@@ -71,6 +71,10 @@ shape of Python's habits; with two the common part is visible. Today the checker
   **Breaking for a host that reads a Python scan** (`meizel.api.scan_tree`): those six fields are no
   longer attributes of `FileScan`; the one a host used, `type_checking`, is `type_checking_lines(scan)`
   (0.10.1), which `type_checking_violations` takes as before.
+  0.10.2: the JSON form of a fixture function in the scan cache carries every field of it (it kept
+  five of twelve, and no helper), so a scan read back from the cache equals the scan that was stored;
+  `language/tests/test_scan_roundtrip.py` states that for every field of `FileScan`, `PythonRecord`,
+  `FixtureState` and `FixtureFunction`.
 - `graph/`: Python import resolution (`imports.py`, `python_layout.py`, `Universe.resolve_module`,
   `python_files`) and the hard-coded `typescript_files`. Plan: files per frontend in `Universe`; done
   together with the Rust frontend, since both need the same change.

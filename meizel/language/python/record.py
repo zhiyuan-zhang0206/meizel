@@ -11,7 +11,7 @@ from typing import Literal
 
 from meizel.graph.model import EntropySite
 from meizel.language.file_scan import FileScan
-from meizel.language.json_containers import as_record
+from meizel.language.json_containers import as_array, as_record, as_row
 from meizel.language.json_fields import opt_list, opt_rows, put_if
 from meizel.language.json_scalars import as_flag, as_int, as_optional_text, as_text
 from meizel.language.python.fixtures import FixtureFunction, FixtureRequest, FixtureState
@@ -62,6 +62,58 @@ def _fixture_form(value: object) -> _FixtureForm:
     raise ValueError(f"unknown fixture form: {text}")
 
 
+def _encode_function(fn: FixtureFunction) -> list[object]:
+    return [
+        fn.name,
+        fn.line,
+        fn.registered,
+        fn.module_owned,
+        fn.parameters_known,
+        fn.end_line,
+        fn.is_async,
+        list(fn.requests),
+        list(fn.imported_modules),
+        list(fn.callees),
+        list(fn.local_calls),
+        list(fn.names_loaded),
+    ]
+
+
+def _texts(value: object) -> tuple[str, ...]:
+    return tuple(as_text(item) for item in as_array(value))
+
+
+def _decode_function(item: object) -> FixtureFunction:
+    (
+        name,
+        line,
+        registered,
+        owned,
+        known,
+        end,
+        is_async,
+        requests,
+        modules,
+        callees,
+        local,
+        loaded,
+    ) = as_row(item, 12)
+    return FixtureFunction(
+        as_text(name),
+        as_int(line),
+        as_optional_text(registered),
+        as_flag(owned),
+        as_flag(known),
+        end_line=as_int(end),
+        is_async=as_flag(is_async),
+        requests=_texts(requests),
+        imported_modules=_texts(modules),
+        callees=_texts(callees),
+        local_calls=_texts(local),
+        names_loaded=_texts(loaded),
+    )
+
+
 def _encode_fixtures_raw(fx: FixtureState) -> dict[str, object]:
     out: dict[str, object] = {}
     put_if(out, "defs", sorted(fx.defs))
@@ -71,14 +123,8 @@ def _encode_fixtures_raw(fx: FixtureState) -> dict[str, object]:
         [[r.name, r.line, r.skip_self, r.requester_line, r.form] for r in fx.requests],
     )
     put_if(out, "plugins", [[name, line] for name, line in fx.plugins])
-    put_if(
-        out,
-        "functions",
-        [
-            [fn.name, fn.line, fn.registered, fn.module_owned, fn.parameters_known]
-            for fn in fx.functions
-        ],
-    )
+    put_if(out, "functions", [_encode_function(fn) for fn in fx.functions])
+    put_if(out, "helpers", [_encode_function(fn) for fn in fx.helpers])
     return out
 
 
@@ -98,13 +144,11 @@ def _decode_fixtures(raw: Mapping[str, object]) -> FixtureState:
         for name, line, skip_self, req_line, form in opt_rows(fx, "requests", 5)
     ]
     plugins = [(as_text(name), as_int(line)) for name, line in opt_rows(fx, "plugins", 2)]
-    functions = [
-        FixtureFunction(
-            as_text(name), as_int(line), as_optional_text(reg), as_flag(owned), as_flag(known)
-        )
-        for name, line, reg, owned, known in opt_rows(fx, "functions", 5)
-    ]
-    return FixtureState(defs=defs, requests=requests, plugins=plugins, functions=functions)
+    functions = [_decode_function(item) for item in opt_list(fx, "functions")]
+    helpers = [_decode_function(item) for item in opt_list(fx, "helpers")]
+    return FixtureState(
+        defs=defs, requests=requests, plugins=plugins, functions=functions, helpers=helpers
+    )
 
 
 def encode_record(extra: object) -> dict[str, object] | None:
