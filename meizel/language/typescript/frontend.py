@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
+
 from meizel.allowances import Policy
-from meizel.graph.model import Code, Diagnostic, Sources
+from meizel.graph.model import Code, Diagnostic, Fact, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
-from meizel.language.frontend import Frontend, StateKinds
+from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.typescript.adapter import scan_source, typescript_extensions, typescript_files
 from meizel.language.typescript.cache import scan_typescript_cached
 from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS, restricted_hint
@@ -33,6 +35,28 @@ def _stale_readers(_universe: Universe, _policy: Policy) -> list[Diagnostic]:
     return []
 
 
+# The TypeScript frontend adds no facts, has no rules of its own beyond what a record carries, reads
+# no file beside the ones it is asked for, and has nothing of its own to say under `explain`.
+def _facts(_view: RunView) -> tuple[list[Fact], list[Diagnostic]]:
+    return [], []
+
+
+def _rules(_view: RunView) -> list[Diagnostic]:
+    return []
+
+
+def _companions(
+    _universe: Universe,
+    _scans: Mapping[str, FileScan],
+    _scan_more: Callable[[list[str]], dict[str, FileScan]],
+) -> dict[str, FileScan]:
+    return {}
+
+
+def _evidence(_universe: Universe, _scans: Mapping[str, FileScan], _node: str) -> list[str]:
+    return []
+
+
 def _scan_source(
     universe: Universe, path: str, source: bytes, sources: Sources, policy: Policy
 ) -> FileScan:
@@ -49,6 +73,10 @@ TYPESCRIPT = Frontend(
     _scan_source,
     EXTERNAL_FORMS,
     DYNAMIC_ATTR_FORMS,
+    _facts,
+    _rules,
+    _companions,
+    _evidence,
     Code.RESTRICTED_TS,
     "TypeScript",
     restricted_hint,

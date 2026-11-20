@@ -10,8 +10,11 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.python.cache import scan_python_cached
+from meizel.language.python.explain import python_evidence
+from meizel.language.python.pytest_scope import python_companions, python_facts
 from meizel.language.python.readers import python_sources, stale_readers
 from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
+from meizel.language.python.rules import python_rules
 from meizel.language.python.scanner import scan_source
 
 __all__ = ["PYTHON"]
@@ -50,6 +53,10 @@ PYTHON = Frontend(
     _scan_source,
     EXTERNAL_FORMS,
     DYNAMIC_ATTR_FORMS,
+    python_facts,
+    python_rules,
+    python_companions,
+    python_evidence,
     Code.RESTRICTED,
     "Python",
     _restricted_hint,

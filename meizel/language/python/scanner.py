@@ -24,12 +24,12 @@ from meizel.graph.model import (
     TypeCastSite,
 )
 from meizel.graph.universe import Universe
-from meizel.language import fixtures
-from meizel.language.file_scan import FileScan, InputListAppend, read_source
-from meizel.language.python import fixture_scan, purity
+from meizel.language.file_scan import FileScan, read_source
+from meizel.language.python import fixture_scan, fixtures, purity
 from meizel.language.python.ambient import AmbientAccess
 from meizel.language.python.bindings import unambiguous_function_lines
 from meizel.language.python.input_mutations import input_list_appends
+from meizel.language.python.record import InputListAppend, PythonRecord
 from meizel.language.python.restricted import const_str
 from meizel.lint_common import is_test_path
 
@@ -250,18 +250,20 @@ class Scanner(AmbientAccess):
             restricted=self.restricted,
             patches=self.patches,
             problems=[*self.problems, *self.ambient.unjudged_problems()],
-            fixtures=self.fixture_state,
-            imported=self.imported,
             purity=self.purity_state.items,
             enum_subsets=self.purity_state.finalize_subsets(),
-            input_appends=self.input_appends,
             ambient=self.ambient.finish(),
-            entropy=self.entropy_finish(),
             type_casts=self.type_casts,
             any_collaborators=self.any_collaborators,
-            type_checking=tuple(self.type_checking),
-            deps=tuple(sorted(self.binding_files - {self.path})),
             injected=tuple(self.injected),
+            extra=PythonRecord(
+                fixtures=self.fixture_state,
+                imported=self.imported,
+                input_appends=self.input_appends,
+                entropy=self.entropy_finish(),
+                type_checking=tuple(self.type_checking),
+                deps=tuple(sorted(self.binding_files - {self.path})),
+            ),
         )
 
     def visit_if(self, node: ast.If) -> None:

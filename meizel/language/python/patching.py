@@ -11,7 +11,6 @@ import sys
 
 from meizel.graph.model import Code, FactKind, Patch
 from meizel.graph.universe import Universe
-from meizel.language import fixtures
 from meizel.language.python import purity
 from meizel.language.python.bindings import (
     ClassFacts,
@@ -23,6 +22,7 @@ from meizel.language.python.bindings import (
 )
 from meizel.language.python.python_commands import PythonCommands
 from meizel.language.python.restricted import const_str
+from meizel.language.test_files import is_test_file
 from meizel.lint_common import is_test_path
 
 __all__ = ["PatchForms"]
@@ -59,7 +59,7 @@ def _is_dunder(name: str) -> bool:
 class PatchForms(PythonCommands):
     def __init__(self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool) -> None:
         super().__init__(universe, path, tree, walrus=walrus)
-        self.test_file = fixtures.is_test_file(path)
+        self.test_file = is_test_file(path)
         self.purity_state = purity.make_state(universe, path=path)
         self.patches: list[Patch] = []
 
@@ -102,7 +102,7 @@ class PatchForms(PythonCommands):
         info = None if dotted is None else find_class(self.u, dotted, seen=self.binding_files)
         if info is None or info.abstract or info.file == self.path:
             return None
-        return None if is_test_path(info.file) or fixtures.is_test_file(info.file) else info
+        return None if is_test_path(info.file) or is_test_file(info.file) else info
 
     def record_overrides(
         self, info: ClassFacts, methods: list[ast.FunctionDef | ast.AsyncFunctionDef]

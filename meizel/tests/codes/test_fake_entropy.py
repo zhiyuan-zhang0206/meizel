@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from meizel.contracts.analysis import render_policy
+from meizel.language.python import python_record
 from meizel.tests.synthetic import RepoFactory, analysis_of, diagnostics, failures, run
 
 ROOT = '[roles]\napplication = ["app"]\ntests = ["tests"]\n'
@@ -18,7 +19,7 @@ def entropy(make_repo: RepoFactory, source: str, path: str = "app/mod.py") -> li
             path: source,
         }
     )
-    return [site.what for site in analysis_of(root).scans[path].entropy]
+    return [site.what for site in python_record(analysis_of(root).scans[path]).entropy]
 
 
 @pytest.mark.parametrize(

@@ -10,6 +10,7 @@ from meizel.entry import open_repository
 from meizel.graph.model import Code, Sources
 from meizel.graph.universe import Universe
 from meizel.language import FileScan, scan_source
+from meizel.language.python import python_record
 from meizel.tests.synthetic import (
     RepoFactory,
     analysis_of,
@@ -370,13 +371,13 @@ def test_alias_bound_keeps_existing_source_consumers(
 def test_generic_fixture_decorator_keeps_outer_metadata_identity(tmp_path: Path) -> None:
     source = "import pytest\n@pytest.fixture\ndef resource[pytest](): return None\n"
     result = scan(tmp_path, source, "conftest.py")
-    assert result.fixtures.defs == {"resource"}
-    assert result.fixtures.functions[0].module_owned
+    assert python_record(result).fixtures.defs == {"resource"}
+    assert python_record(result).fixtures.functions[0].module_owned
 
 
 def test_scope_views_preserve_top_level_parameter_observations(tmp_path: Path) -> None:
     result = scan(tmp_path, "def collect(values: list[int]): values.append(1)\n")
-    assert [(item.function, item.parameter) for item in result.input_appends] == [
+    assert [(item.function, item.parameter) for item in python_record(result).input_appends] == [
         ("collect", "values")
     ]
 

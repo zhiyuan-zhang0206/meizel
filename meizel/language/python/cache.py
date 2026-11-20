@@ -15,6 +15,7 @@ from meizel.graph.model import (
 )
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
+from meizel.language.python.record import decode_record, encode_record, python_record
 from meizel.language.python.scanner import scan_file
 from meizel.language.scan_codec import (
     decode_file_scan,
@@ -189,13 +190,13 @@ def _decode_py_entry(
         )
         if not _deps_valid(deps, digests):
             return None
-        return _CachedPyScan(decode_file_scan(body, kinds), deps)
+        return _CachedPyScan(decode_file_scan(body, kinds, decode_record), deps)
     except (ValueError, TypeError, KeyError, IndexError):
         return None
 
 
 def _encode_py_entry(scan: FileScan, text: str, digests: Mapping[str, str]) -> str:
-    deps = [[dep, digests.get(dep, _MISSING)] for dep in scan.deps]
+    deps = [[dep, digests.get(dep, _MISSING)] for dep in python_record(scan).deps]
     return f"{json.dumps(deps, separators=(',', ':'))}\n{text}"
 
 
@@ -206,7 +207,7 @@ def _init_worker(universe: Universe, sources: Sources, policy: Policy) -> None:
 def _scan_in_worker(path: str) -> tuple[FileScan, str]:
     universe, sources, policy = _WORKER["scan"]
     scan = scan_file(universe, path, sources, policy=policy)
-    return scan, encode_file_scan(scan)
+    return scan, encode_file_scan(scan, encode_record)
 
 
 def _scan_python_misses(
@@ -215,7 +216,7 @@ def _scan_python_misses(
     workers = 1 if jobs is None else jobs
     if workers <= 1 or len(paths) < _PARALLEL_FROM:
         return [
-            (scan, encode_file_scan(scan))
+            (scan, encode_file_scan(scan, encode_record))
             for scan in (scan_file(universe, p, sources, policy=policy) for p in paths)
         ]
     with ProcessPoolExecutor(
@@ -273,10 +274,10 @@ def _store_py_scans(
 ) -> None:
     updates: dict[str, str] = {}
     for scan, text in fresh:
-        if scan.path not in keys or any(dep not in digests for dep in scan.deps):
+        if scan.path not in keys or any(dep not in digests for dep in python_record(scan).deps):
             continue
         key = keys[scan.path]
-        deps = tuple((dep, digests[dep]) for dep in scan.deps)
+        deps = tuple((dep, digests[dep]) for dep in python_record(scan).deps)
         universe.repo.memo_put(key, _CachedPyScan(scan, deps))
         updates[key] = _encode_py_entry(scan, text, digests)
     if updates:

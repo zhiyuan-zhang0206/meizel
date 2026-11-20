@@ -17,6 +17,7 @@ from meizel.contracts.debt import (
     PATCH_HINT,
     PATCH_REASONING,
     PATCH_WHAT,
+    PURITY_CODES,
     DebtEntry,
     entry_value,
     file_key,
@@ -28,6 +29,7 @@ from meizel.contracts.ledger import account_line, legal_read_recorded, reconcile
 from meizel.contracts.manifest import Manifest, effective_purity, load_manifests, manifest_path
 from meizel.contracts.policy import POLICY, Policy, load_policy, render_policy
 from meizel.contracts.policy import check as check_policy
+from meizel.contracts.purity_mode import purity_debt, test_purity_mode
 from meizel.contracts.rule import (
     Projection,
     judge_facts,
@@ -37,24 +39,20 @@ from meizel.contracts.rule import (
 )
 from meizel.graph import python_reverse_closure
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind, Patch, Sources
-from meizel.graph.universe import Universe, parent_of
+from meizel.graph.universe import Universe
 from meizel.language import (
     DYNAMIC_ATTR_FORMS,
     EXTERNAL_FORMS,
     FileScan,
+    RunView,
     enabled_frontends,
     frontend_of,
     scan_all,
     stale_readers,
 )
-from meizel.language.fixtures import FixtureIndex, fixture_facts, is_test_file
-from meizel.language.python import (
-    TYPE_CHECKING_MESSAGE,
-    mount_facts,
-)
+from meizel.language.test_files import is_test_file
 from meizel.language.typescript import typescript_scopes
 from meizel.lint_common import is_test_path
-from meizel.roles import select_packages
 
 _EMPTY_POLICY = Policy()
 _PRUNE = "run `python -m meizel sync --prune` to remove it"
@@ -76,8 +74,6 @@ __all__ = [
     "render_policy",
     "scan_all",
     "set_debt",
-    "type_checking_in_scope",
-    "type_checking_violations",
 ]
 
 
@@ -149,23 +145,6 @@ def _load_facts(manifests: dict[str, Manifest]) -> list[Fact]:
                 for target in targets
             )
     return facts
-
-
-def _fixture_facts(
-    universe: Universe, scans: dict[str, FileScan], judged: Collection[str]
-) -> list[Fact]:
-    defined = {
-        path: scan.fixtures.defs | scan.imported
-        for path, scan in scans.items()
-        if scan.fixtures.defs or path.endswith("conftest.py") or scan.fixtures.plugins
-    }
-    plugins = {
-        p: [n for n, _ in s.fixtures.plugins] for p, s in scans.items() if s.fixtures.plugins
-    }
-    requests = {
-        p: s.fixtures.requests for p, s in scans.items() if s.fixtures.requests and p in judged
-    }
-    return fixture_facts(FixtureIndex(universe, defined, plugins), requests)
 
 
 # The `[loads]`, `[external]` and `[dynamic-attrs]` files, as repository paths.
@@ -439,48 +418,20 @@ def _stale_diagnostics(
     return found
 
 
-def _ancestor_conftests(universe: Universe, path: str) -> list[str]:
-    found: list[str] = []
-    directory = parent_of(path)
-    while True:
-        candidate = f"{directory}/conftest.py" if directory else "conftest.py"
-        if candidate in universe.files:
-            found.append(candidate)
-        if not directory:
-            return found
-        directory = parent_of(directory)
-
-
-def _needed_conftests(universe: Universe, scans: Mapping[str, FileScan]) -> list[str]:
-    needed: set[str] = set()
-    for scan in scans.values():
-        if scan.fixtures.requests or scan.fixtures.plugins:
-            needed.update(_ancestor_conftests(universe, scan.path))
-    return sorted(needed - scans.keys())
-
-
-def _missing_plugins(universe: Universe, scans: Mapping[str, FileScan]) -> list[str]:
-    found: set[str] = set()
-    for scan in scans.values():
-        for name, _ in scan.fixtures.plugins:
-            mod = universe.resolve_module(name)
-            if mod is not None and mod.file is not None and mod.file not in scans:
-                found.add(mod.file)
-    return sorted(found)
-
-
-# Scans only changed source files first, pulling in ancestor conftest.py files and transitive
-# pytest_plugins modules only when a changed file requests fixtures or declares plugins.
+# Scans only changed source files first, then what each frontend needs read alongside them: for the
+# Python frontend the ancestor conftest.py files and transitive pytest_plugins modules of the tests
+# that request fixtures or declare plugins.
 def _scan_changed(
     universe: Universe, sources: Sources, changed: Collection[str], jobs: int | None, policy: Policy
 ) -> dict[str, FileScan]:
     initial = sorted(p for p in _all_source_files(universe, policy) if p in changed)
     scans = scan_all(universe, sources, jobs, initial, policy=policy)
-    conftests = _needed_conftests(universe, scans)
-    if conftests:
-        scans.update(scan_all(universe, sources, jobs, conftests, policy=policy))
-    while more := _missing_plugins(universe, scans):
-        scans.update(scan_all(universe, sources, jobs, more, policy=policy))
+
+    def scan_more(paths: list[str]) -> dict[str, FileScan]:
+        return scan_all(universe, sources, jobs, paths, policy=policy)
+
+    for frontend in enabled_frontends(policy):
+        scans.update(frontend.companions(universe, scans, scan_more))
     return scans
 
 
@@ -511,51 +462,6 @@ def _type_cast_diagnostics(scans: Iterable[FileScan]) -> list[Diagnostic]:
     ]
 
 
-_WRAPPER_HINTS = (
-    "why: a private function that is only `return time.monotonic()` hides the clock read from the "
-    "rule on functions that wait and is a seam only a patch can reach; the module never hands it "
-    "on, so nothing can inject the clock",
-    "instead: take the clock as a required `Timers` parameter (or `now: float`) from the root, and "
-    "delete the wrapper; one the module passes on as a default or an argument is an injection point",
-    "see: meizel/docs/checker/fake-entropy.md",
-)
-_ENTROPY_HINTS = (
-    "why: a monotonic or perf-counter reading, an object address and a process-local counter are "
-    "not entropy: two processes started together draw the same value, a restart repeats it and an "
-    "address is reused; and because they are neither the wall clock nor a random call they hide a "
-    "read of randomness from `ambient-read`",
-    "instead: entropy has one carrier, the process's `random.Random`: pass it down from the "
-    "composition root and mint identifiers with `new_uuid(rng)`; keep an interval clock for "
-    "durations (`end - start`); a module's clock is a required `Timers` parameter, not a private "
-    "wrapper",
-    "see: meizel/docs/checker/fake-entropy.md",
-)
-
-
-# A reading spent as identity or randomness, or a private wrapper over an interval clock. It is
-# recordable debt like an ambient read, except in a strict file.
-def _entropy_diagnostics(
-    scans: Iterable[FileScan], manifests: dict[str, Manifest]
-) -> list[Diagnostic]:
-    found: list[Diagnostic] = []
-    for scan in scans:
-        if not scan.entropy or not in_scope(scan.path, manifests):
-            continue
-        owner = scan.path.rpartition("/")[0]
-        strict = effective_purity(scan.path, manifests) == "strict"
-        for site in scan.entropy:
-            reading, _, context = site.what.partition(" in ")
-            what = (
-                f"`{site.what.split()[-1]}` wraps an interval clock that nothing injects"
-                if site.what.startswith("interval-wrapper")
-                else f"`{reading}` is spent as identity or randomness ({context})"
-            )
-            debt = None if strict else DebtKey(owner, file_key(owner, scan.path, site.what))
-            hints = _WRAPPER_HINTS if site.what.startswith("interval-wrapper") else _ENTROPY_HINTS
-            found.append(Diagnostic(scan.path, site.line, Code.FAKE_ENTROPY, what, hints, debt))
-    return found
-
-
 def _any_collaborator_diagnostics(scans: Iterable[FileScan]) -> list[Diagnostic]:
     return [
         Diagnostic(
@@ -580,42 +486,28 @@ def _any_collaborator_diagnostics(scans: Iterable[FileScan]) -> list[Diagnostic]
     ]
 
 
-def type_checking_in_scope(path: str, packages: tuple[str, ...]) -> bool:
-    if path == "conftest.py":
-        return True
-    return (
-        path.endswith(".py")
-        and not path.rsplit("/", 1)[-1].startswith("test_")
-        and path.split("/", 1)[0] in packages
-    )
-
-
-def type_checking_violations(
-    lines: tuple[int, ...],
-    rel_path: str,
-    allowed: Collection[str],
-    packages: tuple[str, ...],
-) -> list[tuple[int, str]]:
-    if rel_path in allowed or not type_checking_in_scope(rel_path, packages):
-        return []
-    return [(line, TYPE_CHECKING_MESSAGE) for line in lines]
-
-
-def _type_checking_diagnostics(
-    scans: Iterable[FileScan], manifests: dict[str, Manifest], policy: Policy
-) -> list[Diagnostic]:
+# What a frontend's rules are told of a run, with the answers the manifests give.
+def _run_view(
+    universe: Universe | None,
+    policy: Policy,
+    scans: Mapping[str, FileScan],
+    judged: list[FileScan],
+    changed: frozenset[str] | None,
+    manifests: dict[str, Manifest],
+) -> RunView:
     root = manifests.get("")
-    packages = select_packages(
-        root.roles if root else {}, "application", "standalone", "tooling", "templates", "tests"
+    return RunView(
+        universe,
+        policy,
+        scans,
+        judged,
+        changed,
+        {} if root is None else root.roles,
+        lambda path: effective_purity(path, manifests),
+        lambda scan: test_purity_mode(scan, manifests),
+        lambda path: in_scope(path, manifests),
+        lambda path, what, mode: purity_debt(path.rpartition("/")[0], path, what, mode),
     )
-    allowed = policy.reasons("type-checking", "files")
-    return [
-        Diagnostic(scan.path, line, Code.TYPE_CHECKING, message)
-        for scan in scans
-        for line, message in type_checking_violations(
-            scan.type_checking, scan.path, allowed, packages
-        )
-    ]
 
 
 # The diagnostics a single file produces on its own, without whole-repository facts.
@@ -631,14 +523,11 @@ def diagnose(
     loaders, externals, owners = _declared_sites(manifests)
     found.extend(_source_diagnostics([scan], loaders, externals, owners, pol))
     found.extend(_patch_diagnostics([scan], _approved(pol), scan.facts))
-    found.extend(ambient_diagnostics([scan], manifests) + _entropy_diagnostics([scan], manifests))
+    found.extend(ambient_diagnostics([scan], manifests))
     found.extend(_type_cast_diagnostics([scan]) + _any_collaborator_diagnostics([scan]))
-    found.extend(_type_checking_diagnostics([scan], manifests, pol))
-    found.extend(
-        purity_diagnostics(
-            [scan], [scan], manifests, pol, include_manifests=False, universe=universe
-        )
-    )
+    found.extend(purity_diagnostics([scan], [scan], manifests, pol, include_manifests=False))
+    view = _run_view(universe, pol, {scan.path: scan}, [scan], None, manifests)
+    found.extend(frontend_of(scan.path, pol).rules(view))
     return _distinct(found)
 
 
@@ -721,23 +610,23 @@ def analyze(
     judged_scans = [scans[p] for p in judged]
     loaders, externals, owners = _declared_sites(manifests)
     facts = [f for scan in judged_scans for f in scan.facts]
-    facts.extend([*_fixture_facts(universe, scans, judged), *_load_facts(manifests)])
-    mounts, unmounted = mount_facts(universe, scope)
-    facts.extend(mounts)
-    diagnostics.extend(unmounted)
+    view = _run_view(universe, policy, scans, judged_scans, scope, manifests)
+    facts.extend(_load_facts(manifests))
+    for frontend in enabled_frontends(policy):
+        added, unread = frontend.facts(view)
+        facts.extend(added)
+        diagnostics.extend(unread)
     projections, found, needed = judge_facts(facts, manifests)
     diagnostics.extend(found)
     diagnostics.extend(_source_diagnostics(judged_scans, loaders, externals, owners, policy))
     diagnostics.extend(_patch_diagnostics(judged_scans, _approved(policy), facts))
     diagnostics.extend(ambient_diagnostics(judged_scans, manifests))
-    diagnostics.extend(
-        _entropy_diagnostics(judged_scans, manifests) + _type_cast_diagnostics(judged_scans)
-    )
+    diagnostics.extend(_type_cast_diagnostics(judged_scans))
     diagnostics.extend(_any_collaborator_diagnostics(judged_scans))
-    diagnostics.extend(_type_checking_diagnostics(judged_scans, manifests, policy))
-    purity_diags = purity_diagnostics(
-        scans.values(), judged_scans, manifests, policy, universe=universe
-    )
+    purity_diags = purity_diagnostics(scans.values(), judged_scans, manifests, policy)
+    for frontend in enabled_frontends(policy):
+        for ruled in frontend.rules(view):
+            (purity_diags if ruled.code in PURITY_CODES else diagnostics).append(ruled)
     stale = StaleDeclarations()
     inert: list[tuple[str, str]] = []
     if scope is None:

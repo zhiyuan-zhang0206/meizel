@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from meizel.language.python import python_record
 from meizel.tests.synthetic import RepoFactory, analysis_of, run
 
 
@@ -42,11 +43,12 @@ def test_input_append_observations_keep_fresh_rebound_and_nested_mutation_separa
     )
     analysis = analysis_of(root)
     scan = analysis.scans["sample.py"]
-    assert [(item.function, item.parameter) for item in scan.input_appends] == [
+    assert [(item.function, item.parameter) for item in python_record(scan).input_appends] == [
         ("direct", "values")
     ]
     # Only the trusted scanner value serialized in this assertion is unpickled.
-    assert pickle.loads(pickle.dumps(scan)).input_appends == scan.input_appends  # noqa: S301
+    restored = pickle.loads(pickle.dumps(scan))  # noqa: S301
+    assert python_record(restored).input_appends == python_record(scan).input_appends
     assert analysis.diagnostics == analysis.verdict == analysis.facts == []
     text = explain_text(root, "sample.py", capsys)
     assert "direct: values.append(...)" in text
@@ -62,7 +64,7 @@ def test_shadowed_or_star_import_list_annotation_is_unknown(
     root = make_repo(
         {"sample.py": f"{binding}\ndef bump(values: list[int]):\n    values.append(1)\n"}
     )
-    assert analysis_of(root).scans["sample.py"].input_appends == []
+    assert python_record(analysis_of(root).scans["sample.py"]).input_appends == []
 
 
 def test_explicit_fixture_chain_uses_consuming_test_visibility_and_ignores_unused_definitions(
@@ -100,7 +102,8 @@ def test_explicit_fixture_chain_uses_consuming_test_visibility_and_ignores_unuse
     )
     assert "never_requested" not in text and "operator_database" not in text
     assert [
-        (r.name, r.line, r.skip_self) for r in analysis.scans["child/test_a.py"].fixtures.requests
+        (r.name, r.line, r.skip_self)
+        for r in python_record(analysis.scans["child/test_a.py"]).fixtures.requests
     ] == [("wrapped", 1, False)]
     assert {(f.src, f.dst, f.names) for f in analysis.facts if f.kind.value == "fixture"} == {
         ("child/test_a.py", "conftest.py", ("wrapped",)),
@@ -255,7 +258,7 @@ def test_pattern_captures_are_local_rebindings_not_input_list_observations(
     """
         }
     )
-    assert analysis_of(root).scans["sample.py"].input_appends == []
+    assert python_record(analysis_of(root).scans["sample.py"]).input_appends == []
 
 
 def test_diamond_fixture_display_bounds_total_work_without_claiming_complete_paths(

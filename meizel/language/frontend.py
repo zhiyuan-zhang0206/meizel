@@ -6,15 +6,39 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, Diagnostic, KindName, Sources
+from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, KindName, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 
-__all__ = ["Frontend", "StateKinds"]
+__all__ = ["Frontend", "RunView", "StateKinds"]
 
 # The process state a repository keeps, as its manifests declare it under `[state]`: directory, then
 # file, then the kinds of state the file holds.
 type StateKinds = Mapping[str, Mapping[str, tuple[KindName, ...]]]
+
+
+# What a frontend's rules are told of a run: the records of every file it read (the whole run's,
+# whatever the language), the ones this run judges, and the answers only the checker's manifests
+# can give -- how pure a path is declared to be, which files the ambient-read rule governs, and
+# the debt a violation of a given file is recorded as.
+@dataclass(frozen=True, slots=True)
+class RunView:
+    universe: Universe | None
+    policy: Policy
+    scans: Mapping[str, FileScan]
+    judged: Sequence[FileScan]
+    # The files a `check --changed` run was given; None for a whole-repository run.
+    changed: frozenset[str] | None
+    # The top-level roles the root manifest declares.
+    roles: Mapping[str, tuple[str, ...]]
+    # The purity a path is declared to have: "strict", "strict-to-be" or "none".
+    purity_of: Callable[[str], str]
+    # The purity a test file is judged under, from its own path and the modules it reaches.
+    test_mode: Callable[[FileScan], str]
+    # Whether the ambient-read rule governs the file (the roles whose code ships).
+    governed: Callable[[str], bool]
+    # The debt a violation `what` in `path` is recorded as under a purity: None where that is strict.
+    debt_key: Callable[[str, str, str], DebtKey | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +63,19 @@ class Frontend:
     # that it owns an attribute name only the running program knows.
     external_forms: frozenset[str]
     dynamic_attr_forms: frozenset[str]
+    # The facts this language adds to the run beyond those of its files' records, and the problems
+    # in reading them (a whole-run question: the files of the judged paths only, when `changed`).
+    facts: Callable[[RunView], tuple[list[Fact], list[Diagnostic]]]
+    # The rules of this language that need more than one file's record, or the manifests.
+    rules: Callable[[RunView], list[Diagnostic]]
+    # The files a run that read only some files must read as well, scanned through the callable it is
+    # handed, for the judgments above to see what they reach; the records it returns join the run's.
+    companions: Callable[
+        [Universe, Mapping[str, FileScan], Callable[[list[str]], dict[str, FileScan]]],
+        dict[str, FileScan],
+    ]
+    # The lines `explain` adds about the files under a node: what this language's scan saw there.
+    evidence: Callable[[Universe, Mapping[str, FileScan], str], list[str]]
     # How a restricted form of this language is reported: the code (a debt of the file's directory),
     # the name of the subset the form is outside of, and what to do about a form in the directory
     # whose manifest is given.

@@ -30,15 +30,13 @@ from meizel.contracts.analysis import (
     exempt_test_modules,
     load_manifests,
     load_policy,
-    type_checking_in_scope,
-    type_checking_violations,
 )
 from meizel.contracts.enumerations import parse_regions
 from meizel.contracts.sync import prepare_policy_snapshot
 from meizel.entry import main, open_repository
 from meizel.graph.model import Fact, FactKind, MeizelError, Sources
 from meizel.graph.universe import EditPlan, SourceTree, Universe
-from meizel.language.python import scan_tree
+from meizel.language.python import scan_tree, type_checking_in_scope, type_checking_violations
 from meizel.language.typescript import typescript_files
 from meizel.roles import (
     all_packages,
