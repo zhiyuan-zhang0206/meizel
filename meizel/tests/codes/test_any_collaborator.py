@@ -9,7 +9,7 @@ from meizel.contracts.analysis import analyze, diagnose, load_policy, scan_all
 from meizel.entry import open_repository
 from meizel.graph.model import AnyCollaboratorSite, Code, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import FileScan, scan_source
+from meizel.language import FileScan, scan_source
 from meizel.tests.synthetic import (
     RepoFactory,
     analysis_of,

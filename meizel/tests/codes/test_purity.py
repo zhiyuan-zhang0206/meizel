@@ -4,7 +4,7 @@ import pytest
 
 from meizel.contracts.analysis import render_policy
 from meizel.entry import open_repository
-from meizel.language.scan import is_imported_binding, module_bindings
+from meizel.language.python import is_imported_binding, module_bindings
 from meizel.tests.synthetic import RepoFactory, analysis_of, diagnostics, git, record, run
 
 

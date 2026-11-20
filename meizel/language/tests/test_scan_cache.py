@@ -30,11 +30,9 @@ from meizel.graph.model import (
     Unless,
 )
 from meizel.graph.universe import Checkout, EditPlan, SourceTree, Universe
+from meizel.language import FileScan, InputListAppend, scan_all
 from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
-from meizel.language.frontends import scan_all
-from meizel.language.input_mutations import InputListAppend
-from meizel.language.scan import FileScan
-from meizel.language.scan_cache import (
+from meizel.language.python import (
     cached_module_imports,
     load_cached_sources,
     store_cached_sources,

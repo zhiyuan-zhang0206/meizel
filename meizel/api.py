@@ -38,7 +38,8 @@ from meizel.contracts.sync import prepare_policy_snapshot
 from meizel.entry import main, open_repository
 from meizel.graph.model import Fact, FactKind, MeizelError, Sources
 from meizel.graph.universe import EditPlan, SourceTree, Universe
-from meizel.language.scan import scan_tree, typescript_files
+from meizel.language.python import scan_tree
+from meizel.language.typescript import typescript_files
 from meizel.roles import (
     all_packages,
     framework_dirs,

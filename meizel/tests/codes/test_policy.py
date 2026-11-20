@@ -9,7 +9,7 @@ import pytest
 from meizel.allowances import parse
 from meizel.contracts.analysis import render_policy
 from meizel.contracts.sync import with_table
-from meizel.language import ALLOWED_STDLIB_MODULES, IMPURE_STDLIB_MODULES
+from meizel.language.python import ALLOWED_STDLIB_MODULES, IMPURE_STDLIB_MODULES
 from meizel.tests.synthetic import (
     RepoFactory,
     analysis_of,

@@ -20,7 +20,7 @@ from meizel.contracts.manifest import Manifest, load_manifests
 from meizel.contracts.policy import load_policy
 from meizel.graph.model import Code, MeizelError, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import FileScan, scan_source
+from meizel.language import FileScan, scan_source
 
 __all__ = [
     "SymbolMove",

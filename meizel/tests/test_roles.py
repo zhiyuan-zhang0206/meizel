@@ -113,7 +113,7 @@ def test_standalone_is_a_distinct_closed_role(make_repo: RepoFactory) -> None:
 
 def test_native_and_repo_import_names_resolve_to_the_same_files(make_repo: RepoFactory) -> None:
     from meizel.graph.model import Sources
-    from meizel.language.scan import scan_source
+    from meizel.language import scan_source
 
     root = make_repo(standalone_files())
     universe = seat(root)
@@ -219,7 +219,7 @@ def test_undeclared_layout_is_not_guessed(make_repo: RepoFactory) -> None:
 @pytest.mark.parametrize("name", ["numpy", "PIL", "ruff"])
 def test_native_alias_is_scoped_to_its_project(make_repo: RepoFactory, name: str) -> None:
     from meizel.graph.model import Sources
-    from meizel.language.scan import scan_source
+    from meizel.language import scan_source
 
     files = {
         path.replace("meiva_embedding_service", name): text.replace("meiva_embedding_service", name)

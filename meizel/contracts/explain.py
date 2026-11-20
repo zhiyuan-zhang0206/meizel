@@ -7,8 +7,8 @@ from meizel.contracts.analysis import Analysis
 from meizel.contracts.manifest import first
 from meizel.graph.model import Fact, MeizelError
 from meizel.graph.universe import MANIFEST, parent_of
+from meizel.language import FileScan
 from meizel.language.fixtures import FixtureFunction, FixtureIndex, FixtureRequest
-from meizel.language.scan import FileScan
 
 __all__ = ["Explain", "explain"]
 

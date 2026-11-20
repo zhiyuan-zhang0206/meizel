@@ -39,16 +39,15 @@ from meizel.contracts.rule import (
 from meizel.graph import python_reverse_closure
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind, Patch, Sources
 from meizel.graph.universe import Universe, parent_of
-from meizel.language import enabled_frontends, scan_all
+from meizel.language import FileScan, enabled_frontends, scan_all
 from meizel.language.fixtures import FixtureIndex, fixture_facts, is_test_file
-from meizel.language.scan import (
+from meizel.language.python import (
     DYNAMIC_ATTR_FORMS,
     EXTERNAL_FORMS,
     TYPE_CHECKING_MESSAGE,
-    FileScan,
     mount_facts,
-    typescript_scopes,
 )
+from meizel.language.typescript import typescript_scopes
 from meizel.lint_common import is_test_path
 from meizel.roles import select_packages
 

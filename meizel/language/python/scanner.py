@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import TypeGuard
 
 from meizel import allowances
@@ -17,52 +16,30 @@ from meizel.graph.imports import (
     parameter_names,
 )
 from meizel.graph.model import (
-    Acquisition,
     AnyCollaboratorSite,
     Code,
-    EntropySite,
-    EnumSubsetUse,
-    Fact,
     FactKind,
     MeizelError,
-    Patch,
-    Problem,
-    PurityItem,
-    Restricted,
     Sources,
     TypeCastSite,
 )
 from meizel.graph.universe import Universe
-from meizel.language import fixtures, purity, typescript
-from meizel.language.ambient import AmbientAccess
-from meizel.language.bindings import (
-    is_imported_binding,
-    module_bindings,
-    unambiguous_function_lines,
-)
-from meizel.language.input_mutations import InputListAppend, input_list_appends
-from meizel.language.mounts import mount_facts
-from meizel.language.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS, const_str
-from meizel.language.typescript import typescript_files, typescript_scopes
+from meizel.language import fixtures
+from meizel.language.file_scan import FileScan, InputListAppend, read_source
+from meizel.language.python import fixture_scan, purity
+from meizel.language.python.ambient import AmbientAccess
+from meizel.language.python.bindings import unambiguous_function_lines
+from meizel.language.python.input_mutations import input_list_appends
+from meizel.language.python.restricted import const_str
 from meizel.lint_common import is_test_path
 
 __all__ = [
-    "DYNAMIC_ATTR_FORMS",
-    "EXTERNAL_FORMS",
     "TYPE_CHECKING_DOC",
     "TYPE_CHECKING_MESSAGE",
     "TYPE_CHECKING_WHY",
-    "FileScan",
-    "invalidate_policy_caches",
-    "is_imported_binding",
-    "module_bindings",
-    "mount_facts",
     "scan_file",
     "scan_source",
     "scan_tree",
-    "scan_typescript_files",
-    "typescript_files",
-    "typescript_scopes",
 ]
 
 # The document that states the rule against type-only guards; the diagnostic of every face that
@@ -194,28 +171,6 @@ def _unwrap_annotation_expr(expr: ast.expr) -> ast.expr | None:
         return ast.parse(expr.value, mode="eval").body
     except (SyntaxError, ValueError):
         return None
-
-
-@dataclass(frozen=True, slots=True)
-class FileScan:
-    path: str
-    facts: list[Fact] = field(default_factory=list[Fact])
-    restricted: list[Restricted] = field(default_factory=list[Restricted])
-    patches: list[Patch] = field(default_factory=list[Patch])
-    problems: list[Problem] = field(default_factory=list[Problem])
-    fixtures: fixtures.FixtureState = field(default_factory=fixtures.FixtureState)
-    imported: set[str] = field(default_factory=set[str])
-    purity: list[PurityItem] = field(default_factory=list[PurityItem])
-    enum_subsets: list[EnumSubsetUse] = field(default_factory=list[EnumSubsetUse])
-    input_appends: list[InputListAppend] = field(default_factory=list[InputListAppend])
-    ambient: list[Acquisition] = field(default_factory=list[Acquisition])
-    entropy: list[EntropySite] = field(default_factory=list[EntropySite])
-    type_casts: list[TypeCastSite] = field(default_factory=list[TypeCastSite])
-    any_collaborators: list[AnyCollaboratorSite] = field(default_factory=list[AnyCollaboratorSite])
-    type_checking: tuple[int, ...] = ()
-    symbols: tuple[tuple[str, int, int], ...] = ()
-    deps: tuple[str, ...] = ()
-    injected: tuple[str, ...] = ()
 
 
 class Scanner(AmbientAccess):
@@ -414,7 +369,7 @@ class Scanner(AmbientAccess):
         outer = self.scope
         annotation = outer.annotation_scope(node.type_params)
         self.visit_function_annotations(node, annotation)
-        fixtures.record_function(
+        fixture_scan.record_function(
             self.fixture_state,
             node,
             self.dotted,
@@ -593,7 +548,7 @@ class Scanner(AmbientAccess):
         if at_module and any(
             isinstance(t, ast.Name) and t.id == "pytest_plugins" for t in node.targets
         ):
-            names = fixtures.plugin_names(node.value)
+            names = fixture_scan.plugin_names(node.value)
             if names is None:
                 self.restrict(node.lineno, "pytest_plugins that is not a literal")
             else:
@@ -653,7 +608,7 @@ class Scanner(AmbientAccess):
         self.patch_forms(node, callee)
         self.attribute_name_call(node)
         self.spawn_call(callee, node)
-        fixtures.record_call(self.fixture_state, node, callee, requester=self.fixture_requester)
+        fixture_scan.record_call(self.fixture_state, node, callee, requester=self.fixture_requester)
         unshadowed_open = (
             isinstance(node.func, ast.Name)
             and node.func.id == "open"
@@ -712,15 +667,6 @@ def scan_source(
     universe: Universe, path: str, source: bytes, sources: Sources, *, policy: allowances.Policy
 ) -> FileScan:
     """Scan `source` as if it were the file at `path` (a version that is not in the working tree)."""
-    if path.endswith((".ts", ".tsx", ".mts", ".cts")):
-        try:
-            text = source.decode("utf-8")
-        except UnicodeDecodeError as error:
-            raise MeizelError(
-                f"{path}: cannot decode TypeScript source as UTF-8: {error}"
-            ) from error
-        ts = typescript.scan_batch(universe, {path: text}, policy, sources)[path]
-        return _typescript_scan(ts)
     try:
         tree = ast.parse(source, filename=path)
     except SyntaxError as error:
@@ -728,23 +674,6 @@ def scan_source(
     except ValueError as error:
         raise MeizelError(f"{path}: cannot read: {error}") from error
     return scan_tree(universe, path, tree, sources, walrus=b":=" in source, policy=policy)
-
-
-def _typescript_scan(ts: typescript.TsScan) -> FileScan:
-    return FileScan(
-        ts.path,
-        facts=list(ts.facts),
-        patches=list(ts.patches),
-        problems=list(ts.problems),
-        imported=set(ts.external),
-        purity=list(ts.purity),
-        ambient=list(ts.ambient),
-        type_casts=list(ts.type_casts),
-        any_collaborators=list(ts.any_collaborators),
-        enum_subsets=list(ts.enum_subsets),
-        symbols=ts.symbols,
-        restricted=list(ts.restricted),
-    )
 
 
 def scan_tree(
@@ -759,32 +688,7 @@ def scan_tree(
     return Scanner(universe, path, tree, walrus=walrus, sources=sources, policy=policy).run()
 
 
-def _read_source(universe: Universe, path: str) -> bytes:
-    try:
-        return universe.repo.load_bytes(path)
-    except (OSError, ValueError) as error:
-        raise MeizelError(f"{path}: cannot read: {error}") from error
-
-
 def scan_file(
     universe: Universe, path: str, sources: Sources, *, policy: allowances.Policy
 ) -> FileScan:
-    return scan_source(universe, path, _read_source(universe, path), sources, policy=policy)
-
-
-def scan_typescript_files(
-    universe: Universe, paths: list[str], sources: Sources, policy: allowances.Policy
-) -> dict[str, FileScan]:
-    try:
-        contents = {path: _read_source(universe, path).decode("utf-8") for path in paths}
-    except UnicodeDecodeError as error:
-        raise MeizelError(f"cannot decode TypeScript source as UTF-8: {error}") from error
-    scans = typescript.scan_batch(universe, contents, policy, sources)
-    return {path: _typescript_scan(scan) for path, scan in scans.items()}
-
-
-# This is the scanner boundary for a disposable snapshot whose policy has changed. Each cache
-# owner invalidates its own entries; callers neither reach into private caches nor skip the
-# original snapshot validation to avoid them.
-def invalidate_policy_caches() -> None:
-    allowances.invalidate_cache()
+    return scan_source(universe, path, read_source(universe, path), sources, policy=policy)

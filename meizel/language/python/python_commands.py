@@ -20,7 +20,7 @@ import re
 from pathlib import PurePosixPath
 
 from meizel.graph.model import Code, FactKind
-from meizel.language.restricted import RestrictedForms, const_str
+from meizel.language.python.restricted import RestrictedForms, const_str
 
 __all__ = ["PythonCommands"]
 

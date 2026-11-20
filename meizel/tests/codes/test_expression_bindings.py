@@ -8,7 +8,7 @@ from meizel import allowances
 from meizel.entry import open_repository
 from meizel.graph.model import Code, FactKind, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import FileScan, scan_source
+from meizel.language import FileScan, scan_source
 
 
 def scan(tmp_path: Path, source: str) -> FileScan:

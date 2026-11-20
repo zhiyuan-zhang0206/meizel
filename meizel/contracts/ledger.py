@@ -30,7 +30,7 @@ from meizel.contracts.debt import (
 )
 from meizel.contracts.manifest import Manifest
 from meizel.graph.model import Code, Diagnostic
-from meizel.language.scan import FileScan
+from meizel.language import FileScan
 
 __all__ = [
     "Tally",

@@ -24,7 +24,7 @@ from meizel.graph import licensed
 from meizel.graph.graphs import cycle_through, strongly_connected, unneeded_back_edges
 from meizel.graph.model import OS_KINDS, Code, Diagnostic, KindName, PurityItem, covered_kinds
 from meizel.graph.universe import MANIFEST, SOURCE_EXTENSIONS, Universe, is_private_module
-from meizel.language.scan import FileScan
+from meizel.language import FileScan
 from meizel.roles import check_table
 
 __all__ = [

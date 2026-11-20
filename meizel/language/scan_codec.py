@@ -24,9 +24,8 @@ from meizel.graph.model import (
     Unless,
     known_kind,
 )
+from meizel.language.file_scan import FileScan, InputListAppend
 from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
-from meizel.language.input_mutations import InputListAppend
-from meizel.language.scan import FileScan
 from meizel.source_text import object_of
 
 __all__ = [

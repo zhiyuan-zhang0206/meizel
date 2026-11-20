@@ -13,8 +13,9 @@ from meizel.allowances import POLICY, Policy
 from meizel.graph.model import (
     Sources,
 )
-from meizel.graph.universe import MANIFEST, Universe
-from meizel.language.scan import FileScan, scan_file, scan_typescript_files
+from meizel.graph.universe import Universe
+from meizel.language.file_scan import FileScan
+from meizel.language.python.scanner import scan_file
 from meizel.language.scan_codec import (
     decode_file_scan,
     decode_imports,
@@ -23,20 +24,17 @@ from meizel.language.scan_codec import (
     encode_imports,
     encode_sources,
 )
-from meizel.language.typescript import load_ts_config
 from meizel.source_text import object_of, object_pairs
 
 __all__ = [
     "cached_module_imports",
     "load_cached_sources",
     "scan_python_cached",
-    "scan_typescript_cached",
     "store_cached_sources",
 ]
 
 _PARALLEL_FROM = 200
 _MISSING = "<missing>"
-_TS_WORLD_SUFFIXES = (".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json")
 _WORKER: dict[str, tuple[Universe, Sources, Policy]] = {}
 
 
@@ -44,11 +42,6 @@ _WORKER: dict[str, tuple[Universe, Sources, Policy]] = {}
 class _CachedPyScan:
     scan: FileScan
     deps: tuple[tuple[str, str], ...]
-
-
-@dataclass(frozen=True, slots=True)
-class _CachedTsBatch:
-    scans: dict[str, FileScan]
 
 
 @dataclass(frozen=True, slots=True)
@@ -313,76 +306,4 @@ def scan_python_cached(
     for scan, _ in fresh:
         scans[scan.path] = scan
     _store_py_scans(universe, fresh, keys, digests)
-    return scans
-
-
-def _ts_batch_key(
-    universe: Universe,
-    paths: list[str],
-    sources: Sources,
-    policy: Policy,
-    digests: Mapping[str, str],
-) -> str:
-    if not digests or any(path not in digests for path in paths):
-        return ""
-    non_manifest = [p for p in sorted(universe.files) if p.rsplit("/", 1)[-1] != MANIFEST]
-    world_files = [p for p in non_manifest if p.endswith(_TS_WORLD_SUFFIXES)]
-    if any(p not in digests for p in world_files):
-        return ""
-    cfg = load_ts_config(policy)
-    payload = {
-        "scanner": universe.repo.scanner_digest(),
-        "paths": paths,
-        "config": {
-            "scopes": list(cfg.scopes),
-            "import_sources": list(cfg.import_sources),
-            "aliases": [[a, b] for a, b in cfg.aliases],
-            "extensions": list(cfg.extensions),
-            "impure_calls": sorted(cfg.impure_calls),
-            "impure_hooks": sorted(cfg.impure_hooks),
-            "max_public_symbols": cfg.max_public_symbols,
-            "max_params": cfg.max_params,
-            "max_attr_hops": cfg.max_attr_hops,
-            "inlined_env_prefix": cfg.inlined_env_prefix,
-            "inlined_env_roots": list(cfg.inlined_env_roots),
-        },
-        "ambient": {
-            "names": sorted((k, str(v)) for k, v in sources.names.items()),
-            "calls": sorted((k, str(v)) for k, v in sources.calls.items()),
-        },
-        "world": [[p, digests[p]] for p in world_files],
-    }
-    digest = hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()
-    return f"tsbatch:v1:{digest}"
-
-
-def scan_typescript_cached(
-    universe: Universe, paths: list[str], sources: Sources, policy: Policy
-) -> dict[str, FileScan]:
-    if not paths:
-        return {}
-    digests = universe.file_digests()
-    key = _ts_batch_key(universe, paths, sources, policy, digests)
-    if not key:
-        return scan_typescript_files(universe, paths, sources, policy)
-    repo = universe.repo
-    memo = repo.memo_get(key)
-    if isinstance(memo, _CachedTsBatch) and set(memo.scans) == set(paths):
-        return dict(memo.scans)
-    hit = repo.cache_get_many((key,)).get(key)
-    if hit is not None:
-        try:
-            decoded = {
-                s.path: s
-                for s in (decode_file_scan(line, policy.reader_kinds) for line in hit.split("\n"))
-            }
-            if set(decoded) == set(paths):
-                repo.memo_put(key, _CachedTsBatch(decoded))
-                return decoded
-        except (ValueError, TypeError, KeyError, IndexError):
-            decoded = {}
-    scans = scan_typescript_files(universe, paths, sources, policy)
-    repo.memo_put(key, _CachedTsBatch(dict(scans)))
-    encoded = "\n".join(encode_file_scan(scans[p]) for p in paths)
-    repo.cache_put_many({key: encoded})
     return scans

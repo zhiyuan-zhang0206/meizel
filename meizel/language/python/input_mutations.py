@@ -1,18 +1,11 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
 
 from meizel.graph.imports import Scope
+from meizel.language.file_scan import InputListAppend
 
-__all__ = ["InputListAppend", "input_list_appends"]
-
-
-@dataclass(frozen=True, slots=True)
-class InputListAppend:
-    line: int
-    function: str
-    parameter: str
+__all__ = ["input_list_appends"]
 
 
 def input_list_appends(

@@ -11,8 +11,9 @@ import sys
 
 from meizel.graph.model import Code, FactKind, Patch
 from meizel.graph.universe import Universe
-from meizel.language import fixtures, purity
-from meizel.language.bindings import (
+from meizel.language import fixtures
+from meizel.language.python import purity
+from meizel.language.python.bindings import (
     ClassFacts,
     find_class,
     is_imported_binding,
@@ -20,8 +21,8 @@ from meizel.language.bindings import (
     overridable_methods,
     provides,
 )
-from meizel.language.python_commands import PythonCommands
-from meizel.language.restricted import const_str
+from meizel.language.python.python_commands import PythonCommands
+from meizel.language.python.restricted import const_str
 from meizel.lint_common import is_test_path
 
 __all__ = ["PatchForms"]

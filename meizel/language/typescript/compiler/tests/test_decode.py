@@ -5,7 +5,7 @@ import json
 import pytest
 
 from meizel.graph.model import OS_KINDS, Acquisition
-from meizel.language.typescript_compiler.decode import decode_batch
+from meizel.language.typescript.compiler.decode import decode_batch
 
 PATH = "ui/web/src/x.ts"
 

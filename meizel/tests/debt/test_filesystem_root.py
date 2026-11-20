@@ -8,7 +8,7 @@ from pathlib import Path
 from meizel.contracts.analysis import render_policy
 from meizel.graph import FILESYSTEM_READS
 from meizel.graph.model import OS_KINDS, AmbientKind
-from meizel.language import DEFAULT_IMPURE_CALLS
+from meizel.language.python import DEFAULT_IMPURE_CALLS
 from meizel.tests.synthetic import RepoFactory, analysis_of, diagnostics, failures
 
 ROOT = '[roles]\napplication = ["app"]\n'

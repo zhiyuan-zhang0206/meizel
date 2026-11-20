@@ -8,7 +8,7 @@ from meizel.allowances import parse
 from meizel.checkout import GitRepo
 from meizel.graph.model import Code, MeizelError
 from meizel.graph.universe import Universe
-from meizel.language.typescript import scan_typescript
+from meizel.language.typescript.adapter import scan_typescript
 
 
 def test_ast_visits_expressions_but_not_text_and_respects_shadowing(tmp_path: Path) -> None:
@@ -131,7 +131,7 @@ def test_inferred_returns_and_value_constants_do_not_inflate_behavior(tmp_path: 
 
 def test_module_resolution_keeps_each_importers_project_options(tmp_path: Path) -> None:
     from meizel.graph.model import Sources
-    from meizel.language.typescript import scan_batch
+    from meizel.language.typescript.compiler import scan_batch
 
     files = ["base.json"]
     (tmp_path / "base.json").write_text('{"compilerOptions":{"moduleResolution":"bundler"}}')
@@ -155,7 +155,7 @@ def test_module_resolution_keeps_each_importers_project_options(tmp_path: Path) 
 
 def test_enum_subsets_resolve_imported_enum_symbols(tmp_path: Path) -> None:
     from meizel.graph.model import Sources
-    from meizel.language.typescript import scan_batch
+    from meizel.language.typescript.compiler import scan_batch
 
     contents = {
         "kind.ts": "export enum Kind { One, Two, Three }",

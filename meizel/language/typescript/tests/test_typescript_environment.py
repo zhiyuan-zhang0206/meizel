@@ -10,7 +10,7 @@ from meizel.allowances import parse
 from meizel.checkout import GitRepo
 from meizel.graph.model import Sources
 from meizel.graph.universe import Universe
-from meizel.language.typescript import scan_batch
+from meizel.language.typescript.compiler import scan_batch
 
 BUNDLED = "ui/web/src/lib/x.ts"
 _POLICY, _ = parse('[typescript]\ninlined-env-roots = ["ui/web/src/"]\n')

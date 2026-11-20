@@ -1,26 +1,18 @@
-exports = ["fixtures.py", "scan.py"]
+exports = ["fixtures.py", "python", "typescript"]
 
 [uses]
-"__init__.py" = ["frontends.py", "purity.py", "scan_cache.py", "scan_codec.py"]
-"ambient.py" = ["fake_entropy.py", "patching.py"]
-"patching.py" = ["bindings.py", "fixtures.py", "purity.py", "python_commands.py", "restricted.py"]
-"purity.py" = ["purity_structure.py"]
-"python_commands.py" = ["restricted.py"]
-"restricted.py" = ["bindings.py"]
-"scan.py" = ["ambient.py", "bindings.py", "fixtures.py", "input_mutations.py", "mounts.py", "purity.py", "restricted.py", "typescript.py"]
-"scan_cache.py" = ["scan.py", "scan_codec.py", "typescript.py"]
-"scan_codec.py" = ["fixtures.py", "input_mutations.py", "scan.py"]
-"frontends.py" = ["scan.py", "scan_cache.py", "typescript.py"]
-"tests" = ["fixtures.py", "frontends.py", "input_mutations.py", "scan.py", "scan_cache.py", "scan_codec.py", "typescript.py"]
-"typescript.py" = ["typescript_compiler"]
-"typescript_compiler" = ["fixtures.py"]
-
+"__init__.py" = ["file_scan.py", "frontend.py", "frontends.py"]
+"file_scan.py" = ["fixtures.py"]
+"frontend.py" = ["file_scan.py"]
+"frontends.py" = ["file_scan.py", "frontend.py", "python", "typescript"]
+"python" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
+"scan_codec.py" = ["file_scan.py", "fixtures.py"]
+"tests" = ["__init__.py", "fixtures.py", "python", "scan_codec.py"]
+"typescript" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
 
 [purity]
 "." = "strict"
-"bindings.py" = "strict"
-"purity.py" = "strict"
-"scan.py" = "strict"
+"file_scan.py" = "strict"
+"frontend.py" = "strict"
 "frontends.py" = "strict"
-"scan_cache.py" = "strict"
 "scan_codec.py" = "strict"

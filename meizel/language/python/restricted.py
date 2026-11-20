@@ -8,7 +8,7 @@ import re
 from meizel.graph.imports import ImportAccess
 from meizel.graph.model import Restricted
 from meizel.graph.universe import Universe
-from meizel.language.bindings import module_bindings
+from meizel.language.python.bindings import module_bindings
 
 __all__ = ["DYNAMIC_ATTR_FORMS", "EXTERNAL_FORMS", "RestrictedForms", "const_str"]
 

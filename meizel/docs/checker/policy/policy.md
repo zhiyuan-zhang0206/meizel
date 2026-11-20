@@ -55,7 +55,7 @@ section name is `policy-syntax`, not an exemption that silently allows nothing.
 | `test-graph` | what test selection knows about the repository's tests (`meizel/test_graph/`) | `native-fixtures`, `native-markers`, `native-modules` (a test that reaches one runs in the native lane); `pytester-native-tokens`; `tree-scan-pins` (tests that read the whole tree and always run); `global-files`, `global-prefixes` (a change runs every test); `frontend-prefixes` (a change outside Python runs none); `excluded-prefixes` (never scanned or selected); `doc-dirs`, `doc-excluded-roots`, `doc-excluded-names` (which Markdown is documentation only) — all lists |
 | `type-checking` | `if TYPE_CHECKING:` | `files` |
 | `languages` | which language frontends a run uses (`meizel/language/frontends.py`, [language frontends](../../meizel.md#language-frontends)) | `enabled` (list of frontend names, `python` and `typescript`; absent means every built-in frontend; an unknown name is refused) |
-| `typescript` | TypeScript/TSX scanning (`meizel/language/typescript.py`) | `scopes`, `import-sources`, `aliases`, `extensions`, `impure-calls`, `impure-hooks`, `inlined-env-roots`, `package-dir` (lists) |
+| `typescript` | TypeScript/TSX scanning (`meizel/language/typescript/`) | `scopes`, `import-sources`, `aliases`, `extensions`, `impure-calls`, `impure-hooks`, `inlined-env-roots`, `package-dir` (lists) |
 
 ## Host rules
 

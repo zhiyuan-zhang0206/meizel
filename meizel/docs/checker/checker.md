@@ -160,7 +160,7 @@ rule each belongs to in [the diagnostic codes](../diagnostics.md).
 ## Layout
 
 `cli.py` parses commands; `analysis.py` assembles universe, scans, manifests and diagnostics;
-`universe.py` reads git; `scan.py` and the files beside it extract facts from one file;
+`universe.py` reads git; `language/` turns each file into a `FileScan` through one frontend per language (`python/` reads the syntax tree in process, `typescript/` runs the compiler in a Node child);
 `manifest.py` validates manifests; `rule.py` projects and judges; `graphs.py` holds components and
 cycles; the rest implement the other commands.
 

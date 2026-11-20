@@ -8,9 +8,9 @@ from meizel.allowances import Policy
 from meizel.graph.model import MeizelError, Sources
 from meizel.graph.universe import Universe
 from meizel.language import fixtures
-from meizel.language.typescript_compiler.config import load_ts_config
-from meizel.language.typescript_compiler.decode import decode_batch
-from meizel.language.typescript_compiler.model import TsScan
+from meizel.language.typescript.compiler.config import load_ts_config
+from meizel.language.typescript.compiler.decode import decode_batch
+from meizel.language.typescript.compiler.model import TsScan
 from meizel.lint_common import run_node_analyzer
 
 

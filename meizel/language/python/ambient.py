@@ -39,8 +39,8 @@ from meizel.graph.model import (
     Unless,
 )
 from meizel.graph.universe import Universe
-from meizel.language import fake_entropy
-from meizel.language.patching import PatchForms
+from meizel.language.python import fake_entropy
+from meizel.language.python.patching import PatchForms
 from meizel.lint_common import is_test_path
 
 __all__ = ["AmbientAccess", "AmbientRecorder"]

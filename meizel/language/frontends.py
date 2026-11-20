@@ -12,50 +12,25 @@ TypeScript frontend's results are cached in.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Sequence
 
+from meizel import allowances
 from meizel.allowances import Policy
 from meizel.graph.model import MeizelError, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import FileScan
-from meizel.language.scan_cache import scan_python_cached, scan_typescript_cached
-from meizel.language.typescript import typescript_extensions, typescript_files
+from meizel.language.file_scan import FileScan
+from meizel.language.frontend import Frontend
+from meizel.language.python import PYTHON
+from meizel.language.typescript import TYPESCRIPT
 
-__all__ = ["FRONTENDS", "Frontend", "enabled_frontends", "scan_all"]
+__all__ = [
+    "FRONTENDS",
+    "enabled_frontends",
+    "invalidate_policy_caches",
+    "scan_all",
+    "scan_source",
+]
 
-
-@dataclass(frozen=True, slots=True)
-class Frontend:
-    name: str
-    # Whether a path is a file of this language, under the policy the run reads.
-    owns: Callable[[str, Policy], bool]
-    # The files of this language the checker judges in a whole-tree run.
-    files: Callable[[Universe, Policy], Sequence[str]]
-    # The records of the given files of this language.
-    scan: Callable[[Universe, list[str], Sources, int | None, Policy], dict[str, FileScan]]
-
-
-def _python_owns(path: str, _policy: Policy) -> bool:
-    return path.endswith(".py")
-
-
-def _python_files(universe: Universe, _policy: Policy) -> Sequence[str]:
-    return universe.python_files
-
-
-def _typescript_owns(path: str, policy: Policy) -> bool:
-    return path.endswith(typescript_extensions(policy))
-
-
-def _scan_typescript(
-    universe: Universe, paths: list[str], sources: Sources, _jobs: int | None, policy: Policy
-) -> dict[str, FileScan]:
-    return scan_typescript_cached(universe, paths, sources, policy)
-
-
-PYTHON = Frontend("python", _python_owns, _python_files, scan_python_cached)
-TYPESCRIPT = Frontend("typescript", _typescript_owns, typescript_files, _scan_typescript)
 FRONTENDS = {frontend.name: frontend for frontend in (PYTHON, TYPESCRIPT)}
 
 
@@ -94,3 +69,19 @@ def scan_all(
         if chosen:
             scans.update(frontend.scan(universe, chosen, sources, jobs, policy))
     return scans
+
+
+# The record of `source` as if it were the file at `path` (a version that is not in the working
+# tree): the frontend that owns the path reads it, and Python reads any path none owns.
+def scan_source(
+    universe: Universe, path: str, source: bytes, sources: Sources, *, policy: Policy
+) -> FileScan:
+    frontend = next((f for f in FRONTENDS.values() if f.owns(path, policy)), PYTHON)
+    return frontend.scan_source(universe, path, source, sources, policy)
+
+
+# This is the scanner boundary for a disposable snapshot whose policy has changed. Each cache
+# owner invalidates its own entries; callers neither reach into private caches nor skip the
+# original snapshot validation to avoid them.
+def invalidate_policy_caches() -> None:
+    allowances.invalidate_cache()

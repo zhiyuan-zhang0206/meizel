@@ -21,7 +21,7 @@ from meizel.contracts.manifest import Manifest
 from meizel.graph.imports import Scope, collect_scope, dotted_chain
 from meizel.graph.model import Code, MeizelError, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import FileScan
+from meizel.language import FileScan
 from meizel.lint_common import is_test_path
 
 __all__ = [

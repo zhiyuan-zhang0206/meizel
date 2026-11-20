@@ -5,7 +5,7 @@
 package-dir = ["toolchain"]
 
 
-# injected-calls (meizel/language/scan): a call whose receiver is a parameter holding a callable, not a
+# injected-calls (meizel/language/python/scanner): a call whose receiver is a parameter holding a callable, not a
 # path. The purity rule matches a path method by its attribute name, so `deps.read_text(...)` is
 # reported as `Path.read_text`; narrowing the match to receivers provably of type Path would miss
 # `p = some_path(); p.read_text()`, and missing a read costs more than reporting one. The false

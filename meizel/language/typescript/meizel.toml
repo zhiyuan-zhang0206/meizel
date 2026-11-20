@@ -1,0 +1,14 @@
+exports = ["__init__.py"]
+
+[uses]
+"__init__.py" = ["adapter.py", "frontend.py"]
+"adapter.py" = ["compiler"]
+"cache.py" = ["adapter.py", "compiler"]
+"frontend.py" = ["adapter.py", "cache.py"]
+"tests" = ["adapter.py", "compiler"]
+
+[purity]
+"." = "strict"
+"adapter.py" = "strict"
+"cache.py" = "strict"
+"frontend.py" = "strict"

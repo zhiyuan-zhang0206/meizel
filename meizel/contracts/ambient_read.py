@@ -33,8 +33,13 @@ from meizel.graph.model import (
     covered_kinds,
 )
 from meizel.graph.universe import Universe
-from meizel.language import cached_module_imports, load_cached_sources, store_cached_sources
-from meizel.language.scan import FileScan, module_bindings
+from meizel.language import FileScan
+from meizel.language.python import (
+    cached_module_imports,
+    load_cached_sources,
+    module_bindings,
+    store_cached_sources,
+)
 from meizel.lint_common import is_test_path
 
 __all__ = [

@@ -18,7 +18,7 @@ from meizel.graph.model import (
     TypeCastSite,
     known_kind,
 )
-from meizel.language.typescript_compiler.model import TsScan
+from meizel.language.typescript.compiler.model import TsScan
 from meizel.source_text import object_of
 
 

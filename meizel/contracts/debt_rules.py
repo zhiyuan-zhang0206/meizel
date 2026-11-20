@@ -63,7 +63,7 @@ from meizel.contracts.policy import changes as policy_changes
 from meizel.contracts.sync import prepare_policy_snapshot, prune, regenerate_role_regions
 from meizel.graph.model import Code, Diagnostic, MeizelError
 from meizel.graph.universe import MANIFEST, Checkout, EditPlan, Universe
-from meizel.language.scan import invalidate_policy_caches
+from meizel.language import invalidate_policy_caches
 
 __all__ = ["RuleDiff", "declarations_changed", "measurement_lines", "rule_change", "rule_diff"]
 

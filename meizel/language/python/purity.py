@@ -8,7 +8,7 @@ from functools import cache
 from meizel import allowances
 from meizel.graph.model import Code, EnumSubsetUse, PurityItem
 from meizel.graph.universe import Universe
-from meizel.language.purity_structure import (
+from meizel.language.python.purity_structure import (
     ALLOWED_STDLIB_MODULES,
     DEFAULT_IMPURE_IMPORTS,
     IMPURE_DOTTED_STDLIB_MODULES,

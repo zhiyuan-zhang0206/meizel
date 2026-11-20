@@ -24,8 +24,11 @@ facts (edges, fixtures, loads), purity items, ambient acquisitions, patches and 
 file. Everything after that (manifests, the dependency graph, recorded debt, exemptions, budgets,
 test selection) reads those records and never the language, which is why Python and TypeScript share
 one `check`, one `debt record` and one `debt prune`. The built-in frontends are `python` (the
-standard library's `ast`, in process) and `typescript` (the TypeScript compiler, in a Node child
-whose result is the same record as JSON, `meizel/language/scan_codec.py`).
+standard library's `ast`, in process, `meizel/language/python/`) and `typescript` (the TypeScript
+compiler, in a Node child whose result is the same record as JSON, `meizel/language/typescript/`
+and `meizel/language/scan_codec.py`). The two packages share only the record (`file_scan.py`) and the
+`Frontend` shape (`frontend.py`); neither imports the other, and the checker reads a language only
+through `meizel.language` and the doors of the two packages.
 
 A repository chooses its languages in `meizel.policy.toml`:
 
@@ -71,10 +74,11 @@ keep production governance separate from the root distribution environment.
   access, and `universe.py` the two handles a decision layer reads a checkout
   with — the `Checkout` protocol and the `SourceTree` its `tree` property
   returns, a frozen dataclass whose reads are function fields, so a module that
-  only decides takes one and reads nothing itself; `language/` the restricted
-  Python forms, pytest fixture requests, mechanical purity and container-budget
-  checks (`purity.py`, `purity_structure.py`) and the file scanner that composes
-  them with import access; `contracts/` the
+  only decides takes one and reads nothing itself; `language/` the frontends
+  that read a file into a `FileScan` (see [language frontends](#language-frontends)): `python/` holds
+  the restricted Python forms, pytest fixture requests, mechanical purity and
+  container-budget checks (`purity.py`, `purity_structure.py`) and the file scanner that composes
+  them with import access, `typescript/` the adapter to the TypeScript compiler; `contracts/` the
   `meizel.toml` manifests, the rule, analysis, recorded debt, the policy file and the commands
   (`python -m meizel`). The layers form a DAG: `contracts` -> `language` -> `graph`.
 

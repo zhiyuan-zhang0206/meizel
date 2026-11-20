@@ -1,0 +1,20 @@
+exports = ["__init__.py"]
+
+[uses]
+"__init__.py" = ["bindings.py", "cache.py", "frontend.py", "mounts.py", "purity.py", "restricted.py", "scanner.py"]
+"ambient.py" = ["fake_entropy.py", "patching.py"]
+"cache.py" = ["scanner.py"]
+"frontend.py" = ["cache.py", "scanner.py"]
+"patching.py" = ["bindings.py", "purity.py", "python_commands.py", "restricted.py"]
+"purity.py" = ["purity_structure.py"]
+"python_commands.py" = ["restricted.py"]
+"restricted.py" = ["bindings.py"]
+"scanner.py" = ["ambient.py", "bindings.py", "fixture_scan.py", "input_mutations.py", "purity.py", "restricted.py"]
+
+[purity]
+"." = "strict"
+"bindings.py" = "strict"
+"cache.py" = "strict"
+"frontend.py" = "strict"
+"purity.py" = "strict"
+"scanner.py" = "strict"

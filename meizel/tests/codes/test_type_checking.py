@@ -9,7 +9,7 @@ from meizel.contracts.analysis import analyze, diagnose, load_policy
 from meizel.entry import open_repository
 from meizel.graph.model import Code, FactKind, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import scan_source
+from meizel.language import scan_source
 from meizel.tests.synthetic import STANDALONE_PROJECT, RepoFactory, run, seat, write
 
 GUARD = "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    import decimal\n"

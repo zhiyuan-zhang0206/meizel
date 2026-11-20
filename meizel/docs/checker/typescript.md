@@ -97,7 +97,7 @@ rankings.
 property or an imported package of the same name does not, nor does `typeof location` or a type position.
 Not seen: a destructuring of `window` (`const {location} = window`) and `parent.`/`top.` prefixes.
 
-`process.env.NEXT_PUBLIC_<NAME>` read in `ui/web/src` (`INLINED_ENV_ROOTS` in `typescript_compiler/config.py`) is not
+`process.env.NEXT_PUBLIC_<NAME>` read in `ui/web/src` (`INLINED_ENV_ROOTS` in `language/typescript/compiler/config.py`) is not
 a read: the Next.js build replaces it with the value it saw, in client, server and edge bundles, when the variable is
 set at build time (`define-env.js`, `static-env.js`; an unset one is read at run time on the server). The root must be
 the global `process` and the hop to `env` must not be optional (`process?.env` is not replaced by Turbopack).

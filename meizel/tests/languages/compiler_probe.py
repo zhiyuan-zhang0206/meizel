@@ -7,7 +7,7 @@ from meizel import allowances
 from meizel.entry import open_repository
 from meizel.graph.model import MeizelError, Sources
 from meizel.graph.universe import Universe
-from meizel.language.scan import scan_source
+from meizel.language import scan_source
 
 
 def main() -> int:
