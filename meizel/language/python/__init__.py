@@ -25,7 +25,11 @@ from meizel.language.python.record import (
     encode_record,
     python_record,
 )
-from meizel.language.python.rules import type_checking_in_scope, type_checking_violations
+from meizel.language.python.rules import (
+    type_checking_in_scope,
+    type_checking_lines,
+    type_checking_violations,
+)
 from meizel.language.python.scanner import scan_tree
 
 __all__ = [
@@ -49,5 +53,6 @@ __all__ = [
     "scan_tree",
     "store_cached_sources",
     "type_checking_in_scope",
+    "type_checking_lines",
     "type_checking_violations",
 ]
