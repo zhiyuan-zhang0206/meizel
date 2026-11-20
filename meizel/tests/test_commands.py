@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import shutil
 import subprocess
@@ -564,3 +565,34 @@ def test_an_unjudged_interpreter_is_refused_with_the_one_it_needs() -> None:
     refused = unsupported_python((3, 14))
     assert refused is not None
     assert "3.12" in refused and "3.14" in refused
+
+
+# The public API is a reviewed list: adding a name is a minor release, removing one a major release, so
+# the list is pinned here and a change to it is an edit a reviewer reads. The module is read as source:
+# every name it lists is one it binds by import.
+def test_the_public_api_is_the_pinned_list() -> None:
+    tree = ast.parse((Path(__file__).resolve().parents[1] / "api.py").read_text(encoding="utf-8"))
+    listed: list[str] = []
+    bound: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            bound.update(alias.asname or alias.name for alias in node.names)
+        elif isinstance(node, ast.Assign) and isinstance(node.value, ast.List):
+            listed = [
+                item.value
+                for item in node.value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            ]
+    assert sorted(listed) == sorted(
+        [
+            "Analysis", "EditPlan", "Fact", "FactKind", "GitRepo", "MeizelError", "SourceTree",
+            "Sources", "Universe", "all_packages", "allowances", "analyze", "apply_plan",
+            "exempt_test_modules", "framework_dirs", "is_mapping", "is_object_list", "lanes_at",
+            "limits", "lint_common", "load_policy", "load_universe", "main", "object_of",
+            "open_repository", "package_local_tests", "parse_roles", "prepare_policy_snapshot",
+            "propagate_test_consumers", "pytest_test_hosts", "python_reverse_closure_at",
+            "roles_at", "scan_tree", "select_packages", "source_tree", "toplevel",
+            "tracked_files", "typescript_files",
+        ]
+    )  # fmt: skip
+    assert set(listed) <= bound

@@ -21,12 +21,14 @@ through a small Node adapter.
 meizel has no runtime Python dependencies. It runs on Python 3.12: its standard-library tables (which
 modules are the standard library's, and what each public name of `os`, `time`, `pathlib`, ... reads)
 are judged on that interpreter, and it refuses to run on another rather than judge new names by a
-default. To use it as a git
-dependency of a project managed by uv:
+default.
+
+meizel is not on PyPI. Use it as a git dependency pinned to a release tag or commit, for example in
+a project managed by uv:
 
 ```toml
 [dependency-groups]
-dev = ["meizel @ git+https://github.com/zhiyuan-zhang0206/meizel@v0.1.0"]
+dev = ["meizel @ git+https://github.com/zhiyuan-zhang0206/meizel@v0.4.0"]
 ```
 
 ## Use
@@ -49,6 +51,14 @@ tooling = ["scripts"]
 ```
 
 Everything the checker allows by exception lives in `meizel.policy.toml`, each entry with its reason.
+A repository's own rules keep their exemptions in the same file and declare the shape of their tables
+under `[sections]`; what test selection should know about the repository's tests (native fixtures,
+paths whose change runs everything) is its `[test-graph]` table.
+
+### Writing your own rules
+
+Import from `meizel.api` only. Its names follow the version: removing or changing one is a breaking
+release, adding one is a minor release. Every other module is internal.
 
 ### TypeScript
 

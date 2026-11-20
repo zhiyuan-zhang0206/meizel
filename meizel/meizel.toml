@@ -1,6 +1,7 @@
-exports = ["__main__.py", "allowances.py", "budgets", "checkout.py", "contracts", "entry.py", "frontend_deps.py", "graph", "installation.py", "language", "lint_common.py", "roles.py", "source_text.py", "test_graph", "tests"]
+exports = ["api.py", "__main__.py", "allowances.py", "budgets", "checkout.py", "contracts", "entry.py", "frontend_deps.py", "graph", "installation.py", "language", "lint_common.py", "roles.py", "source_text.py", "test_graph", "tests"]
 
 [uses]
+"api.py" = ["allowances.py", "budgets", "checkout.py", "contracts", "entry.py", "graph", "language", "lint_common.py", "roles.py", "source_text.py", "test_graph"]
 "__init__.py" = ["graph"]
 "__main__.py" = ["entry.py"]
 "entry.py" = ["checkout.py", "contracts", "frontend_deps.py", "graph"]
@@ -28,6 +29,7 @@ exports = ["__main__.py", "allowances.py", "budgets", "checkout.py", "contracts"
 
 [purity]
 "." = "strict"
+"api.py" = { mode = "none", why = "the public door: it re-exports the names a host may import and holds no code of its own, so it reaches every package it names" }
 "frontend_deps.py" = "strict"
 "frontend_install.py" = { mode = "none", why = "the process form of the verdict: it reads argv once, asks the checkout shell for one observation and prints what the pure classifier decided, so a caller outside the checker (`check.sh` before the whole-tree index) gets the same answer as the analyzer’s preflight" }
 "installation.py" = { mode = "none", why = "the installation shell: it reads the environment prefix and the installing project's policy to name the Node package that supplies the compiler; nothing it returns is decided anywhere else" }
