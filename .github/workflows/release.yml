@@ -1,0 +1,26 @@
+name: release
+
+# A pushed `v*` tag builds the sdist and wheel and publishes them to PyPI through trusted publishing:
+# no token is stored here; PyPI trusts this workflow in the `pypi` environment.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: uv build
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
