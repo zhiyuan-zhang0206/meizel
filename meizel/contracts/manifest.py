@@ -384,17 +384,13 @@ class _Reader:
             )
             return {}
         result: dict[str, str] = {}
-        extensions = (".py",) if section == "dynamic-attrs" else SOURCE_EXTENSIONS
         for key, reason in table.items():
             line = self.manifest.line_of(key)
-            if not key.endswith(extensions):
+            if not key.endswith(SOURCE_EXTENSIONS):
                 self.report(
                     line,
                     Code.MANIFEST_CHILD,
-                    f"[{section}] key {key!r} must be a "
-                    + (
-                        "Python file" if section == "dynamic-attrs" else "Python or TypeScript file"
-                    ),
+                    f"[{section}] key {key!r} must be a Python or TypeScript file",
                 )
             elif not self.child(key, f"[{section}]", line):
                 self.dangling.append((section, key, None))

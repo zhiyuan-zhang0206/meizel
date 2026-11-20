@@ -8,7 +8,7 @@ than off the checker node, which owns the rules rather than the words they repor
 ## When it fails
 
 Diagnostic codes: `undeclared-edge`, `not-exported`, `private-module`, `private-name`,
-`cycle-edge`, `restricted-python`, the patch codes and `missing-patch-target` ([patching](checker/patching/patching.md)),
+`cycle-edge`, `restricted-python`, `restricted-typescript` ([restricted TypeScript](checker/restricted/restricted-typescript.md)), the patch codes and `missing-patch-target` ([patching](checker/patching/patching.md)),
 the 15 purity and bounded-container codes ([purity](checker/purity.md)),
 `ambient-read`, `legal-read-recorded`, `stale-root`, `stale-reader`, `stale-approval`,
 `approved-budget` ([the approved list's ceiling](checker/policy/policy.md)),

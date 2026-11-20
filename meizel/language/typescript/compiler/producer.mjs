@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {ts} from './compiler.mjs';
 import {project} from './project.mjs';
 import {imports} from './imports.mjs';
+import {restricted} from './restricted.mjs';
 import {semantics} from './semantics.mjs';
 
 function main() {
@@ -20,7 +21,10 @@ function main() {
     const result = {path: name, facts: [], external: [], patches: [], purity: [], problems: [], exports: [], defined: [], ambient: [], casts: [], any: [], subsets: [], symbols: [], restricted: []};
     const index = imports(ts, context, tree, result);
     const full = !input.config.scopes.length || input.config.scopes.some(prefix => name === prefix || name.startsWith(prefix + '/'));
-    if (full) semantics(ts, context, tree, result, index, input.config, tests.has(name), input.ambient);
+    if (full) {
+      semantics(ts, context, tree, result, index, input.config, tests.has(name), input.ambient);
+      restricted(ts, context, tree, result, index);
+    }
     if (input.config.scopes.length) result.facts = result.facts.filter(fact => input.config.scopes.some(prefix => fact[0] === prefix || fact[0].startsWith(prefix + '/')));
     if (tests.has(name)) result.exports = null;
     for (const key of ['facts', 'external', 'patches', 'purity', 'problems', 'defined', 'ambient', 'casts', 'any', 'subsets', 'symbols', 'restricted']) {

@@ -32,7 +32,7 @@ edge, so concurrent repayments touch different files:
 - an edge violation (`undeclared-edge`, `not-exported`, `private-module`,
   `private-name`, `cycle-edge`) belongs to the lowest common directory `L` of
   the fact edge;
-- `restricted-python` belongs to the directory of the file.
+- `restricted-python` and `restricted-typescript` belong to the directory of the file.
 
 ```toml
 [debt.private-name]
@@ -40,6 +40,9 @@ edge, so concurrent repayments touch different files:
 
 [debt.restricted-python]
 "loader.py#importlib.import_module" = 1
+
+[debt.restricted-typescript]
+"run.ts#eval of source text" = 1
 
 [debt.cycle-edge]
 "x/m.py -> y/n.py" = 2

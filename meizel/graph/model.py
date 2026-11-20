@@ -53,6 +53,7 @@ class Code(StrEnum):
     PRIVATE_NAME = "private-name"
     UNRESOLVED_IMPORT = "unresolved-import"
     RESTRICTED = "restricted-python"
+    RESTRICTED_TS = "restricted-typescript"
     STALE_LOAD = "stale-load"
     STALE_EXTERNAL = "stale-external"
     STALE_DYNAMIC_ATTRS = "stale-dynamic-attrs"

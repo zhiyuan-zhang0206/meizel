@@ -47,7 +47,9 @@ The compiler performs extension substitution, including `.js` to `.ts`.
 Only tracked repository targets become first-party facts; unresolved relative,
 workspace-package and configured-alias imports are explicit `unresolved-import`
 diagnostics. Computed loaders require the same policy-approved `[loads]` or
-`[external]` declaration as Python; stale declarations fail the common check.
+`[external]` declaration as Python; stale declarations fail the common check. They and the
+other forms that leave a dependency to the run are `restricted-typescript`
+([restricted TypeScript](restricted/restricted-typescript.md)), which can be recorded as debt.
 
 One Node process with a 4 GiB heap limit and a 180-second deadline parses the selected source snapshot. The compiler
 program contains selected roots and default libraries, without recursively
@@ -78,6 +80,7 @@ policy retains the same path-attributed diagnostic in both languages.
 | Encapsulation | Nested writes, deep attribute chains, enum subsets | Compiler-node equivalents, with lexical import/shadowing resolution |
 | Ambient state | Roots/state/ambient policy | The same contracts, including clock, environment, randomness and configured state |
 | Test patching | Python patch forms and fixture rules | Vitest/Jest module/spies/global/environment replacements and imported-object writes |
+| Restricted forms | `exec`, dynamic imports, string patch targets, dynamic attribute names | `eval`/`Function`, computed `import()`, computed global keys, `export *`, ambient `declare`, rewriting an import |
 | Runtime-specific rules | Python commands, `TYPE_CHECKING`, pytest fixtures | Not applicable; these do not count as TypeScript coverage |
 
 Constants and type-only declarations do not inflate behavioral surface counts.

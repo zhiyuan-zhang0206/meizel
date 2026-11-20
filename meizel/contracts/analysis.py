@@ -44,6 +44,7 @@ from meizel.language import (
     EXTERNAL_FORMS,
     FileScan,
     enabled_frontends,
+    frontend_of,
     scan_all,
 )
 from meizel.language.fixtures import FixtureIndex, fixture_facts, is_test_file
@@ -180,7 +181,11 @@ def _declared_sites(manifests: dict[str, Manifest]) -> tuple[set[str], set[str],
 
 
 def _source_diagnostics(
-    scans: Iterable[FileScan], loaders: set[str], externals: set[str], owners: set[str]
+    scans: Iterable[FileScan],
+    loaders: set[str],
+    externals: set[str],
+    owners: set[str],
+    policy: Policy,
 ) -> list[Diagnostic]:
     found: list[Diagnostic] = []
     for scan in scans:
@@ -188,6 +193,7 @@ def _source_diagnostics(
         if scan.path in loaders:
             continue
         owner = scan.path.rpartition("/")[0]
+        frontend = frontend_of(scan.path, policy)
         for item in scan.restricted:
             if scan.path in externals and item.form in EXTERNAL_FORMS:
                 continue
@@ -198,19 +204,15 @@ def _source_diagnostics(
                 Diagnostic(
                     scan.path,
                     item.line,
-                    Code.RESTRICTED if scan.path.endswith(".py") else Code.UNRESOLVED_IMPORT,
-                    f"{form} is outside the restricted Python subset"
-                    if scan.path.endswith(".py")
-                    else f"{form} has no declared TypeScript load targets",
+                    frontend.restricted_code,
+                    f"{form} is outside the restricted {frontend.restricted_subset} subset",
                     (
-                        "use a static import, and inject a collaborator instead of patching it; a file that genuinely "
-                        f"owns a dynamic load declares it under [loads] in {manifest_path(scan.path.rpartition('/')[0])}; "
+                        f"{frontend.restricted_advice}; a file that genuinely "
+                        f"owns a dynamic load declares it under [loads] in {manifest_path(owner)}; "
                         "a file that runs code from outside the repository declares it under [external] with a reason; "
                         "a file that owns an attribute name only the run knows declares it under [dynamic-attrs] with a reason",
                     ),
-                    DebtKey(owner, file_key(owner, scan.path, form))
-                    if scan.path.endswith(".py")
-                    else None,
+                    DebtKey(owner, file_key(owner, scan.path, form)),
                 )
             )
     return found
@@ -632,7 +634,7 @@ def diagnose(
     pol = _EMPTY_POLICY if policy is None else policy
     _, found, _ = judge_facts(scan.facts, manifests)
     loaders, externals, owners = _declared_sites(manifests)
-    found.extend(_source_diagnostics([scan], loaders, externals, owners))
+    found.extend(_source_diagnostics([scan], loaders, externals, owners, pol))
     found.extend(_patch_diagnostics([scan], _approved(pol), scan.facts))
     found.extend(ambient_diagnostics([scan], manifests) + _entropy_diagnostics([scan], manifests))
     found.extend(_type_cast_diagnostics([scan]) + _any_collaborator_diagnostics([scan]))
@@ -730,7 +732,7 @@ def analyze(
     diagnostics.extend(unmounted)
     projections, found, needed = judge_facts(facts, manifests)
     diagnostics.extend(found)
-    diagnostics.extend(_source_diagnostics(judged_scans, loaders, externals, owners))
+    diagnostics.extend(_source_diagnostics(judged_scans, loaders, externals, owners, policy))
     diagnostics.extend(_patch_diagnostics(judged_scans, _approved(policy), facts))
     diagnostics.extend(ambient_diagnostics(judged_scans, manifests))
     diagnostics.extend(

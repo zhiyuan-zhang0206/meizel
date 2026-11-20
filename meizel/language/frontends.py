@@ -28,6 +28,7 @@ __all__ = [
     "EXTERNAL_FORMS",
     "FRONTENDS",
     "enabled_frontends",
+    "frontend_of",
     "invalidate_policy_caches",
     "scan_all",
     "scan_source",
@@ -79,13 +80,17 @@ def scan_all(
     return scans
 
 
+# The frontend that reads the file at `path`: the one that owns it, and Python for a path none owns.
+def frontend_of(path: str, policy: Policy) -> Frontend:
+    return next((f for f in FRONTENDS.values() if f.owns(path, policy)), PYTHON)
+
+
 # The record of `source` as if it were the file at `path` (a version that is not in the working
 # tree): the frontend that owns the path reads it, and Python reads any path none owns.
 def scan_source(
     universe: Universe, path: str, source: bytes, sources: Sources, *, policy: Policy
 ) -> FileScan:
-    frontend = next((f for f in FRONTENDS.values() if f.owns(path, policy)), PYTHON)
-    return frontend.scan_source(universe, path, source, sources, policy)
+    return frontend_of(path, policy).scan_source(universe, path, source, sources, policy)
 
 
 # This is the scanner boundary for a disposable snapshot whose policy has changed. Each cache
