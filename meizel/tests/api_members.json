@@ -1,0 +1,32 @@
+{
+  "meizel.allowances": {
+    "ANY_SECTION": "value",
+    "Declaration": "class(table, entry, shown)",
+    "POLICY": "value",
+    "Policy": "class(external, dynamic_attrs, loads, default_arguments, listed, named, unless, lines, state_kinds, sections)",
+    "RULES": "value",
+    "Removal": "class(declared, why, replacement)",
+    "RemovalReport": "class(removed, added, declared, unanswered, unused, problems)",
+    "SECTIONS_TABLE": "value",
+    "invalidate_cache": "() -> 'None'",
+    "load": "(repo: 'Checkout') -> 'Policy'",
+    "parse": "(text: 'str') -> 'tuple[Policy, list[str]]'",
+    "parse_snapshot": "(text: 'str') -> 'tuple[Policy, list[str]]'",
+    "removal_report": "(old: 'Policy', new: 'Policy', record: 'str') -> 'RemovalReport'"
+  },
+  "meizel.lint_common": {
+    "admission": "value",
+    "changed_scope": "(tree: 'SourceTree', only: 'list[str] | None', *, inputs: 'Iterable[str]' = ()) -> 'frozenset[str] | None'",
+    "decode_source": "(data: 'bytes') -> 'str | None'",
+    "is_repo_test_file": "(path: 'Path', repo_root: 'Path') -> 'bool'",
+    "is_test_path": "(rel_path: 'str') -> 'bool'",
+    "pytest_test_hosts": "(pyproject_text: 'str') -> 'tuple[str, ...]'",
+    "python_files": "(tree: 'SourceTree', roots: 'Iterable[Path]') -> 'list[Path]'",
+    "read_utf8_text": "(tree: 'SourceTree', path: 'Path') -> 'str | None'",
+    "resolve_targets": "(tree: 'SourceTree', argv: 'list[str]') -> 'tuple[list[str], list[str]]'",
+    "restrict": "(paths: 'Iterable[Path]', scope: 'frozenset[str] | None', repo_root: 'Path') -> 'list[Path]'",
+    "run_node_analyzer": "(tree: 'SourceTree', producer: 'Path', payload: 'str', *, frontend: 'Path | None' = None) -> 'str'",
+    "scan_roots": "(tree: 'SourceTree', dirs: 'Iterable[str]') -> 'list[Path]'",
+    "split_only": "(argv: 'list[str]') -> 'tuple[list[str], list[str] | None]'"
+  }
+}

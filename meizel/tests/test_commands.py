@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import dataclasses
+import inspect
 import json
 import shutil
 import subprocess
@@ -13,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from meizel import allowances, lint_common
 from meizel.contracts.cli import read_args
 from meizel.contracts.sync import remove_entries
 from meizel.entry import main
@@ -598,3 +601,28 @@ def test_the_public_api_is_the_pinned_list() -> None:
         ]
     )  # fmt: skip
     assert set(listed) <= bound
+
+
+def _describe(value: object) -> str:
+    if inspect.isclass(value):
+        if dataclasses.is_dataclass(value):
+            return "class(" + ", ".join(field.name for field in dataclasses.fields(value)) + ")"
+        return "class"
+    if callable(value):
+        try:
+            return str(inspect.signature(value))
+        except (TypeError, ValueError):
+            return "callable"
+    return "value"
+
+
+# The two modules the API exports whole are part of it member by member: the names each lists in
+# `__all__`, the signature of each function and the fields of each dataclass are pinned in
+# `api_members.json`, so a changed reader is an edit a reviewer reads, not a surprise for a host.
+def test_the_modules_the_api_exports_whole_are_pinned_member_by_member() -> None:
+    pinned = json.loads((Path(__file__).with_name("api_members.json")).read_text(encoding="utf-8"))
+    current = {
+        module.__name__: {name: _describe(vars(module)[name]) for name in module.__all__}
+        for module in (allowances, lint_common)
+    }
+    assert current == pinned
