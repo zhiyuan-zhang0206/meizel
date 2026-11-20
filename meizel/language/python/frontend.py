@@ -10,6 +10,7 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.python.cache import scan_python_cached
+from meizel.language.python.readers import python_sources, stale_readers
 from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
 from meizel.language.python.scanner import scan_source
 
@@ -44,6 +45,8 @@ PYTHON = Frontend(
     _owns,
     _files,
     scan_python_cached,
+    python_sources,
+    stale_readers,
     _scan_source,
     EXTERNAL_FORMS,
     DYNAMIC_ATTR_FORMS,

@@ -9,6 +9,8 @@ from typing import NamedTuple
 
 __all__ = [
     "OS_KINDS",
+    "READERS_RULE",
+    "READER_CALL_MARK",
     "Acquisition",
     "AmbientKind",
     "AnyCollaboratorSite",
@@ -240,6 +242,12 @@ class Acquisition:
     line: int
     kind: KindName
     target: str
+
+
+# How the policy spells a reader: the `[ambient-readers]` rule, and the `()` a reader that is called
+# ends with.
+READERS_RULE = "ambient-readers"
+READER_CALL_MARK = "()"
 
 
 # A reader that reads the world only when it is not handed one: the call is an acquisition unless

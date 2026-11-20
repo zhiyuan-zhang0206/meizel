@@ -49,9 +49,12 @@ Moving them is the precondition of a third frontend (Rust) that touches no check
 for that: **prerequisite: a Rust frontend is approved**. With one consumer the abstraction would take the
 shape of Python's habits; with two the common part is visible. Today the checker holds:
 
-- `contracts/ambient_read.py`: `sources_from` resolves the policy's reader names through Python module
-  bindings into the `Sources` both frontends read. Plan: `Frontend.sources(manifests, policy, universe)`,
-  merged by the checker.
+- Done (0.9.0): the ambient sources. `Frontend.sources(state, policy, universe)` returns the `Sources`
+  a frontend spells (the Python one resolves the policy's reader names through module bindings and
+  follows re-exports, in `language/python/readers.py`; the TypeScript one has none), and
+  `Frontend.stale_readers` reports the listed readers that no longer exist. The checker merges the
+  enabled frontends' answers in `language/sources.py`, and `tests/languages/test_kernel_door.py` lists
+  the kernel files that still import a frontend package.
 - `contracts/rule.py`: pytest fixture purity and the standard-library purity tables;
   `contracts/analysis.py`: the `TYPE_CHECKING` diagnostic, pytest plugin mounts and conftest scanning.
   Plan: `Frontend.rules(scans, manifests, policy, universe)`, and the Python-only fields of `FileScan`
