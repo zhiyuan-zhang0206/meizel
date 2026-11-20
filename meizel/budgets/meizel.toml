@@ -1,4 +1,4 @@
-exports = ["limits.py", "check_report.py"]
+exports = ["budget_plans.py", "check_report.py", "limits.py"]
 
 [uses]
 "budget_plans.py" = ["report.py"]

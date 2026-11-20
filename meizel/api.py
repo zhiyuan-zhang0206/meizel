@@ -10,7 +10,9 @@ checkout through `SourceTree` and `GitRepo`, and share the scan vocabulary of `l
 from __future__ import annotations
 
 from meizel import allowances, lint_common
+from meizel.allowances import POLICY, Declaration, Policy, RemovalReport, removal_report
 from meizel.budgets import limits
+from meizel.budgets.budget_plans import tracked_children
 from meizel.checkout import (
     GitRepo,
     apply_plan,
@@ -22,7 +24,16 @@ from meizel.checkout import (
     toplevel,
     tracked_files,
 )
-from meizel.contracts.analysis import Analysis, analyze, exempt_test_modules, load_policy
+from meizel.contracts.analysis import (
+    Analysis,
+    analyze,
+    exempt_test_modules,
+    load_manifests,
+    load_policy,
+    type_checking_in_scope,
+    type_checking_violations,
+)
+from meizel.contracts.enumerations import parse_regions
 from meizel.contracts.sync import prepare_policy_snapshot
 from meizel.entry import main, open_repository
 from meizel.graph.model import Fact, FactKind, MeizelError, Sources
@@ -40,12 +51,16 @@ from meizel.test_graph.cutoff import package_local_tests
 from meizel.test_graph.impact import propagate_test_consumers
 
 __all__ = [
+    "POLICY",
     "Analysis",
+    "Declaration",
     "EditPlan",
     "Fact",
     "FactKind",
     "GitRepo",
     "MeizelError",
+    "Policy",
+    "RemovalReport",
     "SourceTree",
     "Sources",
     "Universe",
@@ -60,22 +75,28 @@ __all__ = [
     "lanes_at",
     "limits",
     "lint_common",
+    "load_manifests",
     "load_policy",
     "load_universe",
     "main",
     "object_of",
     "open_repository",
     "package_local_tests",
+    "parse_regions",
     "parse_roles",
     "prepare_policy_snapshot",
     "propagate_test_consumers",
     "pytest_test_hosts",
     "python_reverse_closure_at",
+    "removal_report",
     "roles_at",
     "scan_tree",
     "select_packages",
     "source_tree",
     "toplevel",
+    "tracked_children",
     "tracked_files",
+    "type_checking_in_scope",
+    "type_checking_violations",
     "typescript_files",
 ]
