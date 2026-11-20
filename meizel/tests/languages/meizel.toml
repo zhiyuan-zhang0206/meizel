@@ -1,2 +1,3 @@
 [uses]
+"test_frontends.py" = ["check_probe.py"]
 "test_parity.py" = ["compiler_probe.py"]

@@ -27,7 +27,8 @@ meizel checks the structure of a repository from data the repository keeps besid
 - **Test selection**: picks the tests a change can affect, from the import graph and the test facts.
 
 It analyzes Python with the standard library's `ast`, and TypeScript with the TypeScript compiler
-through a small Node adapter.
+through a small Node adapter. Each language is a frontend a repository can switch off:
+`[languages] enabled = ["python"]` in `meizel.policy.toml` reads Python only and needs no Node.
 
 ## Install
 

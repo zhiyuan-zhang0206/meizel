@@ -16,6 +16,28 @@ with a cache or a queue declares it in its policy and a manifest may name it fro
 ([ambient kinds](ambient-kinds.md)). Some tables still name this repository;
 they are listed in [the host-coupling node](host-coupling.md).
 
+## Language frontends
+
+Every language the checker reads is a frontend (`meizel/language/frontends.py`), and each is
+optional. A frontend owns the files of its language and turns them into `FileScan` records: the
+facts (edges, fixtures, loads), purity items, ambient acquisitions, patches and problems of each
+file. Everything after that (manifests, the dependency graph, recorded debt, exemptions, budgets,
+test selection) reads those records and never the language, which is why Python and TypeScript share
+one `check`, one `debt record` and one `debt prune`. The built-in frontends are `python` (the
+standard library's `ast`, in process) and `typescript` (the TypeScript compiler, in a Node child
+whose result is the same record as JSON, `meizel/language/scan_codec.py`).
+
+A repository chooses its languages in `meizel.policy.toml`:
+
+```toml
+[languages]
+enabled = ["python"]
+```
+
+With the table absent every built-in frontend runs. A repository that enables only `python` never
+starts Node and never reads a `.ts` file; a name no frontend answers to is refused with the list of
+the ones that exist.
+
 ## Top-level packages and their roles
 
 The root `meizel.toml` declares which top-level directories exist and what each is,

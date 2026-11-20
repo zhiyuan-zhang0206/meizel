@@ -72,6 +72,7 @@ RULES: dict[str, dict[str, str]] = {
     },
     "public-surface": {"names": NAMES},
     "lint": {"tooling": NAMES},
+    "languages": {"enabled": NAMES},
     "test-graph": dict.fromkeys(
         (
             "native-fixtures",

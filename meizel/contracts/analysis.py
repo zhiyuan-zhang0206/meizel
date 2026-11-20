@@ -39,7 +39,7 @@ from meizel.contracts.rule import (
 from meizel.graph import python_reverse_closure
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind, Patch, Sources
 from meizel.graph.universe import Universe, parent_of
-from meizel.language import scan_all
+from meizel.language import enabled_frontends, scan_all
 from meizel.language.fixtures import FixtureIndex, fixture_facts, is_test_file
 from meizel.language.scan import (
     DYNAMIC_ATTR_FORMS,
@@ -47,7 +47,6 @@ from meizel.language.scan import (
     TYPE_CHECKING_MESSAGE,
     FileScan,
     mount_facts,
-    typescript_files,
     typescript_scopes,
 )
 from meizel.lint_common import is_test_path
@@ -131,7 +130,9 @@ class Analysis:
 
 
 def _all_source_files(universe: Universe, policy: Policy) -> tuple[str, ...]:
-    return (*universe.python_files, *typescript_files(universe, policy))
+    return tuple(
+        path for frontend in enabled_frontends(policy) for path in frontend.files(universe, policy)
+    )
 
 
 def _load_facts(manifests: dict[str, Manifest]) -> list[Fact]:

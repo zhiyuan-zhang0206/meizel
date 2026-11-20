@@ -31,16 +31,15 @@ from meizel.graph.model import (
 )
 from meizel.graph.universe import Checkout, EditPlan, SourceTree, Universe
 from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
+from meizel.language.frontends import scan_all
 from meizel.language.input_mutations import InputListAppend
 from meizel.language.scan import FileScan
 from meizel.language.scan_cache import (
     cached_module_imports,
-    decode_file_scan,
-    encode_file_scan,
     load_cached_sources,
-    scan_all,
     store_cached_sources,
 )
+from meizel.language.scan_codec import decode_file_scan, encode_file_scan
 
 
 @dataclass
