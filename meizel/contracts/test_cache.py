@@ -120,8 +120,9 @@ def _json(deps: CacheDeps, path: str) -> object:
 
 
 # Closures a host computed itself, as `{test: {"files": [...], "unbounded": reason-or-null}}`: the
-# host's selection knows more than the graph here does, and the cache must not be bolder than it.
-def _host_closures(deps: CacheDeps, path: str) -> dict[str, InputClosure]:
+# host's selection knows more than the graph here does, and the cache must not be bolder than it. A
+# test with a reason is keyed by every file of the tree, so the host lists no files for it.
+def _host_closures(deps: CacheDeps, path: str, tree: frozenset[str]) -> dict[str, InputClosure]:
     document = _json(deps, path)
     if not is_mapping(document):
         raise MeizelError(f"{path}: closures must be a JSON object")
@@ -129,12 +130,12 @@ def _host_closures(deps: CacheDeps, path: str) -> dict[str, InputClosure]:
     for test, entry in document.items():
         files = entry.get("files") if is_mapping(entry) else None
         reason = entry.get("unbounded") if is_mapping(entry) else None
-        if not isinstance(test, str) or not is_object_list(files):
-            raise MeizelError(f"{path}: {test}: expected {{files: [...], unbounded: reason|null}}")
-        closures[test] = InputClosure(
-            frozenset(item for item in files if isinstance(item, str)),
-            reason if isinstance(reason, str) else None,
-        )
+        if isinstance(reason, str):
+            closures[test] = InputClosure(tree, reason)
+        elif is_object_list(files):
+            closures[test] = InputClosure(frozenset(i for i in files if isinstance(i, str)))
+        else:
+            raise MeizelError(f"{path}: {test}: expected {{files: [...]}} or {{unbounded: reason}}")
     return closures
 
 
@@ -158,7 +159,7 @@ def _plan(repo: CacheRepository, deps: CacheDeps, opts: CachePlan) -> int:
         else set(in_lane)
     )
     closures = (
-        _host_closures(deps, opts.closures_file)
+        _host_closures(deps, opts.closures_file, state.checkout.all_files)
         if opts.closures_file is not None
         else input_closures(state.checkout, state.facts)
     )

@@ -236,12 +236,23 @@ def test_a_host_supplies_the_closures_its_own_selection_knows(
     root = make_repo(SOURCES)
     closures = tmp_path / "closures.json"
     closures.write_text(
-        json.dumps({"pkg/tests/test_calc.py": {"files": ["pkg/calc.py"], "unbounded": None}}),
+        json.dumps(
+            {
+                "pkg/tests/test_calc.py": {"files": ["pkg/calc.py"], "unbounded": None},
+                "tests/test_scratch.py": {"unbounded": "tree-scan"},
+            }
+        ),
         encoding="utf-8",
     )
     narrow = cached(root, capsys, "plan", "--closures-file", str(closures))
     assert isinstance(narrow["keys"], dict)
-    assert list(narrow["keys"]) == ["pkg/tests/test_calc.py"]
+    assert list(narrow["keys"]) == ["pkg/tests/test_calc.py", "tests/test_scratch.py"]
+    assert narrow["unbounded"] == {"tests/test_scratch.py": "tree-scan"}
+    (root / "README.md").write_text("# changed\n", encoding="utf-8")
+    moved = cached(root, capsys, "plan", "--closures-file", str(closures))
+    assert isinstance(moved["keys"], dict)
+    assert moved["keys"]["pkg/tests/test_calc.py"] == narrow["keys"]["pkg/tests/test_calc.py"]
+    assert moved["keys"]["tests/test_scratch.py"] != narrow["keys"]["tests/test_scratch.py"]
     assert isinstance(narrow["uncacheable"], dict)
     assert set(narrow["uncacheable"]) >= {"pkg/tests/test_resource.py"}
 

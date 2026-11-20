@@ -115,7 +115,8 @@ would have fared.
   policy declares, the meizel version, and the content digest of every file in the test's *closure*.
 - **The closure** is the inverse of test selection: a file is in it exactly when changing that file
   alone selects the test, so the cache never reuses a result where selection would run the test. A
-  host whose selection knows more passes its own closures (`plan --closures-file`).
+  host whose selection knows more passes its own closures (`plan --closures-file`, a JSON object of
+  `{test: {"files": [...]}}`, or `{test: {"unbounded": reason}}` for a test keyed by the whole tree).
 - **Inputs the graph cannot bound** (an unknown dependency, a test that reads the whole tree, a read of
   a path the file does not anchor to `__file__` or a temporary directory) make the closure the whole
   tree: such a result is reused only for a tree that differs in no file.
