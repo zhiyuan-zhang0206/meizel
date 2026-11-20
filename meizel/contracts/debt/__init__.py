@@ -105,6 +105,7 @@ ENTROPY_CODES = (Code.FAKE_ENTROPY,)
 _FILE_CODES = frozenset(
     {
         Code.RESTRICTED,
+        Code.RESTRICTED_TS,
         Code.TYPE_CAST,
         Code.ANY_COLLABORATOR,
         *PATCH_CODES,

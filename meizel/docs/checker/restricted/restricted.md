@@ -1,5 +1,7 @@
 # meizel/ — Restricted Python
 
+The TypeScript subset is [restricted TypeScript](restricted-typescript.md).
+
 ## Restricted forms
 
 Binding resolution finds these through aliases (`from importlib import
@@ -59,7 +61,8 @@ has none of the exempt forms is `stale-external`.
 
 Plugin and schedule-script discovery is `[external]`, not `[loads]`.
 
-A file that owns an attribute name only the running program knows declares it under
+A file that owns an attribute name only the running program knows (for TypeScript, a global
+key) declares it under
 `[dynamic-attrs]` with a reason:
 
 ```toml

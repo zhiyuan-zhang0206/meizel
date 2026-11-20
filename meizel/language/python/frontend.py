@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from meizel.allowances import Policy
-from meizel.graph.model import Sources
+from meizel.graph.model import Code, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
@@ -38,4 +38,7 @@ PYTHON = Frontend(
     _scan_source,
     EXTERNAL_FORMS,
     DYNAMIC_ATTR_FORMS,
+    Code.RESTRICTED,
+    "Python",
+    "use a static import, and inject a collaborator instead of patching it",
 )

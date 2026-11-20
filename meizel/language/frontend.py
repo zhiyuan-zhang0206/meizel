@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from meizel.allowances import Policy
-from meizel.graph.model import Sources
+from meizel.graph.model import Code, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 
@@ -29,3 +29,8 @@ class Frontend:
     # that it owns an attribute name only the running program knows.
     external_forms: frozenset[str]
     dynamic_attr_forms: frozenset[str]
+    # How a restricted form of this language is reported: the code (a debt of the file's directory),
+    # the name of the subset the form is outside of, and the first thing to try instead.
+    restricted_code: Code
+    restricted_subset: str
+    restricted_advice: str

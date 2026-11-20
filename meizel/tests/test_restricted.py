@@ -426,11 +426,10 @@ def test_a_dynamic_attrs_declaration_with_nothing_to_exempt_is_stale(
         ('[dynamic-attrs]\n"surface.py" = 3\n', "manifest-syntax"),
         ('[dynamic-attrs]\n"missing.py" = "why"\n', "manifest-unknown-child"),
         ('[dynamic-attrs]\n"notes.txt" = "why"\n', "manifest-unknown-child"),
-        ('[dynamic-attrs]\n"view.ts" = "why"\n', "manifest-unknown-child"),
         ('dynamic-attrs = "why"\n', "manifest-syntax"),
     ],
 )
-def test_dynamic_attrs_entries_need_a_python_child_and_a_reason(
+def test_dynamic_attrs_entries_need_a_source_child_and_a_reason(
     make_repo: RepoFactory, manifest: str, code: str
 ) -> None:
     files = {
