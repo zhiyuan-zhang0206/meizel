@@ -1,7 +1,9 @@
 // Shared rule vocabulary is emitted from compiler nodes and lexical symbols, never source-text matching.
 // See meizel/docs/checker/typescript.md.
+import {symbols} from './symbols.mjs';
 export function semantics(ts, context, tree, out, index, config, test, ambientPolicy) {
   const checker = context.checker;
+  const {transparent, chain, reference} = symbols(ts, context, index);
   const impure = new Set(config.impure_calls);
   // The page and the browser the code runs in: its address, the storage it keeps, the cookies and the machine it reports,
   // bare or behind `window.`, `globalThis.` or `self.`. Only the global counts: a package called `navigator` does not.
@@ -15,10 +17,6 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
   const flags = node => ts.getCombinedModifierFlags(node);
   const exported = node => Boolean(flags(node) & ts.ModifierFlags.Export);
   const nameOf = node => node.name && (ts.isIdentifier(node.name) || ts.isStringLiteralLike(node.name) || ts.isPrivateIdentifier(node.name)) ? node.name.text : '';
-  const transparent = node => {
-    while (node && (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node) || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node))) node = node.expression;
-    return node;
-  };
   const functionNode = node => ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isFunctionTypeNode(node) || ts.isMethodSignature(node) || ts.isCallSignatureDeclaration(node);
   function ownName(node) {
     if (ts.isConstructorDeclaration(node)) return 'constructor';
@@ -35,31 +33,6 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
       else if (ts.isClassDeclaration(current) || ts.isClassExpression(current) || ts.isInterfaceDeclaration(current) || ts.isTypeAliasDeclaration(current) || ts.isModuleDeclaration(current)) parts.unshift(nameOf(current) || '<class>');
     }
     return parts.join('.') || '<module>';
-  }
-  function chain(node) {
-    node = transparent(node);
-    const parts = [];
-    while (node && (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node))) {
-      const name = ts.isPropertyAccessExpression(node) ? node.name.text : node.argumentExpression && (ts.isStringLiteralLike(node.argumentExpression) || ts.isNumericLiteral(node.argumentExpression)) ? node.argumentExpression.text : undefined;
-      if (name === undefined) return undefined;
-      parts.unshift(name);
-      node = transparent(node.expression);
-    }
-    return {root: node, parts};
-  }
-  function reference(node) {
-    const access = chain(node);
-    if (!access || !ts.isIdentifier(access.root)) return undefined;
-    const symbol = checker.getSymbolAtLocation(access.root);
-    const binding = symbol && index.bindings.get(symbol);
-    if (binding) {
-      const members = [binding.member === 'default' ? '' : binding.member, ...access.parts].filter(Boolean);
-      const knownTool = ['vitest', '@jest/globals'].includes(binding.spec);
-      const canonical = knownTool ? members.join('.') : binding.spec === 'react' ? members.join('.') : [binding.spec.replace(/^node:/, ''), ...members].join('.');
-      return {...access, binding, canonical, global: false};
-    }
-    if (symbol?.declarations?.some(declaration => !declaration.getSourceFile().isDeclarationFile)) return {...access, local: true};
-    return {...access, canonical: [access.root.text, ...access.parts].join('.'), global: true};
   }
   function add(node, code, key, message, hint) {
     out.purity.push([line(node), code, key, message, hint]);
