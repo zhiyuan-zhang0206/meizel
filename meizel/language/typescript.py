@@ -12,6 +12,7 @@ __all__ = [
     "load_ts_config",
     "scan_batch",
     "scan_typescript",
+    "typescript_extensions",
     "typescript_files",
     "typescript_scopes",
 ]
@@ -26,6 +27,11 @@ def typescript_files(universe: Universe, policy: Policy) -> tuple[str, ...]:
         if path.endswith(config.extensions)
         and (not active or any(path == p or path.startswith(f"{p}/") for p in active))
     )
+
+
+# The extensions the policy reads as TypeScript (`[typescript].extensions`).
+def typescript_extensions(policy: Policy) -> tuple[str, ...]:
+    return tuple(load_ts_config(policy).extensions)
 
 
 # The directories whose TypeScript behavior this repository judges (`[typescript].scopes`): the

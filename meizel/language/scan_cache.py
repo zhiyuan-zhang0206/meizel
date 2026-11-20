@@ -32,7 +32,7 @@ from meizel.graph.universe import MANIFEST, Universe
 from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
 from meizel.language.input_mutations import InputListAppend
 from meizel.language.scan import FileScan, scan_file, scan_typescript_files
-from meizel.language.typescript import load_ts_config, typescript_files
+from meizel.language.typescript import load_ts_config
 from meizel.source_text import object_of
 
 __all__ = [
@@ -40,7 +40,8 @@ __all__ = [
     "decode_file_scan",
     "encode_file_scan",
     "load_cached_sources",
-    "scan_all",
+    "scan_python_cached",
+    "scan_typescript_cached",
     "store_cached_sources",
 ]
 
@@ -655,10 +656,10 @@ def _store_py_scans(
         universe.repo.cache_put_many(updates)
 
 
-def _scan_python_cached(
+def scan_python_cached(
     universe: Universe,
-    sources: Sources,
     paths: list[str],
+    sources: Sources,
     jobs: int | None,
     policy: Policy,
 ) -> dict[str, FileScan]:
@@ -721,7 +722,7 @@ def _ts_batch_key(
     return f"tsbatch:v1:{digest}"
 
 
-def _scan_ts_cached(
+def scan_typescript_cached(
     universe: Universe, paths: list[str], sources: Sources, policy: Policy
 ) -> dict[str, FileScan]:
     if not paths:
@@ -751,24 +752,4 @@ def _scan_ts_cached(
     repo.memo_put(key, _CachedTsBatch(dict(scans)))
     encoded = json.dumps([_scan_to_raw(scans[p]) for p in paths], separators=(",", ":"))
     repo.cache_put_many({key: encoded})
-    return scans
-
-
-def scan_all(
-    universe: Universe,
-    sources: Sources,
-    jobs: int | None = None,
-    paths: Sequence[str] | None = None,
-    *,
-    policy: Policy,
-) -> dict[str, FileScan]:
-    selected = (
-        (*universe.python_files, *typescript_files(universe, policy)) if paths is None else paths
-    )
-    if not selected:
-        return {}
-    ts_paths = [p for p in selected if not p.endswith(".py")]
-    py_paths = [p for p in selected if p.endswith(".py")]
-    scans = _scan_ts_cached(universe, ts_paths, sources, policy)
-    scans.update(_scan_python_cached(universe, sources, py_paths, jobs, policy))
     return scans
