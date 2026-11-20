@@ -786,13 +786,30 @@ def test_a_deleted_top_level_directory_is_not_measured_under_the_new_roles(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
 ) -> None:
     roles = '[roles]\napplication = ["app", "lib"]\ntooling = ["old", "rules"]\n'
+    region = "\n".join(f'    "{name}",' for name in ("app", "lib", "old", "rules"))
+    pyproject = (
+        "[tool.pyright]\ninclude = [\n    # meizel:roles BEGIN names application tooling\n"
+        f"{region}\n    # meizel:roles END\n]\n"
+    )
     root = base_repo(
-        make_repo, {"meizel.toml": roles, "old/__init__.py": "", "old/tool.py": "VALUE = 1\n"}
+        make_repo,
+        {
+            "meizel.toml": roles,
+            "pyproject.toml": pyproject,
+            "old/__init__.py": "",
+            "old/tool.py": "VALUE = 1\n",
+        },
     )
     record(root)
     commit(root)
     git(root, "rm", "-rq", "old")
-    write(root, {"meizel.toml": roles.replace('"old", ', "")})
+    write(
+        root,
+        {
+            "meizel.toml": roles.replace('"old", ', ""),
+            "pyproject.toml": pyproject.replace('    "old",\n', ""),
+        },
+    )
     rule_change(root)
     record(root)
     capsys.readouterr()

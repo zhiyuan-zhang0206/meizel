@@ -17,7 +17,7 @@ exports = ["analysis.py", "cli.py", "enumerations.py", "sync.py"]
 "manifest.py" = ["debt"]
 "policy.py" = ["manifest.py"]
 "rule.py" = ["debt", "manifest.py", "policy.py"]
-"sync.py" = ["analysis.py", "debt_edit.py", "declare.py", "manifest.py", "manifest_text.py"]
+"sync.py" = ["analysis.py", "debt_edit.py", "declare.py", "enumerations.py", "manifest.py", "manifest_text.py"]
 
 [purity]
 "." = "strict"

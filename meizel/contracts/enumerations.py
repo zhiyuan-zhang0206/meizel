@@ -41,7 +41,13 @@ from meizel.graph.model import Code, Diagnostic, MeizelError
 from meizel.graph.universe import Checkout, EditPlan, Universe
 from meizel.roles import Roles
 
-__all__ = ["check", "parse_regions", "plan_writes", "regions", "run_roles", "write"]
+__all__ = [
+    "check",
+    "parse_regions",
+    "regions",
+    "run_roles",
+    "write",
+]
 
 MARKER = "meizel:roles"
 _BEGIN = re.compile(rf"^(?P<indent>\s*)#\s*{MARKER}\s+BEGIN\s+(?P<format>\S+)\s+(?P<roles>.+?)\s*$")
@@ -147,7 +153,7 @@ def _stale(
     return messages
 
 
-def plan_writes(
+def _plan_writes(
     root: Path,
     texts: Mapping[str, str],
     by_path: Mapping[str, list[Region]],
@@ -175,7 +181,7 @@ def write(repo: Checkout, declared: Roles) -> list[str]:
     by_path: dict[str, list[Region]] = {}
     for region in parse_regions(texts):
         by_path.setdefault(region.path, []).append(region)
-    plan, changed = plan_writes(repo.root, texts, by_path, declared)
+    plan, changed = _plan_writes(repo.root, texts, by_path, declared)
     repo.apply_plan(plan)
     return changed
 

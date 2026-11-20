@@ -61,7 +61,7 @@ from meizel.contracts.debt_symbol import SymbolMove, defines, retarget_imports
 from meizel.contracts.declare import declare
 from meizel.contracts.policy import POLICY, load_policy, policy_at
 from meizel.contracts.policy import changes as policy_changes
-from meizel.contracts.sync import prepare_policy_snapshot, prune
+from meizel.contracts.sync import prepare_policy_snapshot, prune, regenerate_role_regions
 from meizel.graph.model import Code, Diagnostic, MeizelError
 from meizel.graph.universe import MANIFEST, Checkout, EditPlan, Universe
 from meizel.language.scan import invalidate_policy_caches
@@ -606,6 +606,7 @@ def rule_diff(
         _apply_deletions(repo, ref, checkout, moved)
         _sync_rule_files(repo, ref, checkout)
         _apply_declarations(repo, checkout)
+        regenerate_role_regions(checkout)
         checkout.stage_all()
         rewritten, ignored = _apply_symbol_moves(repo, ref, checkout, symbols)
         invalidate_policy_caches()
@@ -613,6 +614,7 @@ def rule_diff(
     with repo.checkout(ref) as checkout:
         prepare_policy_snapshot(checkout)
         _apply_content(repo, ref, checkout, moved)
+        regenerate_role_regions(checkout)
         checkout.stage_all()
         invalidate_policy_caches()
         under_reference = regenerated(checkout, ref, jobs)

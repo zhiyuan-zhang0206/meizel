@@ -12,15 +12,16 @@ from meizel.allowances import POLICY, RETIRED_AMBIENT_SECTIONS, Policy, load_sna
 from meizel.contracts.analysis import Analysis, analyze
 from meizel.contracts.debt_edit import prune as prune_debt
 from meizel.contracts.declare import declare
+from meizel.contracts.enumerations import write as write_role_regions
 from meizel.contracts.manifest import manifest_path
 from meizel.contracts.manifest_text import ENTRY, HEADER, entry_end, items, unquote
 from meizel.graph.model import MeizelError
-from meizel.graph.universe import Checkout, EditPlan
+from meizel.graph.universe import MANIFEST, Checkout, EditPlan
 
 __all__ = [
-    "plan_removals",
     "prepare_policy_snapshot",
     "prune",
+    "regenerate_role_regions",
     "remove_entries",
     "sync_manifests",
     "with_table",
@@ -154,7 +155,7 @@ def _collect(analysis: Analysis) -> tuple[Removals, list[str]]:
     return removals, changes
 
 
-def plan_removals(root: Path, texts: Mapping[str, str], removals: Removals) -> EditPlan:
+def _plan_removals(root: Path, texts: Mapping[str, str], removals: Removals) -> EditPlan:
     writes: dict[Path, str] = {}
     deletes: list[Path] = []
     for relative, sections in removals.items():
@@ -174,7 +175,7 @@ def plan_removals(root: Path, texts: Mapping[str, str], removals: Removals) -> E
 
 def _apply(repo: Checkout, removals: Removals) -> None:
     texts = {relative: repo.load_text(relative) for relative in removals}
-    repo.apply_plan(plan_removals(repo.root, texts, removals))
+    repo.apply_plan(_plan_removals(repo.root, texts, removals))
 
 
 # meiva:note
@@ -248,3 +249,18 @@ def prepare_policy_snapshot(repo: Checkout) -> Policy:
     if current != text:
         _apply(repo, {POLICY: removals})
     return policy
+
+
+# meiva:note
+# The lists generated from the roles (`roles write`) belong to the device that wrote them: each replay
+# regenerates them under the roles it judges by, as the checker would write them. A tree that declares
+# no roles has no regions to write; one whose roles cannot be read is refused by the readability check
+# that follows, which names the problem.
+def regenerate_role_regions(checkout: Checkout) -> None:
+    if not checkout.has_file(MANIFEST):
+        return
+    try:
+        declared = checkout.tree.roles()
+    except MeizelError:
+        return
+    write_role_regions(checkout, declared)
