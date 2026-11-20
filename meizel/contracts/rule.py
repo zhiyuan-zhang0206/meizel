@@ -3,29 +3,19 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import NamedTuple
 
-from meizel.contracts.debt import PURITY_CODES, file_key, source_of
+from meizel.contracts.debt import PURITY_CODES, source_of
 from meizel.contracts.manifest import Manifest, effective_purity, manifest_path, unlicensed, within
 from meizel.contracts.policy import Policy
+from meizel.contracts.purity_mode import purity_debt, test_purity_mode
 from meizel.graph.graphs import reachable
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind
 from meizel.graph.universe import Universe, is_private_module
 from meizel.language import FileScan
-from meizel.language.fixtures import (
-    DEFAULT_IMPURE_FIXTURES,
-    FixtureFunction,
-    FixtureIndex,
-    is_test_file,
-)
-from meizel.language.python import (
-    ALLOWED_STDLIB_MODULES,
-    DEFAULT_IMPURE_CALLS,
-    IMPURE_DOTTED_STDLIB_MODULES,
-    IMPURE_STDLIB_MODULES,
-)
+from meizel.language.test_files import is_test_file
 
 __all__ = [
     "Projection",
@@ -292,10 +282,6 @@ def judge_facts(
     return projections, found, dict(needed)
 
 
-def _purity_debt(owner: str, path: str, key: str, mode: str) -> DebtKey | None:
-    return None if mode == "strict" else DebtKey(owner, file_key(owner, path, key))
-
-
 def _module_purity_diagnostics(
     scan: FileScan,
     owner: str,
@@ -321,7 +307,7 @@ def _module_purity_diagnostics(
                     (
                         "mark the dependency `strict` or `strict-to-be`, or move the impure dependency to an adapter outside the strict core",
                     ),
-                    _purity_debt(owner, scan.path, fact.dst, mode),
+                    purity_debt(owner, scan.path, fact.dst, mode),
                 )
             )
     for item in unlicensed(manifests, scan):
@@ -334,254 +320,40 @@ def _module_purity_diagnostics(
                 item.code,
                 item.message,
                 (item.hint,),
-                _purity_debt(owner, scan.path, item.key, mode),
+                purity_debt(owner, scan.path, item.key, mode),
             )
         )
     return found
 
 
-def _test_purity_mode(scan: FileScan, manifests: dict[str, Manifest]) -> str:
-    own_mode = effective_purity(scan.path, manifests, include_tests=True)
-    targets = {
-        f.dst
-        for f in scan.facts
-        if f.kind in {FactKind.IMPORT, FactKind.ATTRIBUTE, FactKind.PATCH} and f.dst != scan.path
-    }
-    if not targets:
-        return own_mode
-    target_modes = {effective_purity(dst, manifests) for dst in targets}
-    if "none" in target_modes:
-        return "none"
-    return (
-        "strict-to-be" if own_mode == "strict-to-be" or "strict-to-be" in target_modes else "strict"
-    )
-
-
-def _build_fixture_index(
-    scans: Mapping[str, FileScan], universe: Universe | None = None
-) -> FixtureIndex:
-    defined = {
-        p: s.fixtures.defs | s.imported
-        for p, s in scans.items()
-        if s.fixtures.defs or p.endswith("conftest.py") or s.fixtures.plugins
-    }
-    plugins = {
-        p: [n for n, _ in s.fixtures.plugins] for p, s in scans.items() if s.fixtures.plugins
-    }
-    return FixtureIndex(universe, defined, plugins)
-
-
-def _is_module_impure(
-    mod_name: str,
-    index: FixtureIndex,
-    manifests: Mapping[str, Manifest],
-    pure_third_party: frozenset[str],
-) -> bool:
-    top = mod_name.split(".", 1)[0]
-    if index.universe is not None and (
-        index.universe.is_first_party_name(top)
-        or index.universe.resolve_module(mod_name) is not None
-    ):
-        mod = index.universe.resolve_module(mod_name)
-        return effective_purity(mod.file, manifests) == "none" if mod and mod.file else False
-    parts = mod_name.split(".")
-    for i in range(len(parts), 0, -1):
-        if ".".join(parts[:i]) in IMPURE_DOTTED_STDLIB_MODULES:
-            return True
-    if top in IMPURE_STDLIB_MODULES:
-        return True
-    return False if top in ALLOWED_STDLIB_MODULES else top not in pure_third_party
-
-
-def _has_impure_fact(
-    fn: FixtureFunction, scan: FileScan, manifests: Mapping[str, Manifest]
-) -> bool:
-    for fact in scan.facts:
-        if fact.kind == FactKind.IMPORT:
-            target = fact.dst
-            if not is_test_file(target) and effective_purity(target, manifests) == "none":
-                base = target.rpartition("/")[2].removesuffix(".py")
-                if base in fn.names_loaded or any(sym in fn.names_loaded for sym in fact.names):
-                    return True
-    return False
-
-
-def _is_function_direct_impure(
-    fn: FixtureFunction,
-    scan: FileScan,
-    index: FixtureIndex,
-    manifests: Mapping[str, Manifest],
-    pure_third_party: frozenset[str],
-) -> bool:
-    if fn.is_async and fn.registered is not None:
-        return True
-    if any(c in DEFAULT_IMPURE_CALLS for c in fn.callees):
-        return True
-    if any(_is_module_impure(m, index, manifests, pure_third_party) for m in fn.imported_modules):
-        return True
-    if any(fn.line <= a.line <= fn.end_line for a in scan.ambient):
-        return True
-    return _has_impure_fact(fn, scan, manifests)
-
-
-def _infer_helper_taint(
-    scan: FileScan,
-    index: FixtureIndex,
-    manifests: Mapping[str, Manifest],
-    pure_third_party: frozenset[str],
-) -> set[str]:
-    impure = {
-        h.name
-        for h in scan.fixtures.helpers
-        if _is_function_direct_impure(h, scan, index, manifests, pure_third_party)
-    }
-    changed = True
-    while changed:
-        changed = False
-        for h in scan.fixtures.helpers:
-            if h.name not in impure and any(c in impure for c in h.local_calls):
-                impure.add(h.name)
-                changed = True
-    return impure
-
-
-def _collect_file_fixtures(
-    path: str,
-    scan: FileScan,
-    index: FixtureIndex,
-    manifests: Mapping[str, Manifest],
-    pure_third_party: frozenset[str],
-) -> tuple[dict[tuple[str, str], FixtureFunction], set[tuple[str, str]]]:
-    file_fixtures: dict[tuple[str, str], FixtureFunction] = {}
-    direct: set[tuple[str, str]] = set()
-    helper_impure = _infer_helper_taint(scan, index, manifests, pure_third_party)
-    for fn in scan.fixtures.functions:
-        if fn.registered is not None:
-            key = (path, fn.registered)
-            file_fixtures[key] = fn
-            if _is_function_direct_impure(fn, scan, index, manifests, pure_third_party) or any(
-                c in helper_impure for c in fn.local_calls
-            ):
-                direct.add(key)
-    return file_fixtures, direct
-
-
-def _propagate_fixture_taint(
-    all_fixtures: Mapping[tuple[str, str], FixtureFunction],
-    impure: set[tuple[str, str]],
-    index: FixtureIndex,
-    builtins_impure: frozenset[str],
-) -> None:
-    changed = True
-    while changed:
-        changed = False
-        for (path, name), fn in all_fixtures.items():
-            if (path, name) in impure:
-                continue
-            if any(
-                r in builtins_impure or any((c, r) in impure for c in index.candidates(r, path)[0])
-                for r in fn.requests
-            ):
-                impure.add((path, name))
-                changed = True
-
-
-def _infer_impure_fixtures(
-    index: FixtureIndex,
-    scans: Mapping[str, FileScan],
-    manifests: Mapping[str, Manifest],
-    pure_third_party: frozenset[str],
-    external_impure_fixtures: frozenset[str] = frozenset(),
-) -> frozenset[tuple[str, str]]:
-    all_fixtures: dict[tuple[str, str], FixtureFunction] = {}
-    direct_impure: set[tuple[str, str]] = set()
-    for path, scan in scans.items():
-        if is_test_file(path) or "fixture" in path or path.endswith("conftest.py"):
-            f, d = _collect_file_fixtures(path, scan, index, manifests, pure_third_party)
-            all_fixtures.update(f)
-            direct_impure.update(d)
-    builtins = DEFAULT_IMPURE_FIXTURES | external_impure_fixtures
-    impure = set(direct_impure)
-    _propagate_fixture_taint(all_fixtures, impure, index, builtins)
-    return frozenset(impure)
-
-
-def _is_impure_fixture_request(
-    name: str,
-    test_path: str,
-    impure_fixtures: frozenset[tuple[str, str]],
-    index: FixtureIndex,
-    external_impure: frozenset[str] = frozenset(),
-) -> bool:
-    if name in DEFAULT_IMPURE_FIXTURES or name in external_impure:
-        return True
-    return any((c, name) in impure_fixtures for c in index.candidates(name, test_path)[0])
-
-
 def _test_purity_diagnostics(
-    scan: FileScan,
-    owner: str,
-    manifests: dict[str, Manifest],
-    impure_fixtures: frozenset[tuple[str, str]],
-    index: FixtureIndex | None = None,
-    external_impure: frozenset[str] = frozenset(),
+    scan: FileScan, owner: str, manifests: dict[str, Manifest]
 ) -> list[Diagnostic]:
-    test_mode = _test_purity_mode(scan, manifests)
+    test_mode = test_purity_mode(scan, manifests)
     if test_mode == "none":
         return []
-    found = [
-        Diagnostic(
-            scan.path,
-            req.line,
-            Code.IMPURE_TEST_FIXTURE,
-            f"test of strict modules requests impure fixture `{req.name}`",
-            (
-                "pass pure values or fakes directly instead of requesting heavy I/O fixtures or monkeypatch",
-            ),
-            _purity_debt(owner, scan.path, f"fixture {req.name}", test_mode),
-        )
-        for req in scan.fixtures.requests
-        if (
-            _is_impure_fixture_request(
-                req.name, scan.path, impure_fixtures, index, external_impure=external_impure
-            )
-            if index is not None
-            else req.name in external_impure
-        )
-    ]
-    found.extend(
+    return [
         Diagnostic(
             scan.path,
             item.line,
             item.code,
             item.message,
             (item.hint,),
-            _purity_debt(owner, scan.path, item.key, test_mode),
+            purity_debt(owner, scan.path, item.key, test_mode),
         )
         for item in scan.purity
         if item.code is Code.NESTED_PATCH_TARGET
-    )
-    return found
+    ]
 
 
-def _file_purity_diagnostics(
-    scan: FileScan,
-    manifests: dict[str, Manifest],
-    impure_fixtures: frozenset[tuple[str, str]],
-    index: FixtureIndex | None = None,
-    external_impure: frozenset[str] = frozenset(),
-) -> list[Diagnostic]:
+def _file_purity_diagnostics(scan: FileScan, manifests: dict[str, Manifest]) -> list[Diagnostic]:
     found: list[Diagnostic] = []
     owner = scan.path.rpartition("/")[0]
     mode = effective_purity(scan.path, manifests)
     if mode in {"strict", "strict-to-be"}:
         found.extend(_module_purity_diagnostics(scan, owner, mode, manifests))
     if is_test_file(scan.path):
-        found.extend(
-            _test_purity_diagnostics(
-                scan, owner, manifests, impure_fixtures, index, external_impure
-            )
-        )
+        found.extend(_test_purity_diagnostics(scan, owner, manifests))
     return found
 
 
@@ -609,7 +381,7 @@ def _wide_fanout_diagnostics(manifests: dict[str, Manifest], policy: Policy) -> 
                     (
                         "keep the package door narrow by re-exporting through `__init__.py` or splitting subpackages",
                     ),
-                    _purity_debt(directory, manifest.path, "exports", manifest.purity_default),
+                    purity_debt(directory, manifest.path, "exports", manifest.purity_default),
                 )
             )
         for child, targets in sorted(manifest.uses.items()):
@@ -625,7 +397,7 @@ def _wide_fanout_diagnostics(manifests: dict[str, Manifest], policy: Policy) -> 
                         (
                             "split the module's responsibilities or group lower-level collaborators behind a cohesive subpackage door",
                         ),
-                        _purity_debt(directory, child_path, "uses", mode),
+                        purity_debt(directory, child_path, "uses", mode),
                     )
                 )
     return found
@@ -662,7 +434,7 @@ def _domain_subset_diagnostics(
                         (
                             f"define a predicate method or `@property def is_...(self) -> bool` on `{use.cls_name}` so the domain concept has one owner",
                         ),
-                        _purity_debt(owner, scan.path, key, mode),
+                        purity_debt(owner, scan.path, key, mode),
                     )
                 )
     return found
@@ -675,26 +447,10 @@ def purity_diagnostics(
     policy: Policy,
     *,
     include_manifests: bool = True,
-    universe: Universe | None = None,
 ) -> list[Diagnostic]:
-    scans_map: dict[str, FileScan] = {s.path: s for s in all_scans}
-    for s in judged_scans:
-        scans_map.setdefault(s.path, s)
-    index = _build_fixture_index(scans_map, universe)
-    pure_third_party = frozenset(policy.names("purity", "pure-third-party"))
-    external_impure = DEFAULT_IMPURE_FIXTURES | frozenset(policy.names("purity", "impure-fixtures"))
-    impure_fixtures = _infer_impure_fixtures(
-        index,
-        scans_map,
-        manifests,
-        pure_third_party,
-        external_impure_fixtures=external_impure,
-    )
     found: list[Diagnostic] = []
     for scan in judged_scans:
-        found.extend(
-            _file_purity_diagnostics(scan, manifests, impure_fixtures, index, external_impure)
-        )
+        found.extend(_file_purity_diagnostics(scan, manifests))
     found.extend(_domain_subset_diagnostics(all_scans, judged_scans, manifests))
     if include_manifests:
         found.extend(_wide_fanout_diagnostics(manifests, policy))
@@ -717,7 +473,7 @@ def stale_exports(
             mode = effective_purity(child_path, manifests)
             if mode not in {"strict", "strict-to-be"}:
                 continue
-            debt = _purity_debt(directory, child_path, "exports", mode)
+            debt = purity_debt(directory, child_path, "exports", mode)
             found.append(
                 Diagnostic(
                     manifest.path,

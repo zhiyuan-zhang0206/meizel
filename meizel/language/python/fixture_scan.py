@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from collections.abc import Callable
 
-from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
+from meizel.language.python.fixtures import FixtureFunction, FixtureRequest, FixtureState
 
 __all__ = ["fixture_name", "plugin_names", "record_call", "record_function"]
 

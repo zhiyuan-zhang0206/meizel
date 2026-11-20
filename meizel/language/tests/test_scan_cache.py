@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Collection, Generator, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import pytest
@@ -30,11 +30,18 @@ from meizel.graph.model import (
     Unless,
 )
 from meizel.graph.universe import Checkout, EditPlan, SourceTree, Universe
-from meizel.language import FileScan, InputListAppend, scan_all
-from meizel.language.fixtures import FixtureFunction, FixtureRequest, FixtureState
+from meizel.language import FileScan, scan_all
 from meizel.language.python import (
+    FixtureFunction,
+    FixtureRequest,
+    FixtureState,
+    InputListAppend,
+    PythonRecord,
     cached_module_imports,
+    decode_record,
+    encode_record,
     load_cached_sources,
+    python_record,
     store_cached_sources,
 )
 from meizel.language.scan_codec import decode_file_scan, encode_file_scan
@@ -156,32 +163,38 @@ def test_encode_decode_file_scan_round_trips_full_and_sparse_forms() -> None:
         restricted=[Restricted(7, "exec", "exec of source text")],
         patches=[Patch(9, "mock.patch", "pkg.dep.run", Code.FIRST_PARTY_PATCH, imported=True)],
         problems=[Problem(11, Code.UNRESOLVED_IMPORT, "unresolved import pkg.missing")],
-        fixtures=FixtureState(
-            defs={"db_conn"},
-            requests=[
-                FixtureRequest("db_conn", 14, skip_self=False, requester_line=13, form="parameter"),
-                FixtureRequest(
-                    "clean_tmp", 15, skip_self=True, requester_line=15, form="usefixtures"
-                ),
-                FixtureRequest("seed", 16, skip_self=False, requester_line=16, form="call"),
-                FixtureRequest("dyn", 17, skip_self=False, requester_line=17, form="lookup"),
-            ],
-            plugins=[("pkg.plugins", 2)],
-            functions=[FixtureFunction("db_conn", 13, "db_conn", True, True)],
-        ),
-        imported={"pkg/dep.py"},
         purity=[PurityItem(20, Code.IMPURE_CALL, "fn#open", "calls open", "inject reader")],
         enum_subsets=[EnumSubsetUse(22, "Color", ("RED", "BLUE"))],
-        input_appends=[InputListAppend(25, "collect", "items")],
         ambient=[Acquisition(28, AmbientKind.CLOCK, "time.time")],
-        entropy=[EntropySite(30, "uuid.uuid4")],
         type_casts=[TypeCastSite(32, 11, "fn")],
         any_collaborators=[AnyCollaboratorSite(35, 8, "Box.run", "arg", "parameter")],
-        type_checking=(4, 5),
         symbols=(("Box", 34, 40), ("fn", 19, 33)),
-        deps=("pkg/dep.py",),
+        extra=PythonRecord(
+            fixtures=FixtureState(
+                defs={"db_conn"},
+                requests=[
+                    FixtureRequest(
+                        "db_conn", 14, skip_self=False, requester_line=13, form="parameter"
+                    ),
+                    FixtureRequest(
+                        "clean_tmp", 15, skip_self=True, requester_line=15, form="usefixtures"
+                    ),
+                    FixtureRequest("seed", 16, skip_self=False, requester_line=16, form="call"),
+                    FixtureRequest("dyn", 17, skip_self=False, requester_line=17, form="lookup"),
+                ],
+                plugins=[("pkg.plugins", 2)],
+                functions=[FixtureFunction("db_conn", 13, "db_conn", True, True)],
+            ),
+            imported={"pkg/dep.py"},
+            input_appends=[InputListAppend(25, "collect", "items")],
+            entropy=[EntropySite(30, "uuid.uuid4")],
+            type_checking=(4, 5),
+            deps=("pkg/dep.py",),
+        ),
     )
-    assert decode_file_scan(encode_file_scan(populated), OS_KINDS) == populated
+    encoded = encode_file_scan(populated, encode_record)
+    assert decode_file_scan(encoded, OS_KINDS, decode_record) == populated
+    assert decode_file_scan(encoded, OS_KINDS) == replace(populated, extra=None)
 
     fake = FileScan("pkg/fake.py", ambient=[Acquisition(28, "envrion", "os.environ")])
     with pytest.raises(ValueError, match="unknown ambient kind 'envrion'"):
@@ -261,7 +274,7 @@ def test_cross_file_patch_target_deps_invalidate_when_target_module_changes(
     policy = Policy()
     sources = Sources()
     initial = scan_all(GitRepo(root).universe(), sources, jobs=1, policy=policy)
-    assert initial["pkg/tests/test_target.py"].deps == ("pkg/target.py",)
+    assert python_record(initial["pkg/tests/test_target.py"]).deps == ("pkg/target.py",)
     assert [p.code for p in initial["pkg/tests/test_target.py"].patches] == [Code.FIRST_PARTY_PATCH]
     assert initial["pkg/tests/test_target.py"].problems == []
 

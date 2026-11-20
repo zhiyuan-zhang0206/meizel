@@ -55,11 +55,19 @@ shape of Python's habits; with two the common part is visible. Today the checker
   `Frontend.stale_readers` reports the listed readers that no longer exist. The checker merges the
   enabled frontends' answers in `language/sources.py`, and `tests/languages/test_kernel_door.py` lists
   the kernel files that still import a frontend package.
-- `contracts/rule.py`: pytest fixture purity and the standard-library purity tables;
-  `contracts/analysis.py`: the `TYPE_CHECKING` diagnostic, pytest plugin mounts and conftest scanning.
-  Plan: `Frontend.rules(scans, manifests, policy, universe)`, and the Python-only fields of `FileScan`
-  (fixtures, `type_checking`, `input_appends`, `entropy`, `deps`, `injected`) move into a record the
-  frontend owns.
+- Done (0.10.0): the Python rules and the Python fields of a record. `Frontend.rules(view)` returns
+  the diagnostics a language judges over the run (Python: `TYPE_CHECKING` blocks, readings spent as
+  entropy, impure pytest fixtures, in `language/python/rules.py` and `fixture_purity.py`);
+  `Frontend.facts(view)` the facts it adds (fixture requests resolved to a `conftest.py` or plugin,
+  `path_scopes.toml` mounts); `Frontend.companions` the files a `--changed` run reads besides the
+  changed ones (ancestor `conftest.py` files, plugin modules); `Frontend.evidence` the lines `explain`
+  adds. The `view` (`RunView`) carries the run's scans and the answers only the manifests give (the
+  purity of a path, the files `ambient-read` governs, the debt a violation is recorded as). What only
+  Python records of a file (`fixtures`, `imported`, `input_appends`, `entropy`, `type_checking`,
+  `deps`) is a `PythonRecord` in `FileScan.extra`: the frontend defines its type and its JSON form
+  (`language/python/record.py`), the codec carries it as an opaque object, and
+  `tests/languages/test_kernel_door.py` pins that no `contracts/` or `graph/` module imports the
+  Python package or reads `FileScan.extra`. A scan cached before 0.10.0 is read again.
 - `graph/`: Python import resolution (`imports.py`, `python_layout.py`, `Universe.resolve_module`,
   `python_files`) and the hard-coded `typescript_files`. Plan: files per frontend in `Universe`; done
   together with the Rust frontend, since both need the same change.

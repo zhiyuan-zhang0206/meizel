@@ -6,33 +6,60 @@ import ast
 from pathlib import Path
 
 _KERNEL = ("contracts", "graph")
-_FRONTENDS = ("meizel.language.python", "meizel.language.typescript")
 # What still reaches into a frontend package, each to be removed by moving the judgment into the
-# frontend: the list only shrinks.
-_STILL_REACHING = frozenset({"contracts/analysis.py", "contracts/rule.py"})
+# frontend: the list only shrinks. Python has none; TypeScript has the scopes the inert-roots
+# warning names.
+_STILL_REACHING_TYPESCRIPT = frozenset({"contracts/analysis.py"})
+# The record a frontend keeps of a file (`FileScan.extra`) is its own: no kernel module names its
+# type or reads the field.
+_NATIVE_NAMES = frozenset({"PythonRecord", "python_record", "decode_record", "encode_record"})
 
 
-def _reaching(root: Path) -> set[str]:
-    found: set[str] = set()
-    for directory in _KERNEL:
-        for path in sorted((root / directory).rglob("*.py")):
-            relative = path.relative_to(root).as_posix()
-            if "/tests/" in relative:
-                continue
-            for node in ast.walk(ast.parse(path.read_text())):
-                modules = (
-                    [node.module or ""]
-                    if isinstance(node, ast.ImportFrom)
-                    else [alias.name for alias in node.names]
-                    if isinstance(node, ast.Import)
-                    else []
-                )
-                if any(m == f or m.startswith(f"{f}.") for m in modules for f in _FRONTENDS):
-                    found.add(relative)
-    return found
+def _kernel_trees() -> dict[str, ast.Module]:
+    root = Path(__file__).resolve().parents[2]
+    return {
+        path.relative_to(root).as_posix(): ast.parse(path.read_text())
+        for directory in _KERNEL
+        for path in sorted((root / directory).rglob("*.py"))
+        if "/tests/" not in path.relative_to(root).as_posix()
+    }
 
 
-def test_kernel_reaches_into_no_more_frontend_code_than_the_listed_files() -> None:
-    reaching = _reaching(Path(__file__).resolve().parents[2])
-    assert reaching <= _STILL_REACHING, sorted(reaching - _STILL_REACHING)
-    assert reaching == _STILL_REACHING, "a file stopped reaching a frontend: shrink the list"
+def _imported_modules(tree: ast.Module) -> list[str]:
+    modules: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            modules.append(node.module or "")
+        elif isinstance(node, ast.Import):
+            modules.extend(alias.name for alias in node.names)
+    return modules
+
+
+def _reaching(frontend: str) -> set[str]:
+    return {
+        path
+        for path, tree in _kernel_trees().items()
+        if any(m == frontend or m.startswith(f"{frontend}.") for m in _imported_modules(tree))
+    }
+
+
+def test_the_kernel_imports_no_python_frontend_code() -> None:
+    assert _reaching("meizel.language.python") == set()
+
+
+def test_the_kernel_imports_no_more_typescript_frontend_code_than_the_listed_files() -> None:
+    reaching = _reaching("meizel.language.typescript")
+    assert reaching <= _STILL_REACHING_TYPESCRIPT, sorted(reaching - _STILL_REACHING_TYPESCRIPT)
+    assert reaching == _STILL_REACHING_TYPESCRIPT, "a file stopped reaching TypeScript: shrink it"
+
+
+def test_the_kernel_never_reads_a_frontends_own_record_of_a_file() -> None:
+    reading = {
+        path
+        for path, tree in _kernel_trees().items()
+        for node in ast.walk(tree)
+        if (isinstance(node, ast.Attribute) and node.attr == "extra")
+        or (isinstance(node, ast.Name) and node.id in _NATIVE_NAMES)
+        or (isinstance(node, ast.alias) and node.name in _NATIVE_NAMES)
+    }
+    assert reading == set()

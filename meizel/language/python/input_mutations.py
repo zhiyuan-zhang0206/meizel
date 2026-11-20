@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 
 from meizel.graph.imports import Scope
-from meizel.language.file_scan import InputListAppend
+from meizel.language.python.record import InputListAppend
 
 __all__ = ["input_list_appends"]
 

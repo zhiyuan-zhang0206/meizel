@@ -54,7 +54,6 @@ def _file_scan(ts: TsScan) -> FileScan:
         facts=list(ts.facts),
         patches=list(ts.patches),
         problems=list(ts.problems),
-        imported=set(ts.external),
         purity=list(ts.purity),
         ambient=list(ts.ambient),
         type_casts=list(ts.type_casts),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from meizel.language.fixtures import is_test_file
+from meizel.language.test_files import is_test_file
 
 # The patch exemption reads this convention, so the pattern is the review surface: a new name is
 # exempt the moment it matches, with no list to update. The accepted classes are therefore stated

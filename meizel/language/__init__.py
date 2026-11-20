@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from meizel.language.file_scan import FileScan, InputListAppend
-from meizel.language.frontend import Frontend, StateKinds
+from meizel.language.file_scan import FileScan
+from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.frontends import (
     DYNAMIC_ATTR_FORMS,
     EXTERNAL_FORMS,
@@ -22,7 +22,7 @@ __all__ = [
     "FRONTENDS",
     "FileScan",
     "Frontend",
-    "InputListAppend",
+    "RunView",
     "StateKinds",
     "ambient_sources",
     "enabled_frontends",

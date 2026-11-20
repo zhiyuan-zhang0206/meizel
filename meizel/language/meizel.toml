@@ -1,20 +1,24 @@
-exports = ["fixtures.py", "python", "typescript"]
+exports = ["python", "test_files.py", "typescript"]
 
 [uses]
 "__init__.py" = ["file_scan.py", "frontend.py", "frontends.py", "sources.py"]
-"file_scan.py" = ["fixtures.py"]
 "frontend.py" = ["file_scan.py"]
 "frontends.py" = ["file_scan.py", "frontend.py", "python", "typescript"]
-"python" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
-"scan_codec.py" = ["file_scan.py", "fixtures.py"]
+"json_fields.py" = ["json_containers.py"]
+"python" = ["file_scan.py", "frontend.py", "json_containers.py", "json_fields.py", "json_scalars.py", "scan_codec.py", "test_files.py"]
+"scan_codec.py" = ["file_scan.py", "json_containers.py", "json_fields.py", "json_scalars.py"]
 "sources.py" = ["frontend.py", "frontends.py"]
-"tests" = ["__init__.py", "fixtures.py", "python", "scan_codec.py"]
-"typescript" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
+"tests" = ["__init__.py", "python", "scan_codec.py"]
+"typescript" = ["file_scan.py", "frontend.py", "scan_codec.py", "test_files.py"]
 
 [purity]
 "." = "strict"
 "file_scan.py" = "strict"
 "frontend.py" = "strict"
 "frontends.py" = "strict"
+"json_containers.py" = "strict"
+"json_fields.py" = "strict"
+"json_scalars.py" = "strict"
 "scan_codec.py" = "strict"
 "sources.py" = "strict"
+"test_files.py" = "strict"

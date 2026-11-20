@@ -7,7 +7,7 @@ from pathlib import Path
 from meizel.allowances import Policy
 from meizel.graph.model import MeizelError, Sources
 from meizel.graph.universe import Universe
-from meizel.language import fixtures
+from meizel.language.test_files import is_test_file
 from meizel.language.typescript.compiler.config import load_ts_config
 from meizel.language.typescript.compiler.decode import decode_batch
 from meizel.language.typescript.compiler.model import TsScan
@@ -29,7 +29,7 @@ def scan_batch(
         "files": sorted(universe.files),
         "sources": contents,
         "config": options,
-        "tests": [path for path in contents if fixtures.is_test_file(path)],
+        "tests": [path for path in contents if is_test_file(path)],
         "ambient": {"names": sources.names, "calls": sources.calls},
     }
     producer = Path(__file__).with_name("producer.mjs")
