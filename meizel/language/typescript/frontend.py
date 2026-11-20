@@ -9,6 +9,7 @@ from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.typescript.adapter import scan_source, typescript_extensions, typescript_files
 from meizel.language.typescript.cache import scan_typescript_cached
+from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
 
 __all__ = ["TYPESCRIPT"]
 
@@ -29,4 +30,12 @@ def _scan_source(
     return scan_source(universe, path, source, sources, policy=policy)
 
 
-TYPESCRIPT = Frontend("typescript", _owns, typescript_files, _scan, _scan_source)
+TYPESCRIPT = Frontend(
+    "typescript",
+    _owns,
+    typescript_files,
+    _scan,
+    _scan_source,
+    EXTERNAL_FORMS,
+    DYNAMIC_ATTR_FORMS,
+)
