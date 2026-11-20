@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Protocol, TypeGuard
 
 from meizel.budgets import check_report
-from meizel.contracts import enumerations
+from meizel.contracts import enumerations, test_cache
 from meizel.contracts.analysis import Analysis, analyze
 from meizel.contracts.bootstrap import Bootstrap, bootstrap
 from meizel.contracts.debt_carry import DebtBase, DebtPaths, renames_since, run_debt
@@ -31,18 +31,20 @@ __all__ = ["CommandDeps", "build_parser", "dispatch"]
 
 # This text is consumed by argparse as native CLI help, not discarded source prose.
 # See meizel/docs/checker/checker.md.
-_DESCRIPTION = (
-    "Command line: check, explain, impacted, tests, sync --prune, bootstrap, debt and roles."
-)
+_DESCRIPTION = "Command line: check, explain, impacted, tests, test-cache, sync --prune, bootstrap, debt and roles."
 
 # The debt modes whose parser declares a `paths` operand; the reader refuses a missing attribute.
+# How long a recorded pass is reused: older than this it is a miss, so every test file runs again
+# at least that often even when nothing it reads is known to have changed.
+_CACHE_TTL_DAYS = 14
+
 _DEBT_MODES_WITH_PATHS = frozenset({"record", "resolve", "sites"})
 
 
 # The checkout as these commands read it: `meizel.graph.Checkout` names the file half, and the test
 # query is added here, beside the two commands that ask it, so `graph` does not depend on
 # `test_graph` for a signature.
-class Repository(Checkout, Protocol):
+class Repository(Checkout, test_cache.CacheRepository, Protocol):
     def test_lanes(self) -> TestLanes: ...
 
     def select_tests(
@@ -65,6 +67,7 @@ class CommandDeps:
     relative_target: Callable[[str], str]
     source_tree: Callable[[Path], SourceTree]
     today: str
+    environment: Callable[[Sequence[str]], dict[str, str]]
 
 
 def _within(path: str, targets: list[str]) -> bool:
@@ -248,6 +251,72 @@ def _run_check(repo: Repository, deps: CommandDeps, opts: Check) -> int:
     return 0
 
 
+def _add_test_cache_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:  # pyright: ignore[reportPrivateUsage]
+    cache = commands.add_parser(
+        "test-cache",
+        help="reuse a test file's passing result while nothing it reads has changed",
+        description=(
+            "Keys each test file by the content of every file that can change its result, the "
+            "interpreter, the declared environment and the pytest arguments, and reports which tests a "
+            "recorded pass lets a run skip. It only plans and records: skipping is the caller's choice."
+        ),
+    )
+    modes = cache.add_subparsers(dest="cache_mode", required=True)
+    plan = modes.add_parser(
+        "plan", help="print each test's key and whether a recorded pass covers it"
+    )
+    plan.add_argument("--lane", choices=["static", "native"], default="static")
+    plan.add_argument("--tests-file", metavar="file", help="plan only the tests this file lists")
+    plan.add_argument(
+        "--closures-file",
+        metavar="file",
+        help="JSON {test: {files: [...], unbounded: reason|null}} from the host's own selection",
+    )
+    plan.add_argument("--pytest-arg", action="append", default=[], metavar="arg")
+    plan.add_argument("--env", action="append", default=[], metavar="NAME=VALUE")
+    plan.add_argument("--ttl-days", type=int, default=_CACHE_TTL_DAYS)
+    record = modes.add_parser("record", help="record the passes of a run the plan covered")
+    record.add_argument("--plan", required=True, metavar="file")
+    record.add_argument("--junit", action="append", default=[], metavar="file")
+    record.add_argument("--run", default="", metavar="id")
+    report = modes.add_parser("report", help="set a plan against how its tests ended")
+    report.add_argument("--plan", required=True, metavar="file")
+    report.add_argument("--junit", action="append", default=[], metavar="file")
+    report.add_argument("--durations", metavar="file", help="JSON of seconds by test file")
+    report.add_argument("--strict", action="store_true", help="exit 1 when a skippable test failed")
+    export = modes.add_parser("export", help="print the recorded passes as JSON lines")
+    export.add_argument("--ttl-days", type=int, default=_CACHE_TTL_DAYS)
+    importing = modes.add_parser("import", help="add the passes of a JSON lines file")
+    importing.add_argument("file")
+    importing.add_argument("--ttl-days", type=int, default=_CACHE_TTL_DAYS)
+    prune = modes.add_parser("prune", help="delete the recorded passes older than the ttl")
+    prune.add_argument("--ttl-days", type=int, default=_CACHE_TTL_DAYS)
+
+
+def _run_test_cache(
+    repo: Repository, base: Path, args: argparse.Namespace, deps: CommandDeps
+) -> int:
+    mode = read_args(args, _CacheMode).cache_mode
+    shapes: dict[str, type] = {
+        "plan": test_cache.CachePlan,
+        "record": test_cache.CacheRecord,
+        "report": test_cache.CacheReport,
+        "export": test_cache.CacheExport,
+        "import": test_cache.CacheImport,
+        "prune": test_cache.CachePrune,
+    }
+    shape = read_args(args, shapes[mode])
+    cache_deps = test_cache.CacheDeps(
+        base=base, read_file=deps.read_text, today=deps.today, environment=deps.environment
+    )
+    return test_cache.run_cache_command(repo, cache_deps, mode, shape)
+
+
+@dataclass(frozen=True)
+class _CacheMode:
+    cache_mode: str
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m meizel", description=_DESCRIPTION)
     parser.add_argument(
@@ -316,6 +385,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="declare the legal new dependencies of the paths (default: the changed files); also prunes",
     )
     sync.add_argument("paths", nargs="*", help="with --declare: only dependencies of these paths")
+    _add_test_cache_parser(commands)
     seed = commands.add_parser("bootstrap", help="generate manifests from current facts")
     seed.add_argument("--out", type=Path, required=True, help="directory to mirror manifests into")
     _add_debt_parser(commands)
@@ -746,6 +816,8 @@ def dispatch(repo: Repository, base: Path, args: argparse.Namespace, deps: Comma
         return _run_impacted(repo, deps, read_args(args, Impacted))
     if cmd == "tests":
         return _run_tests(repo, base, read_args(args, Tests), deps)
+    if cmd == "test-cache":
+        return _run_test_cache(repo, base, args, deps)
     if cmd == "reachability":
         return _run_reachability(repo, deps, read_args(args, Reachability))
     if cmd == "roles":

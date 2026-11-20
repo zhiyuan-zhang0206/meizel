@@ -95,11 +95,44 @@ keep production governance separate from the root distribution environment.
   directory and tests a judged path's links. A host's structure gate drives them. Near-cap reporting shares `check`'s changed-only, ten-percent
   headroom summary; it does not add a failure condition.
 - `test_graph/` — test selection: the tests a change can affect, from the import graph and the
-  scanned test facts (`meizel impacted`, `meizel tests`).
+  scanned test facts (`meizel impacted`, `meizel tests`), and the test result cache built on it
+  ([below](#test-result-cache)).
 
 Rules a repository runs from its own gates, rather than through `meizel check`, belong to that
 repository. They use this package as a library and keep their exemptions in the same policy file,
 declared under `[sections]` ([the policy file](checker/policy/policy.md)).
+
+## Test result cache
+
+`meizel test-cache` lets a run skip a test file whose result was recorded as a pass and whose inputs
+have not changed, the way Bazel reuses a test result. It plans and records; skipping is the caller's
+choice, so a repository can run it in shadow first: plan, run everything, then `report` how the plan
+would have fared.
+
+- **The unit** is a test file, as in test selection and `--dist=loadfile`.
+- **The key** is the hash of the test's path, lane and normalized pytest arguments (the options that
+  only spread or print a run are dropped), the interpreter, platform and the environment variables the
+  policy declares, the meizel version, and the content digest of every file in the test's *closure*.
+- **The closure** is the inverse of test selection: a file is in it exactly when changing that file
+  alone selects the test, so the cache never reuses a result where selection would run the test. A
+  host whose selection knows more passes its own closures (`plan --closures-file`).
+- **Inputs the graph cannot bound** (an unknown dependency, a test that reads the whole tree, a read of
+  a path the file does not anchor to `__file__` or a temporary directory) make the closure the whole
+  tree: such a result is reused only for a tree that differs in no file.
+- **Never cached**: a test in the native lane, a test with a marker named by `[test-cache]
+  uncacheable-markers` (`flaky` always), and any result that was not a pass. A recorded pass expires
+  after `--ttl-days` (14), so every file runs again at least that often.
+- **Not covered** by a key: environment variables the policy does not declare, the clock, randomness,
+  the network, and state shared between test files. A test that depends on one is not a cache
+  candidate; list its marker under `uncacheable-markers` or its variable under `env`.
+- **Storage** is the scan cache's sqlite file in the git directory; `export` and `import` move the
+  passes as JSON lines (a CI cache is one such file), `prune` deletes the expired.
+
+```toml
+[test-cache]
+env = ["TZ"]
+uncacheable-markers = ["network"]
+```
 
 ## Type-only guards
 

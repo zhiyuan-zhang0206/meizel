@@ -598,6 +598,8 @@ def test_the_public_api_is_the_pinned_list() -> None:
             "tracked_files", "typescript_files", "POLICY", "Declaration", "Policy",
             "RemovalReport", "removal_report", "tracked_children", "load_manifests",
             "type_checking_in_scope", "type_checking_violations", "parse_regions",
+            "CachePolicy", "InputClosure", "ShadowReport", "TestPlan", "outcomes_from_junit",
+            "plan_tests", "recordable_tests", "shadow_report", "input_closures",
         ]
     )  # fmt: skip
     assert set(listed) <= bound

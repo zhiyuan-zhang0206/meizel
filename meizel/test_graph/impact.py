@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 
-from meizel.test_graph.cutoff import package_local_tests
 from meizel.test_graph.model import (
     FACT_SYNTAX_ERROR,
+    FACT_UNANCHORED_READ,
     FileTestFacts,
     ModuleTable,
     TestCheckout,
@@ -14,7 +15,10 @@ from meizel.test_graph.model import (
 )
 
 __all__ = [
+    "PathImpacts",
     "fixture_dependency_edges",
+    "package_local_tests",
+    "path_impacts",
     "propagate_test_consumers",
     "select_impacted_tests",
     "tree_scan_pins",
@@ -320,3 +324,84 @@ def select_impacted_tests(
         tests=final_tests,
         diagnostics=tuple(sorted(set(diagnostics))),
     )
+
+
+# What changing one tracked path alone selects, for every tracked path at once, and the tests no path
+# list bounds. `by_path` is `select_impacted_tests((path,), ...)` without the tests it adds to every
+# selection; `unbounded` names those tests and why: a dependency the graph cannot enumerate
+# (`unknown_sites`), a read of the whole tree (a pinned test), or a read of a path the graph does not
+# anchor (`FACT_UNANCHORED_READ`, which selection itself does not act on).
+@dataclass(frozen=True, slots=True)
+class PathImpacts:
+    by_path: dict[str, frozenset[str]]
+    unbounded: dict[str, str]
+
+
+def _unbounded_tests(
+    checkout: TestCheckout,
+    facts_by_file: Mapping[str, FileTestFacts],
+    reverse: Mapping[str, set[str]],
+    tainted: set[str],
+) -> dict[str, str]:
+    reasons = dict.fromkeys(sorted(tainted), "unknown-dependency")
+    for test in sorted(
+        tree_scan_pins(checkout.collectable, facts_by_file, checkout.graph.tree_scan_pins)
+    ):
+        reasons.setdefault(test, "tree-scan")
+    for dep_path in sorted(reverse):
+        facts = facts_by_file.get(dep_path)
+        if facts is not None and facts.flags & FACT_UNANCHORED_READ:
+            for test in sorted(reverse[dep_path]):
+                reasons.setdefault(test, f"unanchored-read:{dep_path}")
+    return reasons
+
+
+def _impacts_of_path(
+    path: str, checkout: TestCheckout, reverse: Mapping[str, set[str]]
+) -> frozenset[str]:
+    graph = checkout.graph
+    if path.startswith(graph.excluded_prefixes):
+        return frozenset()
+    if _is_global_path(path, checkout):
+        return checkout.collectable
+    if _is_frontend_only_path(path, graph):
+        return frozenset()
+    if _is_doc_only_path(path, graph) and not _runtime_consumers_for_path(path, reverse):
+        return frozenset()
+    return frozenset(_select_for_one_path(path, checkout, reverse) & checkout.collectable)
+
+
+# Computes `PathImpacts` over the paths of `checkout`; a graph with a syntax error is judged whole,
+# as selection judges it, so every test is unbounded.
+def path_impacts(checkout: TestCheckout, facts_by_file: Mapping[str, FileTestFacts]) -> PathImpacts:
+    built = _build_runtime_edges(checkout, facts_by_file)
+    if isinstance(built, TestSelection):
+        return PathImpacts({}, dict.fromkeys(sorted(checkout.collectable), built.reason))
+    edges, missing_scopes = built
+    reverse = propagate_test_consumers(edges, checkout.collectable)
+    tainted, _ = _collect_tainted_and_diagnostics(reverse, facts_by_file, missing_scopes)
+    return PathImpacts(
+        {path: _impacts_of_path(path, checkout, reverse) for path in sorted(checkout.all_files)},
+        _unbounded_tests(checkout, facts_by_file, reverse, tainted),
+    )
+
+
+# The one question both test selectors still ask of this module's neighbours: which collectable tests
+# belong to the package that owns `path`.
+def package_local_tests(
+    path: str,
+    test_dirs: frozenset[str],
+    collectable: frozenset[str],
+    *,
+    include_root_tests: bool = False,
+) -> set[str]:
+    directory = path.rpartition("/")[0]
+    while directory:
+        tests_dir = directory if directory.rpartition("/")[2] == "tests" else f"{directory}/tests"
+        if tests_dir in test_dirs:
+            prefix = f"{tests_dir}/"
+            return {test for test in collectable if test.startswith(prefix)}
+        directory = directory.rpartition("/")[0]
+    if include_root_tests and "tests" in test_dirs:
+        return {test for test in collectable if test.startswith("tests/")}
+    return set()

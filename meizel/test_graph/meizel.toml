@@ -1,11 +1,16 @@
-exports = ["cutoff.py", "impact.py", "lanes.py", "model.py"]
+exports = ["impact.py", "lanes.py", "model.py"]
 
 [uses]
-"__init__.py" = ["checkout_plan.py", "model.py", "scan_facts.py"]
+"__init__.py" = ["cache_key.py", "cache_outcomes.py", "cache_plan.py", "cache_store.py", "checkout_plan.py", "closure.py", "model.py", "scan_facts.py"]
+"cache_outcomes.py" = ["cache_plan.py"]
+"cache_plan.py" = ["cache_key.py", "closure.py", "model.py"]
+"cache_store.py" = ["cache_key.py"]
 "checkout_plan.py" = ["model.py", "scan_facts.py"]
-"impact.py" = ["cutoff.py", "model.py"]
+"closure.py" = ["impact.py", "model.py"]
+"impact.py" = ["model.py"]
 "lanes.py" = ["model.py"]
 "scan_facts.py" = ["model.py"]
+"tests" = ["__init__.py", "model.py"]
 
 [purity]
 "." = "strict"

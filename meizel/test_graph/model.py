@@ -19,6 +19,7 @@ __all__ = [
     "RawFileTestFacts",
     "TestCheckout",
     "TestGraphPolicy",
+    "TestGraphState",
     "TestLanes",
     "TestSelection",
     "decode_raw_facts",
@@ -192,6 +193,14 @@ class TestCheckout:
     manifests: dict[str, str]
     native_spawners: frozenset[str] = frozenset()
     graph: TestGraphPolicy = TestGraphPolicy()
+
+
+# A checkout's test graph beside the content digest of each of its files.
+@dataclass(frozen=True, slots=True)
+class TestGraphState:
+    checkout: TestCheckout
+    facts: dict[str, FileTestFacts]
+    digests: dict[str, str]
 
 
 def _is_object(value: object) -> TypeGuard[dict[str, object]]:

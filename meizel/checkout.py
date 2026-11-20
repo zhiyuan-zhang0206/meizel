@@ -35,8 +35,10 @@ from meizel.installation import TOOLCHAIN_ENV, typescript_toolchain
 from meizel.roles import parse_roles
 from meizel.source_text import object_of, object_pairs
 from meizel.test_graph import (
+    InputClosure,
     fact_cache_keys,
     hash_test_tree,
+    input_closures,
     is_test_config_file,
     resolve_cached_raw_facts,
     resolve_test_checkout,
@@ -48,6 +50,7 @@ from meizel.test_graph.model import (
     FileTestFacts,
     TestCheckout,
     TestGraphPolicy,
+    TestGraphState,
     TestLanes,
     TestSelection,
 )
@@ -367,6 +370,29 @@ class GitRepo:
             with conn:
                 conn.executemany(_CACHE_PUT_SQL, entries.items())
 
+    # The entries whose key starts with `prefix`, read from the same file as `cache_get_many`.
+    def cache_items(self, prefix: str) -> dict[str, str]:
+        common = _common_git_dir(self.root)
+        if common is None or not (common / _CACHE_DB).is_file():
+            return {}
+        try:
+            with closing(sqlite3.connect(common / _CACHE_DB, timeout=5.0)) as conn:
+                rows = object_of(conn.execute(_CACHE_LIST_SQL, (len(prefix), prefix)).fetchall)
+            return {str(key): str(val) for key, val in object_pairs(rows)}
+        except (sqlite3.Error, OSError):
+            return {}
+
+    def cache_delete_many(self, keys: Collection[str]) -> None:
+        common = _common_git_dir(self.root)
+        if not keys or common is None or not (common / _CACHE_DB).is_file():
+            return
+        with (
+            suppress(sqlite3.Error, OSError),
+            closing(sqlite3.connect(common / _CACHE_DB, timeout=5.0)) as conn,
+            conn,
+        ):
+            conn.executemany(_CACHE_DELETE_SQL, [(key,) for key in keys])
+
     def memo_get(self, key: str) -> object | None:
         return self._memo.get(key)
 
@@ -383,6 +409,20 @@ class GitRepo:
 
     def test_lanes(self) -> TestLanes:
         return lanes_at(self.root, repo=self)
+
+    # What each collectable test file reads, as the files whose content can change its result.
+    def input_closures(self) -> dict[str, InputClosure]:
+        state = self.test_graph_state()
+        return input_closures(state.checkout, state.facts)
+
+    # The test graph of this checkout with the content digest of every file in it: what a test's
+    # cached result is keyed by. A directory that is not a git checkout has no digests to key by.
+    def test_graph_state(self) -> TestGraphState:
+        if _common_git_dir(self.root) is None:
+            raise MeizelError(f"{self.root}: the test cache needs a git checkout")
+        digests = _git_test_digests(self.root)
+        checkout, facts = _load_test_graph_state(self.root, self, digests=digests)
+        return TestGraphState(checkout=checkout, facts=facts, digests=digests)
 
     def select_tests(
         self, changed_paths: Sequence[str], *, base: str | None = None
@@ -521,6 +561,8 @@ _CACHE_DDL = (
 )
 _CACHE_GET_SQL = "SELECT s.k, s.v FROM scan_cache AS s JOIN json_each(?) AS j ON s.k = j.value"
 _CACHE_PUT_SQL = "INSERT OR REPLACE INTO scan_cache (k, v) VALUES (?, ?)"
+_CACHE_LIST_SQL = "SELECT k, v FROM scan_cache WHERE substr(k, 1, ?) = ?"
+_CACHE_DELETE_SQL = "DELETE FROM scan_cache WHERE k = ?"
 _COMMON_DIRS: dict[tuple[Path, int], Path] = {}
 
 

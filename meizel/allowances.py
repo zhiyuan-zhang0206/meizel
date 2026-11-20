@@ -90,6 +90,7 @@ RULES: dict[str, dict[str, str]] = {
         ),
         NAMES,
     ),
+    "test-cache": {"env": NAMES, "uncacheable-markers": NAMES},
     "typescript": {
         "scopes": NAMES,
         "import-sources": NAMES,

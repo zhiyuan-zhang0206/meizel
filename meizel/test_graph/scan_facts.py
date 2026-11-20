@@ -12,6 +12,7 @@ from meizel.test_graph.model import (
     FACT_IMPORT_ONLY,
     FACT_PYTESTER_NATIVE,
     FACT_SYNTAX_ERROR,
+    FACT_UNANCHORED_READ,
     FileTestFacts,
     ModuleTable,
     RawFileTestFacts,
@@ -67,6 +68,7 @@ class _Collector:
     plugins: list[str] = field(default_factory=list[str])
     unknown_sites: list[tuple[int, str, str]] = field(default_factory=list[tuple[int, str, str]])
     root_vars: dict[str, str] = field(default_factory=dict[str, str])
+    tmp_names: set[str] = field(default_factory=set[str])
 
 
 def _call_name(func: ast.expr) -> str:
@@ -502,6 +504,73 @@ def _walk_expressions(
 
 _ANCHORED_READ_ATTRS = frozenset({"read_text", "read_bytes", "open", "rglob", "glob", "iterdir"})
 
+# What reads a path the file does not anchor: a method on a path value, or a function of one. A read
+# whose path is `__file__`-anchored is a resource the dependency graph already carries; one whose path
+# derives from a temporary directory reads what the test just wrote. Any other read can open a file
+# the graph does not know, which only the cache closure acts on (`FACT_UNANCHORED_READ`).
+_UNANCHORED_READ_ATTRS = _ANCHORED_READ_ATTRS | {"listdir", "scandir", "walk", "iterglob"}
+_UNANCHORED_READ_FUNCTIONS = frozenset(
+    {
+        "open",
+        "io.open",
+        "os.listdir",
+        "os.scandir",
+        "os.walk",
+        "glob.glob",
+        "glob.iglob",
+        "shutil.copy",
+        "shutil.copy2",
+        "shutil.copyfile",
+        "shutil.copytree",
+    }
+)
+_CWD_READS = frozenset({"os.getcwd", "Path.cwd", "pathlib.Path.cwd"})
+_TMP_ROOTS = frozenset({"tmp_path", "tmp_path_factory", "tmpdir", "tmpdir_factory", "tmp"})
+
+
+def _names_in(expr: ast.AST) -> set[str]:
+    return {node.id for node in ast.walk(expr) if isinstance(node, ast.Name)}
+
+
+# The names that hold a temporary directory: the pytest fixtures and what is assigned from them.
+def _tmp_names(tree: ast.Module) -> set[str]:
+    names = set(_TMP_ROOTS)
+    assigns = [
+        (target.id, node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    ]
+    grew = True
+    while grew:
+        grew = False
+        for name, value in assigns:
+            if name not in names and _names_in(value) & names:
+                names.add(name)
+                grew = True
+    return names
+
+
+def _reads_unanchored_path(node: ast.Call, collector: _Collector) -> bool:
+    cname = _call_name(node.func)
+    if cname in _CWD_READS:
+        return True
+    if isinstance(node.func, ast.Attribute) and node.func.attr in _UNANCHORED_READ_ATTRS:
+        subject: ast.expr | None = node.func.value
+    elif cname in _UNANCHORED_READ_FUNCTIONS:
+        subject = node.args[0] if node.args else None
+    else:
+        return False
+    if subject is None:
+        return True
+    if _names_in(subject) & collector.tmp_names:
+        return False
+    return (
+        _resolve_anchored_path(subject, collector.root_vars) is None
+        and _resolve_file_parents_anchor(collector.path, subject) is None
+    )
+
 
 def _resolve_dynamic_mod_targets(
     node: ast.Call, env: dict[str, tuple[str, ...]]
@@ -542,7 +611,7 @@ def _inspect_call(
         anchored = _resolve_anchored_path(node.func.value, collector.root_vars)
         if anchored is not None and node.func.attr in _ANCHORED_READ_ATTRS:
             collector.anchored_resources.add(anchored)
-    return 0
+    return FACT_UNANCHORED_READ if _reads_unanchored_path(node, collector) else 0
 
 
 def _inspect_argv_sequence(elts: list[ast.expr], collector: _Collector) -> None:
@@ -582,6 +651,7 @@ def scan_raw_test_facts(
             flags=FACT_SYNTAX_ERROR,
         )
     collector = _Collector(path=path)
+    collector.tmp_names.update(_tmp_names(tree))
     flags = FACT_IMPORT_ONLY if _is_import_only_module(tree) else 0
     flags |= _scan_module_globals(tree, collector)
     def_flags, fn_envs = _walk_definitions(tree.body, set(), collector)

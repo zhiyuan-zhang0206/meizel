@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import os
+import platform
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,6 +40,20 @@ def relative_targets(root: Path, base: Path) -> Callable[[str], str]:
         return "" if str(rel) == "." else rel.as_posix()
 
     return relative
+
+
+# What a test result depends on besides the files it reads: the interpreter, the platform and the
+# values of the environment variables a repository declares under `[test-cache] env`.
+def host_environment(declared: Sequence[str]) -> dict[str, str]:
+    environment = {
+        "python": sys.version,
+        "implementation": sys.implementation.name,
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+    }
+    for name in declared:
+        environment[f"env:{name}"] = os.environ.get(name, "")
+    return environment
 
 
 # The two namespace fields the entry reads. `parse_args` returns an `argparse.Namespace`, whose
@@ -90,6 +105,7 @@ def main(argv: list[str]) -> int:
             relative_target=relative_targets(root, base),
             source_tree=source_tree,
             today=datetime.now(UTC).date().isoformat(),
+            environment=host_environment,
         )
         return cli.dispatch(repo, base, args, deps)
     except FrontendDepsError as error:

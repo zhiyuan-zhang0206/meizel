@@ -12,7 +12,7 @@ exports = ["api.py", "__main__.py", "allowances.py", "budgets", "checkout.py", "
 "checkout.py" = ["graph", "installation.py", "roles.py", "source_text.py", "test_graph"]
 "frontend_deps.py" = ["graph"]
 "frontend_install.py" = ["checkout.py", "frontend_deps.py", "installation.py"]
-"contracts" = ["budgets", "allowances.py", "graph", "language", "lint_common.py", "roles.py", "test_graph"]
+"contracts" = ["budgets", "allowances.py", "graph", "language", "lint_common.py", "roles.py", "source_text.py", "test_graph"]
 "language" = ["allowances.py", "checkout.py", "graph", "lint_common.py", "source_text.py"]
 "lint_common.py" = ["__init__.py", "allowances.py", "frontend_deps.py", "graph", "roles.py", "source_text.py"]
 "roles.py" = ["graph", "source_text.py"]
@@ -25,7 +25,7 @@ exports = ["api.py", "__main__.py", "allowances.py", "budgets", "checkout.py", "
 "frontend_install.py" = { kinds = ["argv"], why = "its __main__ guard reads argv[1:] once — the toolchain directory to judge, the installation's own when argv names none — and hands that one path to the verdict; nothing below it reads the process again" }
 "installation.py" = { kinds = ["pid"], why = "the one seat that answers where this installation is: the environment's prefix names the project that installed the checker, read once per process and cached" }
 "checkout.py" = { kinds = ["environ"], why = "the node runner hands the analyzer child the process environment with the installation's toolchain directory added; the child needs PATH to start, and nothing above the runner decides on the environment" }
-"entry.py" = { kinds = ["cwd", "clock", "platform"], why = "the process entry: when argv names no --repo it reads the working directory once and hands the resolved repository root down to the commands, it reads the day once for the placeholder `debt record` writes into an entry nobody has reviewed, and when argv names no --jobs it reads the processor count once and hands the worker count down, so that no command below decides how parallel it is" }
+"entry.py" = { kinds = ["cwd", "clock", "platform", "environ"], why = "the process entry: it reads the interpreter, the platform and the environment variables a repository declares under `[test-cache] env` once, for the key of a test result, and hands the values down; when argv names no --repo it reads the working directory once and hands the resolved repository root down to the commands, it reads the day once for the placeholder `debt record` writes into an entry nobody has reviewed, and when argv names no --jobs it reads the processor count once and hands the worker count down, so that no command below decides how parallel it is" }
 
 [purity]
 "." = "strict"
