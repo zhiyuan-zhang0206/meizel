@@ -10,11 +10,17 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.python.cache import scan_python_cached
-from meizel.language.python.explain import python_evidence
-from meizel.language.python.pytest_scope import python_companions, python_facts
-from meizel.language.python.readers import python_sources, stale_readers
+from meizel.language.python.judge import (
+    python_companions,
+    python_evidence,
+    python_facts,
+    python_rules,
+    python_sources,
+    python_world_reads,
+    stale_readers,
+)
+from meizel.language.python.resolve import python_modules, python_reverse_closure
 from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
-from meizel.language.python.rules import python_rules
 from meizel.language.python.scanner import scan_source
 
 __all__ = ["PYTHON"]
@@ -24,8 +30,22 @@ def _owns(path: str, _policy: Policy) -> bool:
     return path.endswith(".py")
 
 
+def _candidates(universe: Universe) -> Sequence[str]:
+    return universe.files_ending((".py",))
+
+
 def _files(universe: Universe, _policy: Policy) -> Sequence[str]:
-    return universe.python_files
+    return _candidates(universe)
+
+
+def _impacted(
+    universe: Universe, changed: Sequence[str], jobs: int | None
+) -> frozenset[str] | None:
+    return python_reverse_closure(universe, changed, jobs=jobs)
+
+
+def _projects(universe: Universe) -> tuple[str, ...]:
+    return tuple(project.directory for project in python_modules(universe).standalone_projects)
 
 
 def _scan_source(
@@ -46,6 +66,7 @@ def _restricted_hint(_form: str, manifest: str) -> str:
 PYTHON = Frontend(
     "python",
     _owns,
+    _candidates,
     _files,
     scan_python_cached,
     python_sources,
@@ -57,6 +78,9 @@ PYTHON = Frontend(
     python_rules,
     python_companions,
     python_evidence,
+    _impacted,
+    _projects,
+    python_world_reads,
     Code.RESTRICTED,
     "Python",
     _restricted_hint,

@@ -5,10 +5,8 @@ from __future__ import annotations
 import ast
 import re
 
-from meizel.graph.imports import ImportAccess
 from meizel.graph.model import Restricted
-from meizel.graph.universe import Universe
-from meizel.language.python.bindings import module_bindings
+from meizel.language.python.resolve import ImportAccess, PythonModules, module_bindings
 
 __all__ = ["DYNAMIC_ATTR_FORMS", "EXTERNAL_FORMS", "RestrictedForms", "const_str"]
 
@@ -72,7 +70,9 @@ def const_str(node: ast.expr | None) -> str | None:
 class RestrictedForms(ImportAccess):
     """Records the restricted forms of one file next to its import-access facts."""
 
-    def __init__(self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool) -> None:
+    def __init__(
+        self, universe: PythonModules, path: str, tree: ast.Module, *, walrus: bool
+    ) -> None:
         super().__init__(universe, path, tree, walrus=walrus)
         self.restricted: list[Restricted] = []
         # The tracked files whose content this file's scan read besides its own: a cached scan is

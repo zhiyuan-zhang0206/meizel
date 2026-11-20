@@ -15,6 +15,7 @@ from meizel.contracts.rule import Projection
 from meizel.graph.graphs import cycle_through, strongly_connected, transitive_reduction_size
 from meizel.graph.model import Code, Fact, FactKind
 from meizel.graph.universe import Checkout, EditPlan, Universe, is_private_module, parent_of
+from meizel.language import candidates_of
 
 __all__ = ["Bootstrap", "bootstrap", "is_test_path", "plan_bootstrap", "render_manifest"]
 
@@ -212,7 +213,7 @@ def _build_report(analysis: Analysis) -> _Report:
         d: _directory_report(e, len(universe.children.get(d, ())))
         for d, e in sorted(grouped.items())
     }
-    python_dirs = {parent_of(p) for p in universe.python_files}
+    python_dirs = {parent_of(p) for p in candidates_of(universe, "python")}
     above_python = {d for p in python_dirs for d in _ancestors(p)}
     cyclic = [d for d, r in directories.items() if r["components"]]
     cyclic_production = [d for d, r in directories.items() if r["production_components"]]
@@ -220,7 +221,7 @@ def _build_report(analysis: Analysis) -> _Report:
         "summary": {
             "source_files_by_backend": analysis.language_counts(),
             "directories_with_typescript_files": len(
-                {parent_of(p) for p in universe.typescript_files}
+                {parent_of(p) for p in candidates_of(universe, "typescript")}
             ),
             "directories_with_python_files": len(python_dirs),
             "directories_containing_python_anywhere": len(above_python),

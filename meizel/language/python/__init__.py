@@ -4,7 +4,6 @@ a Python scan keeps of a file. The Python-specific code behind them stays in thi
 
 from __future__ import annotations
 
-from meizel.language.python.bindings import is_imported_binding, module_bindings
 from meizel.language.python.cache import (
     cached_module_imports,
     load_cached_sources,
@@ -12,6 +11,11 @@ from meizel.language.python.cache import (
 )
 from meizel.language.python.fixtures import FixtureFunction, FixtureRequest, FixtureState
 from meizel.language.python.frontend import PYTHON
+from meizel.language.python.judge import (
+    type_checking_in_scope,
+    type_checking_lines,
+    type_checking_violations,
+)
 from meizel.language.python.purity import (
     ALLOWED_STDLIB_MODULES,
     DEFAULT_IMPURE_CALLS,
@@ -25,10 +29,12 @@ from meizel.language.python.record import (
     encode_record,
     python_record,
 )
-from meizel.language.python.rules import (
-    type_checking_in_scope,
-    type_checking_lines,
-    type_checking_violations,
+from meizel.language.python.resolve import (
+    PythonModules,
+    is_imported_binding,
+    module_bindings,
+    python_modules,
+    python_reverse_closure,
 )
 from meizel.language.python.scanner import scan_tree
 
@@ -42,6 +48,7 @@ __all__ = [
     "FixtureRequest",
     "FixtureState",
     "InputListAppend",
+    "PythonModules",
     "PythonRecord",
     "cached_module_imports",
     "decode_record",
@@ -49,7 +56,9 @@ __all__ = [
     "is_imported_binding",
     "load_cached_sources",
     "module_bindings",
+    "python_modules",
     "python_record",
+    "python_reverse_closure",
     "scan_tree",
     "store_cached_sources",
     "type_checking_in_scope",

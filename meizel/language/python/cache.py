@@ -16,6 +16,7 @@ from meizel.graph.model import (
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.python.record import decode_record, encode_record, python_record
+from meizel.language.python.resolve import PythonModules, python_modules
 from meizel.language.python.scanner import scan_file
 from meizel.language.scan_codec import (
     decode_file_scan,
@@ -63,7 +64,7 @@ def _policy_digest(policy: Policy) -> str:
     return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()
 
 
-def _projects_digest(universe: Universe) -> str:
+def _projects_digest(universe: PythonModules) -> str:
     payload = [
         [item.directory, [[name, target] for name, target in item.packages]]
         for item in universe.standalone_projects
@@ -72,7 +73,7 @@ def _projects_digest(universe: Universe) -> str:
 
 
 def load_cached_sources(
-    universe: Universe, state_digest: str, policy: Policy
+    universe: PythonModules, state_digest: str, policy: Policy
 ) -> tuple[str, Sources | None]:
     digests = universe.file_digests()
     if not digests or any(path not in digests for path in universe.python_files):
@@ -99,14 +100,14 @@ def load_cached_sources(
     return key, decoded
 
 
-def store_cached_sources(universe: Universe, cache_key: str, sources: Sources) -> None:
+def store_cached_sources(universe: PythonModules, cache_key: str, sources: Sources) -> None:
     if cache_key:
         universe.repo.memo_put(cache_key, sources)
         universe.repo.cache_put_many({cache_key: encode_sources(sources)})
 
 
 def _partition_memo_imports(
-    universe: Universe, keys: Mapping[str, str]
+    universe: PythonModules, keys: Mapping[str, str]
 ) -> tuple[dict[str, dict[str, str]], list[str]]:
     found: dict[str, dict[str, str]] = {}
     pending: list[str] = []
@@ -120,9 +121,9 @@ def _partition_memo_imports(
 
 
 def cached_module_imports(
-    universe: Universe,
+    universe: PythonModules,
     paths: Collection[str],
-    compute: Callable[[Universe, str], dict[str, str]],
+    compute: Callable[[PythonModules, str], dict[str, str]],
 ) -> dict[str, dict[str, str]]:
     ordered = sorted(paths)
     if not ordered:
@@ -153,7 +154,7 @@ def cached_module_imports(
 
 
 def _py_context_digest(
-    universe: Universe, sources: Sources, policy: Policy, digests: Mapping[str, str]
+    universe: PythonModules, sources: Sources, policy: Policy, digests: Mapping[str, str]
 ) -> str:
     hasher = hashlib.sha256()
     repo = universe.repo
@@ -211,23 +212,23 @@ def _scan_in_worker(path: str) -> tuple[FileScan, str]:
 
 
 def _scan_python_misses(
-    universe: Universe, sources: Sources, paths: list[str], jobs: int | None, policy: Policy
+    universe: PythonModules, sources: Sources, paths: list[str], jobs: int | None, policy: Policy
 ) -> list[tuple[FileScan, str]]:
     workers = 1 if jobs is None else jobs
     if workers <= 1 or len(paths) < _PARALLEL_FROM:
         return [
             (scan, encode_file_scan(scan, encode_record))
-            for scan in (scan_file(universe, p, sources, policy=policy) for p in paths)
+            for scan in (scan_file(universe.universe, p, sources, policy=policy) for p in paths)
         ]
     with ProcessPoolExecutor(
-        workers, initializer=_init_worker, initargs=(universe, sources, policy)
+        workers, initializer=_init_worker, initargs=(universe.universe, sources, policy)
     ) as pool:
         chunk = max(1, len(paths) // (workers * 8))
         return list(pool.map(_scan_in_worker, paths, chunksize=chunk))
 
 
 def _from_py_memo(
-    universe: Universe,
+    universe: PythonModules,
     paths: list[str],
     keys: Mapping[str, str],
     digests: Mapping[str, str],
@@ -244,7 +245,7 @@ def _from_py_memo(
 
 
 def _partition_py_cache(
-    universe: Universe,
+    universe: PythonModules,
     paths: list[str],
     ctx: str,
     digests: Mapping[str, str],
@@ -267,7 +268,7 @@ def _partition_py_cache(
 
 
 def _store_py_scans(
-    universe: Universe,
+    universe: PythonModules,
     fresh: list[tuple[FileScan, str]],
     keys: Mapping[str, str],
     digests: Mapping[str, str],
@@ -285,7 +286,7 @@ def _store_py_scans(
 
 
 def scan_python_cached(
-    universe: Universe,
+    base: Universe,
     paths: list[str],
     sources: Sources,
     jobs: int | None,
@@ -293,6 +294,7 @@ def scan_python_cached(
 ) -> dict[str, FileScan]:
     if not paths:
         return {}
+    universe = python_modules(base)
     digests = universe.file_digests()
     if not digests:
         return {

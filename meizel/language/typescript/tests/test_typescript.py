@@ -6,7 +6,8 @@ from meizel.allowances import parse
 from meizel.checkout import GitRepo
 from meizel.graph.model import Code, FactKind
 from meizel.graph.universe import Universe
-from meizel.language.typescript.adapter import scan_typescript, typescript_files
+from meizel.language.typescript.adapter import scan_typescript
+from meizel.language.typescript.files import typescript_files
 
 
 def _make_universe(files: list[str]) -> Universe:

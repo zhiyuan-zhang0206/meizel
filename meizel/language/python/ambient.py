@@ -27,7 +27,6 @@ from meizel.graph import (
     judged,
     unjudged,
 )
-from meizel.graph.imports import Scope
 from meizel.graph.model import (
     Acquisition,
     AmbientKind,
@@ -38,9 +37,9 @@ from meizel.graph.model import (
     Sources,
     Unless,
 )
-from meizel.graph.universe import Universe
 from meizel.language.python import fake_entropy
 from meizel.language.python.patching import PatchForms
+from meizel.language.python.resolve import PythonModules, Scope
 from meizel.lint_common import is_test_path
 
 __all__ = ["AmbientAccess", "AmbientRecorder"]
@@ -443,7 +442,13 @@ def _name_of(target: ast.expr) -> str:
 # that is not entropy as an identifier; test files record neither.
 class AmbientAccess(PatchForms):
     def __init__(
-        self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool, sources: Sources
+        self,
+        universe: PythonModules,
+        path: str,
+        tree: ast.Module,
+        *,
+        walrus: bool,
+        sources: Sources,
     ) -> None:
         super().__init__(universe, path, tree, walrus=walrus)
         self.ambient = AmbientRecorder(sources)

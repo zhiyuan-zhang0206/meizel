@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
 
-from meizel.graph import project_metadata_paths, python_reverse_closure, standalone_projects
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import (
     MANIFEST,
@@ -62,7 +61,6 @@ __all__ = [
     "apply_plan",
     "lanes_at",
     "load_universe",
-    "python_reverse_closure_at",
     "read_roles",
     "read_text",
     "roles_at",
@@ -88,13 +86,6 @@ def read_roles(repo: Checkout) -> Mapping[str, tuple[str, ...]]:
 # command that runs on this repository is the one place allowed to build one.
 def roles_at(root: Path) -> Mapping[str, tuple[str, ...]]:
     return read_roles(GitRepo(root))
-
-
-# Reverse Python import closure for a checkout root, returning None on any read or syntax error.
-def python_reverse_closure_at(
-    root: Path, changed_files: Sequence[str], *, jobs: int | None = None
-) -> frozenset[str] | None:
-    return python_reverse_closure(load_universe(root), changed_files, jobs=jobs)
 
 
 # The UTF-8 text of `rel` under `root`.
@@ -545,14 +536,7 @@ def load_universe(
 ) -> Universe:
     seat = repo if repo is not None else GitRepo(root)
     files = sorted(set(tracked_files(root, include_untracked=include_untracked, regular=True)))
-    root_manifest = seat.load_text(MANIFEST) if MANIFEST in files else ""
-    projects = {
-        name: seat.load_text(name)
-        for name in project_metadata_paths(frozenset(files), root_manifest)
-    }
-    return Universe(
-        seat, files, projects=standalone_projects(frozenset(files), root_manifest, projects)
-    )
+    return Universe(seat, files)
 
 
 _CACHE_DB = "meizel-scan-cache-v1.sqlite3"

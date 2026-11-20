@@ -9,7 +9,7 @@ from meizel.allowances import Policy
 from meizel.graph.model import Code, Diagnostic
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import RunView
-from meizel.language.python.fixture_purity import impure_fixture_diagnostics
+from meizel.language.python.judge.fixture_purity import impure_fixture_diagnostics
 from meizel.language.python.record import python_record
 from meizel.language.python.scanner import TYPE_CHECKING_MESSAGE
 from meizel.roles import select_packages

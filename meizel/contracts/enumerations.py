@@ -35,9 +35,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeGuard
 
+from meizel import allowances
 from meizel import roles as role_api
 from meizel.graph.model import Code, Diagnostic, MeizelError
 from meizel.graph.universe import Checkout, EditPlan, Universe
+from meizel.language import projects
 from meizel.roles import Roles
 
 __all__ = [
@@ -442,8 +444,9 @@ def run_roles(repo: Checkout, declared: Roles, mode: str, role_names: tuple[str,
             print(name)
         return 0
     if mode == "projects":
-        for project in repo.universe().standalone_projects:
-            print(project.directory)
+        universe = repo.universe()
+        for directory in projects(universe, allowances.load(universe.repo)):
+            print(directory)
         return 0
     if mode == "write":
         for path in write(repo, declared):

@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, KindName, Sources
+from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, KindName, Sources, WorldReads
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 
@@ -46,7 +46,9 @@ class Frontend:
     name: str
     # Whether a path is a file of this language, under the policy the run reads.
     owns: Callable[[str, Policy], bool]
-    # The files of this language the checker judges in a whole-tree run.
+    # Every tracked file of this language, whatever the policy scopes, and the files of it the checker
+    # judges in a whole-tree run.
+    candidates: Callable[[Universe], Sequence[str]]
     files: Callable[[Universe, Policy], Sequence[str]]
     # The records of the given files of this language.
     scan: Callable[[Universe, list[str], Sources, int | None, Policy], dict[str, FileScan]]
@@ -76,6 +78,15 @@ class Frontend:
     ]
     # The lines `explain` adds about the files under a node: what this language's scan saw there.
     evidence: Callable[[Universe, Mapping[str, FileScan], str], list[str]]
+    # The files of this language that import, however far, a changed file: None when one of them
+    # cannot be read.
+    impacted: Callable[[Universe, Sequence[str], int | None], frozenset[str] | None]
+    # The directories of the independently packaged projects this language reads, and the problems of
+    # their metadata (an error when a project cannot be read).
+    projects: Callable[[Universe], tuple[str, ...]]
+    # The world reads that travel through the functions of the given files, from the acquisitions of
+    # their records.
+    world_reads: Callable[[Universe, Sequence[str], Mapping[str, FileScan]], WorldReads]
     # How a restricted form of this language is reported: the code (a debt of the file's directory),
     # the name of the subset the form is outside of, and what to do about a form in the directory
     # whose manifest is given.

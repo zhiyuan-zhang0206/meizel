@@ -11,7 +11,6 @@ import json
 from collections.abc import Iterable, Mapping
 
 from meizel.allowances import POLICY, Policy
-from meizel.graph.imports import Scope, collect_scope
 from meizel.graph.model import (
     READER_CALL_MARK,
     READERS_RULE,
@@ -24,11 +23,17 @@ from meizel.graph.model import (
 )
 from meizel.graph.universe import Universe
 from meizel.language.frontend import StateKinds
-from meizel.language.python.bindings import module_bindings
 from meizel.language.python.cache import (
     cached_module_imports,
     load_cached_sources,
     store_cached_sources,
+)
+from meizel.language.python.resolve import (
+    PythonModules,
+    Scope,
+    collect_scope,
+    module_bindings,
+    python_modules,
 )
 from meizel.lint_common import is_test_path
 
@@ -54,7 +59,8 @@ def _state_digest(state: StateKinds) -> str:
 
 
 # The state a repository keeps: modules that declare `[state]`, and the policy's names for it.
-def python_sources(state: StateKinds, policy: Policy, universe: Universe) -> Sources:
+def python_sources(state: StateKinds, policy: Policy, base: Universe) -> Sources:
+    universe = python_modules(base)
     cache_key, cached = load_cached_sources(universe, _state_digest(state), policy)
     if cached is not None:
         return cached
@@ -92,7 +98,7 @@ def _readers(policy: Policy, *, call: bool) -> dict[str, KindName]:
 # The `unless` clause of one entry: the parameter, and where it sits among the arguments that can
 # be given by position. The reason the clause cannot be read - no such module, not a module-level
 # function, no such parameter - comes back as text instead, for the stale-reader diagnostic.
-def _unless(universe: Universe, target: str, parameter: str) -> Unless | str:
+def _unless(universe: PythonModules, target: str, parameter: str) -> Unless | str:
     located = _locate(universe, target)
     if located is None:
         return "names no tracked module"
@@ -118,7 +124,7 @@ def _unless(universe: Universe, target: str, parameter: str) -> Unless | str:
 # The readers whose read a passed parameter spares, by the name a call spells them: the clause is a
 # property of the entry, so a re-exported spelling keeps it only where the policy lists that
 # spelling. Entries whose clause cannot be read are left to `stale_readers`.
-def _spared(universe: Universe, policy: Policy) -> dict[str, Unless]:
+def _spared(universe: PythonModules, policy: Policy) -> dict[str, Unless]:
     found: dict[str, Unless] = {}
     for kind in policy.reader_kinds:
         for name, parameter in policy.unless_for(_READERS, kind).items():
@@ -131,7 +137,7 @@ def _spared(universe: Universe, policy: Policy) -> dict[str, Unless]:
 
 # The module that defines a dotted reader: its dotted name, its file and the member path below it
 # (`name` or `Class.method`). The longest prefix that names a tracked module wins.
-def _locate(universe: Universe, target: str) -> tuple[str, str, tuple[str, ...]] | None:
+def _locate(universe: PythonModules, target: str) -> tuple[str, str, tuple[str, ...]] | None:
     context = universe.context_for_module(target)
     parts = target.split(".")
     for end in range(len(parts) - 1, 0, -1):
@@ -144,7 +150,7 @@ def _locate(universe: Universe, target: str) -> tuple[str, str, tuple[str, ...]]
 
 # How a module defines a top-level name: "function", "class" or "value" (an assignment); None when
 # it does so some other way. The last definition wins, as it does at run time.
-def _definition(universe: Universe, file: str, name: str) -> str | None:
+def _definition(universe: PythonModules, file: str, name: str) -> str | None:
     found: str | None = None
     for node in ast.parse(universe.repo.load_text(file)).body:
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == name:
@@ -162,7 +168,7 @@ def _definition(universe: Universe, file: str, name: str) -> str | None:
 # call), `name` for a value. The other spelling would match nothing, and `stale-reader` is the one
 # place that notices.
 def _spelling_problem(
-    universe: Universe, file: str, member: tuple[str, ...], target: str, *, call: bool
+    universe: PythonModules, file: str, member: tuple[str, ...], target: str, *, call: bool
 ) -> str | None:
     if len(member) != 1:
         return None if call else f"`{'.'.join(member)}` is a method: list it as `{target}()`"
@@ -179,7 +185,7 @@ def _spelling_problem(
 # a `def`, a class or an assignment there, or a method of a class there, spelled as it is used. A
 # name the module only imports is not a definition: a function that moved leaves a re-export
 # behind, and a call imported from the new place would no longer be seen.
-def _missing_reader(universe: Universe, target: str, *, call: bool) -> str | None:
+def _missing_reader(universe: PythonModules, target: str, *, call: bool) -> str | None:
     located = _locate(universe, target)
     if located is None:
         return "names no tracked module"
@@ -204,7 +210,8 @@ def _missing_reader(universe: Universe, target: str, *, call: bool) -> str | Non
 
 # A listed reader that no longer exists fails, like any other stale allowance; only a
 # whole-repository run knows.
-def stale_readers(universe: Universe, policy: Policy) -> list[Diagnostic]:
+def stale_readers(base: Universe, policy: Policy) -> list[Diagnostic]:
+    universe = python_modules(base)
     found: list[Diagnostic] = []
     moved = ("remove the entry, or fix the name if the function moved",)
     clause = ("fix the parameter name, or drop the `unless` clause",)
@@ -235,7 +242,7 @@ _REEXPORT_HOPS = 12
 
 
 # The names a module binds by importing, as `local name -> dotted origin`; an unparsable file binds none.
-def _imports(universe: Universe, path: str) -> dict[str, str]:
+def _imports(universe: PythonModules, path: str) -> dict[str, str]:
     text = universe.repo.load_text(path)
     try:
         tree = ast.parse(text, filename=path)
@@ -251,7 +258,7 @@ type _Spellings = dict[str, dict[str, KindName]]
 
 # What can be re-exported, by its dotted origin: `module.name` -> {tail: kind}, where the tail is
 # the method path below it (empty for a function).
-def _origins(universe: Universe, readers: Mapping[str, KindName]) -> _Spellings:
+def _origins(universe: PythonModules, readers: Mapping[str, KindName]) -> _Spellings:
     exported: _Spellings = {}
     for target, kind in readers.items():
         located = _locate(universe, target)
@@ -264,7 +271,7 @@ def _origins(universe: Universe, readers: Mapping[str, KindName]) -> _Spellings:
 # One round: every module among `candidates` that imports a known origin spells it under its own
 # name too. Returns whether a new spelling appeared.
 def _spread(
-    universe: Universe,
+    universe: PythonModules,
     candidates: Iterable[str],
     exported: _Spellings,
     parsed: dict[str, dict[str, str]],
@@ -289,7 +296,7 @@ def _spread(
 # through a re-export is still the call of the reader. Only the non-test sources that mention one
 # of the names are read, so the cost follows the readers, not the repository.
 def _followed(
-    universe: Universe,
+    universe: PythonModules,
     readers: Mapping[str, KindName],
     parsed: dict[str, dict[str, str]] | None = None,
 ) -> dict[str, KindName]:

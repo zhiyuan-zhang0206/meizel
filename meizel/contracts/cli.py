@@ -22,9 +22,10 @@ from meizel.contracts.explain import Explain, explain
 from meizel.contracts.policy import PolicyQuery, Surface, load_policy, policy_at
 from meizel.contracts.policy import changes as policy_changes
 from meizel.contracts.sync import Sync, sync_manifests
-from meizel.graph import ReachabilityScope, python_reverse_closure, reachability_analysis
+from meizel.graph import ReachabilityScope, reachability_analysis
 from meizel.graph.model import Diagnostic, MeizelError
 from meizel.graph.universe import Checkout, SourceTree
+from meizel.language import reverse_closure
 from meizel.test_graph.model import TestLanes, TestSelection
 
 __all__ = ["CommandDeps", "build_parser", "dispatch"]
@@ -578,7 +579,8 @@ class Impacted:
 
 def _run_impacted(repo: Repository, deps: CommandDeps, opts: Impacted) -> int:
     targets = [deps.relative_target(p) for p in opts.paths]
-    reached = python_reverse_closure(repo.universe(), targets, jobs=opts.jobs)
+    universe = repo.universe()
+    reached = reverse_closure(universe, load_policy(universe)[0], targets, jobs=opts.jobs)
     if reached is None:
         raise MeizelError(
             "cannot compute impacted Python files: a tracked Python file could not be read or parsed"

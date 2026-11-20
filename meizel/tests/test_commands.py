@@ -19,8 +19,8 @@ from meizel import allowances, lint_common
 from meizel.contracts.cli import read_args
 from meizel.contracts.sync import remove_entries
 from meizel.entry import main
-from meizel.graph import python_reverse_closure
 from meizel.graph.model import MeizelError
+from meizel.language.python import python_reverse_closure
 from meizel.tests.synthetic import RepoFactory, git, seat, verdict
 
 SOURCES = {

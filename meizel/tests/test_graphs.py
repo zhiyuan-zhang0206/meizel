@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import pickle
 import sqlite3
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from meizel.graph import ReachabilityScope, reachability_analysis
 from meizel.graph import universe as model
 from meizel.graph.graphs import feedback_edges, strongly_connected, unneeded_back_edges
 from meizel.graph.model import Code
-from meizel.tests.synthetic import RepoFactory, commit, run, write
+from meizel.language.python import python_modules
+from meizel.tests.synthetic import RepoFactory, commit, run, seat, write
 
 PYPROJECT = '[tool.pytest.ini_options]\ntestpaths = ["tests", "pkg/**/tests", "app/**/tests", "base/**/tests"]\n'
 ROLES = '[roles]\napplication = ["pkg", "app", "base"]\ntests = ["tests"]\n'
@@ -575,3 +577,32 @@ def test_reachability_cli_execution_and_gating(
 
     assert run(root, "reachability", "pkg/dead.py", "--check") == 1
     assert run(root, "reachability", "app/main.py", "--check") == 0
+
+
+# A universe is files and directories: it names no language, and what a language derives from it
+# is kept in `memo`, which does not cross into a worker process.
+def test_a_universe_names_no_language_and_pickles_without_what_a_language_derived(
+    make_repo: RepoFactory,
+) -> None:
+    universe = seat(make_repo({"pkg/__init__.py": "", "pkg/a.py": ""}))
+    for name in (
+        "python_files",
+        "typescript_files",
+        "roots",
+        "standalone_projects",
+        "resolve_module",
+        "canonical_name",
+        "is_first_party_name",
+        "context",
+        "context_for_module",
+        "source_files",
+    ):
+        assert name not in dir(universe), name
+    modules = python_modules(universe)
+    assert modules.resolve_module("pkg.a") is not None
+    restored = pickle.loads(pickle.dumps(universe))  # noqa: S301
+    assert b"PythonModules" not in pickle.dumps(universe)
+    assert restored.files == universe.files
+    rebuilt = python_modules(restored)
+    assert rebuilt is not modules
+    assert rebuilt.resolve_module("pkg.a") == modules.resolve_module("pkg.a")

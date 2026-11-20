@@ -6,6 +6,7 @@ import pytest
 
 from meizel import allowances, roles
 from meizel.graph.model import MeizelError
+from meizel.language.python import python_modules
 from meizel.tests.synthetic import STANDALONE_PROJECT, RepoFactory, diagnostics, seat
 
 ROOT = {"a/__init__.py": "", "b/__init__.py": "", "t/test_x.py": "", ".hidden/x.py": ""}
@@ -114,10 +115,13 @@ def test_standalone_is_a_distinct_closed_role(make_repo: RepoFactory) -> None:
 def test_native_and_repo_import_names_resolve_to_the_same_files(make_repo: RepoFactory) -> None:
     from meizel.graph.model import Sources
     from meizel.language import scan_source
+    from meizel.language.python import python_modules
 
     root = make_repo(standalone_files())
-    universe = seat(root)
-    universe = universe.context("runtimes/embedding/src/meiva_embedding_service/worker.py")
+    repository = seat(root)
+    universe = python_modules(repository).context(
+        "runtimes/embedding/src/meiva_embedding_service/worker.py"
+    )
     physical = "runtimes/embedding/src/meiva_embedding_service/config.py"
     assert universe.resolve_module("meiva_embedding_service.config") == universe.resolve_module(
         "runtimes.embedding.src.meiva_embedding_service.config"
@@ -131,7 +135,9 @@ def test_native_and_repo_import_names_resolve_to_the_same_files(make_repo: RepoF
         "from .config import Config\n",
         "from meiva_embedding_service.config import Config\n",
     ):
-        scan = scan_source(universe, caller, source.encode(), Sources(), policy=allowances.Policy())
+        scan = scan_source(
+            repository, caller, source.encode(), Sources(), policy=allowances.Policy()
+        )
         assert [fact.dst for fact in scan.facts] == [physical]
 
 
@@ -206,20 +212,21 @@ def test_invalid_or_ambiguous_standalone_layout_fails_fast(
 
     root = make_repo({**standalone_files(), "runtimes/embedding/pyproject.toml": project, **extra})
     with pytest.raises(MeizelError, match=fragment):
-        seat(root)
+        python_modules(seat(root))
 
 
 def test_undeclared_layout_is_not_guessed(make_repo: RepoFactory) -> None:
 
     root = make_repo({"meizel.toml": '[roles]\nstandalone = ["runtimes"]\n', "runtimes/a.py": ""})
     with pytest.raises(MeizelError, match="no explicit project metadata"):
-        seat(root)
+        python_modules(seat(root))
 
 
 @pytest.mark.parametrize("name", ["numpy", "PIL", "ruff"])
 def test_native_alias_is_scoped_to_its_project(make_repo: RepoFactory, name: str) -> None:
     from meizel.graph.model import Sources
     from meizel.language import scan_source
+    from meizel.language.python import python_modules
 
     files = {
         path.replace("meiva_embedding_service", name): text.replace("meiva_embedding_service", name)
@@ -228,8 +235,9 @@ def test_native_alias_is_scoped_to_its_project(make_repo: RepoFactory, name: str
     files["core/caller.py"] = ""
     universe = seat(make_repo(files))
     source = f'import {name}\nimport subprocess, sys\nsubprocess.run([sys.executable, "-m", "{name}.worker"])\n'
-    assert universe.resolve_module(f"{name}.worker") is None
-    assert not universe.is_first_party_name(name)
+    modules = python_modules(universe)
+    assert modules.resolve_module(f"{name}.worker") is None
+    assert not modules.is_first_party_name(name)
     root_scan = scan_source(
         universe, "core/caller.py", source.encode(), Sources(), policy=allowances.Policy()
     )
@@ -255,7 +263,7 @@ def test_native_alias_cannot_shadow_the_standard_library(make_repo: RepoFactory,
         for path, text in standalone_files().items()
     }
     with pytest.raises(MeizelError, match="standard library"):
-        seat(make_repo(files))
+        python_modules(seat(make_repo(files)))
 
 
 @pytest.mark.parametrize("spelling", [".state", "meiva_embedding_service.state"])
@@ -312,19 +320,19 @@ def test_standalone_project_cannot_silently_drop_its_check_ownership(
     files = standalone_files()
     files["runtimes/embedding/pyproject.toml"] = STANDALONE_PROJECT.replace(old, new)
     with pytest.raises(MeizelError, match=fragment):
-        seat(make_repo(files))
+        python_modules(seat(make_repo(files)))
 
 
 def test_standalone_python_outside_a_project_is_rejected(make_repo: RepoFactory) -> None:
 
     with pytest.raises(MeizelError, match="no owning project"):
-        seat(make_repo({**standalone_files(), "runtimes/orphan.py": ""}))
+        python_modules(seat(make_repo({**standalone_files(), "runtimes/orphan.py": ""})))
 
 
 def test_project_python_outside_strict_includes_is_rejected(make_repo: RepoFactory) -> None:
 
     with pytest.raises(MeizelError, match=r"does not include source 'helper\.py'"):
-        seat(make_repo({**standalone_files(), "runtimes/embedding/helper.py": ""}))
+        python_modules(seat(make_repo({**standalone_files(), "runtimes/embedding/helper.py": ""})))
 
 
 def test_project_listing_refuses_an_unknown_role(

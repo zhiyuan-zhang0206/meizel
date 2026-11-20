@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from meizel.language.typescript.adapter import typescript_files, typescript_scopes
+from meizel.language.typescript.files import typescript_files, typescript_scopes
 from meizel.language.typescript.frontend import TYPESCRIPT
 
 __all__ = ["TYPESCRIPT", "typescript_files", "typescript_scopes"]

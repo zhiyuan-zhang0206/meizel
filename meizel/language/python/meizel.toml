@@ -1,35 +1,27 @@
-exports = ["__init__.py"]
+exports = ["__init__.py", "closure_at.py"]
 
 [uses]
-"__init__.py" = ["bindings.py", "cache.py", "fixtures.py", "frontend.py", "purity.py", "record.py", "rules.py", "scanner.py"]
-"ambient.py" = ["fake_entropy.py", "patching.py"]
-"cache.py" = ["record.py", "scanner.py"]
-"explain.py" = ["fixtures.py", "record.py"]
-"fixture_purity.py" = ["fixtures.py", "purity.py", "record.py"]
+"__init__.py" = ["cache.py", "fixtures.py", "frontend.py", "judge", "purity.py", "record.py", "resolve", "scanner.py"]
+"ambient.py" = ["fake_entropy.py", "patching.py", "resolve"]
+"cache.py" = ["record.py", "resolve", "scanner.py"]
+"closure_at.py" = ["resolve"]
 "fixture_scan.py" = ["fixtures.py"]
-"frontend.py" = ["cache.py", "explain.py", "pytest_scope.py", "readers.py", "restricted.py", "rules.py", "scanner.py"]
-"input_mutations.py" = ["record.py"]
-"patching.py" = ["bindings.py", "purity.py", "python_commands.py", "restricted.py"]
-"purity.py" = ["purity_structure.py"]
-"pytest_scope.py" = ["fixtures.py", "mounts.py", "record.py"]
+"fixtures.py" = ["resolve"]
+"frontend.py" = ["cache.py", "judge", "resolve", "restricted.py", "scanner.py"]
+"input_mutations.py" = ["record.py", "resolve"]
+"judge" = ["cache.py", "fixtures.py", "purity.py", "record.py", "resolve", "scanner.py"]
+"patching.py" = ["purity.py", "python_commands.py", "resolve", "restricted.py"]
+"purity.py" = ["purity_structure.py", "resolve"]
 "python_commands.py" = ["restricted.py"]
-"readers.py" = ["bindings.py", "cache.py"]
 "record.py" = ["fixtures.py"]
-"restricted.py" = ["bindings.py"]
-"rules.py" = ["fixture_purity.py", "record.py", "scanner.py"]
-"scanner.py" = ["ambient.py", "bindings.py", "fixture_scan.py", "fixtures.py", "input_mutations.py", "purity.py", "record.py", "restricted.py"]
+"restricted.py" = ["resolve"]
+"scanner.py" = ["ambient.py", "fixture_scan.py", "fixtures.py", "input_mutations.py", "purity.py", "record.py", "resolve", "restricted.py"]
 
 [purity]
 "." = "strict"
-"bindings.py" = "strict"
+"closure_at.py" = { mode = "none", why = "the entry that turns a checkout's root path into a universe (`meizel.checkout.load_universe` runs git for it) and hands it to the closure; what the closure contains is decided in resolve/impacted.py" }
 "cache.py" = "strict"
-"explain.py" = "strict"
-"fixture_purity.py" = "strict"
 "fixtures.py" = "strict"
 "frontend.py" = "strict"
 "purity.py" = "strict"
-"pytest_scope.py" = "strict"
-"readers.py" = "strict"
-"record.py" = "strict"
-"rules.py" = "strict"
 "scanner.py" = "strict"

@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 
 from meizel.graph.model import Code, Fact, FactKind, Problem
-from meizel.graph.scopes import (
+from meizel.language.python.resolve.modules import PythonModules
+from meizel.language.python.resolve.scopes import (
     Scope,
     absolute_base,
     bind_target,
@@ -13,7 +14,6 @@ from meizel.graph.scopes import (
     dotted_chain,
     parameter_names,
 )
-from meizel.graph.universe import Universe
 
 __all__ = [
     "ImportAccess",
@@ -29,7 +29,9 @@ __all__ = [
 class ImportAccess:
     """The scan state of one file and the facts that import access alone produces."""
 
-    def __init__(self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool) -> None:
+    def __init__(
+        self, universe: PythonModules, path: str, tree: ast.Module, *, walrus: bool
+    ) -> None:
         self.u = universe.context(path)
         self.path = path
         self.tree = tree

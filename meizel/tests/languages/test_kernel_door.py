@@ -63,3 +63,12 @@ def test_the_kernel_never_reads_a_frontends_own_record_of_a_file() -> None:
         or (isinstance(node, ast.alias) and node.name in _NATIVE_NAMES)
     }
     assert reading == set()
+
+
+def test_the_graph_package_reads_no_syntax_tree() -> None:
+    reading = {
+        path
+        for path, tree in _kernel_trees().items()
+        if path.startswith("graph/") and "ast" in _imported_modules(tree)
+    }
+    assert reading == set()

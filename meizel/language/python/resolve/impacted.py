@@ -11,18 +11,20 @@ from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from typing import TypeGuard
 
-from meizel.graph.scopes import absolute_base, dotted_chain
 from meizel.graph.universe import Checkout, Universe, parent_of
+from meizel.language.python.resolve.layout import StandaloneProject
+from meizel.language.python.resolve.modules import PythonModules, python_modules
+from meizel.language.python.resolve.scopes import absolute_base, dotted_chain
 from meizel.source_text import object_of
 
 __all__ = ["python_reverse_closure"]
 
 _PARALLEL_FROM = 200
-_WORKER: dict[str, Universe] = {}
+_WORKER: dict[str, PythonModules] = {}
 
 
 def _visit_import(
-    view: Universe,
+    view: PythonModules,
     node: ast.Import,
     targets: set[str],
     bound: dict[str, set[str]],
@@ -44,7 +46,7 @@ def _visit_import(
 
 
 def _visit_import_from(
-    view: Universe,
+    view: PythonModules,
     package: list[str],
     node: ast.ImportFrom,
     targets: set[str],
@@ -69,7 +71,9 @@ def _visit_import_from(
             targets.add(owner.file)
 
 
-def _walk_module_attrs(view: Universe, origin: str, attrs: list[str], targets: set[str]) -> None:
+def _walk_module_attrs(
+    view: PythonModules, origin: str, attrs: list[str], targets: set[str]
+) -> None:
     if not view.is_first_party_name(origin):
         return
     module = view.resolve_module(origin)
@@ -88,7 +92,7 @@ def _walk_module_attrs(view: Universe, origin: str, attrs: list[str], targets: s
 
 
 def _visit_attributes(
-    view: Universe,
+    view: PythonModules,
     nodes: list[ast.AST],
     bound: dict[str, set[str]],
     targets: set[str],
@@ -108,7 +112,7 @@ def _visit_attributes(
             _walk_module_attrs(view, origin, attrs, targets)
 
 
-def _extract_python_deps(universe: Universe, path: str) -> tuple[str, ...] | None:
+def _extract_python_deps(universe: PythonModules, path: str) -> tuple[str, ...] | None:
     try:
         raw = universe.repo.load_bytes(path)
         raw.decode("utf-8")
@@ -131,7 +135,7 @@ def _extract_python_deps(universe: Universe, path: str) -> tuple[str, ...] | Non
     return tuple(sorted(targets))
 
 
-def _layout_digest(lookup: Universe) -> str:
+def _layout_digest(lookup: PythonModules) -> str:
     hasher = hashlib.sha256()
     projects = [
         [item.directory, [[name, target] for name, target in item.packages]]
@@ -166,8 +170,9 @@ def _decode_deps(text: str) -> tuple[str, ...] | None:
     return tuple(out)
 
 
-def _init_worker(lookup: Universe) -> None:
-    _WORKER["lookup"] = lookup
+# A worker is handed the universe and the projects, and builds its own view: a view is not sent.
+def _init_worker(universe: Universe, projects: tuple[StandaloneProject, ...]) -> None:
+    _WORKER["lookup"] = PythonModules(universe, projects)
 
 
 def _extract_in_worker(path: str) -> tuple[str, tuple[str, ...] | None]:
@@ -175,13 +180,17 @@ def _extract_in_worker(path: str) -> tuple[str, tuple[str, ...] | None]:
 
 
 def _extract_misses(
-    lookup: Universe, paths: list[str], jobs: int | None
+    lookup: PythonModules, paths: list[str], jobs: int | None
 ) -> dict[str, tuple[str, ...]] | None:
     workers = 1 if jobs is None else jobs
     if workers <= 1 or len(paths) < _PARALLEL_FROM:
         pairs = [(p, _extract_python_deps(lookup, p)) for p in paths]
     else:
-        with ProcessPoolExecutor(workers, initializer=_init_worker, initargs=(lookup,)) as pool:
+        with ProcessPoolExecutor(
+            workers,
+            initializer=_init_worker,
+            initargs=(lookup.universe, lookup.standalone_projects),
+        ) as pool:
             chunk = max(1, len(paths) // (workers * 8))
             pairs = list(pool.map(_extract_in_worker, paths, chunksize=chunk))
     found: dict[str, tuple[str, ...]] = {}
@@ -193,7 +202,7 @@ def _extract_misses(
 
 
 def _partition_cached_deps(
-    universe: Universe, lookup: Universe, paths: list[str]
+    universe: PythonModules, lookup: PythonModules, paths: list[str]
 ) -> tuple[dict[str, str], dict[str, tuple[str, ...]], list[str]]:
     digests = universe.file_digests()
     if not digests:
@@ -214,7 +223,7 @@ def _partition_cached_deps(
 
 
 def _load_all_deps(
-    universe: Universe, lookup: Universe, jobs: int | None
+    universe: PythonModules, lookup: PythonModules, jobs: int | None
 ) -> dict[str, tuple[str, ...]] | None:
     paths = list(universe.python_files)
     if not paths:
@@ -292,19 +301,19 @@ def python_reverse_closure(
     if not py_changed:
         return frozenset()
     universe = target if isinstance(target, Universe) else target.universe()
+    modules = python_modules(universe)
     deleted = sorted(set(py_changed) - universe.files)
     lookup = (
-        universe
+        modules
         if not deleted
-        else Universe(
-            universe.repo,
-            sorted(universe.files | set(deleted)),
-            projects=universe.standalone_projects,
+        else PythonModules(
+            Universe(universe.repo, sorted(universe.files | set(deleted))),
+            modules.standalone_projects,
         )
     )
-    edges = _load_all_deps(universe, lookup, jobs)
+    edges = _load_all_deps(modules, lookup, jobs)
     if edges is None:
         return None
-    existing = set(universe.python_files)
+    existing = set(modules.python_files)
     reverse = _build_reverse_graph(edges, existing)
     return _bfs_closure(reverse, py_changed, existing)

@@ -13,14 +13,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from meizel.graph.python_layout import StandaloneProject
-
 __all__ = [
     "MANIFEST",
     "SOURCE_EXTENSIONS",
     "Checkout",
     "EditPlan",
-    "Module",
     "SourceTree",
     "Universe",
     "is_private_module",
@@ -38,14 +35,6 @@ class EditPlan:
     byte_writes: dict[Path, bytes] = field(default_factory=dict[Path, bytes])
     deletes: tuple[Path, ...] = ()
     dirs: tuple[Path, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class Module:
-    """A first-party module: its source file, or None for a namespace directory."""
-
-    file: str | None
-    path: str
 
 
 _DUNDER_MODULE = re.compile(r"__\w+__(\.py)?")
@@ -151,20 +140,13 @@ class Checkout(Protocol):
 
 
 class Universe:
-    """Tracked regular files, every directory above them, and module resolution."""
+    """Tracked regular files and every directory above them: data, whatever the language."""
 
     DOOR_FILES: frozenset[str] = frozenset(
         {"__init__.py", "index.ts", "index.tsx", "index.mts", "index.cts"}
     )
 
-    def __init__(
-        self,
-        repo: Checkout,
-        tracked: list[str],
-        *,
-        projects: tuple[StandaloneProject, ...] = (),
-        project: str | None = None,
-    ) -> None:
+    def __init__(self, repo: Checkout, tracked: list[str]) -> None:
         self.repo = repo
         self.root = repo.root
         self.files: frozenset[str] = frozenset(tracked)
@@ -178,26 +160,17 @@ class Universe:
         self.manifest_dirs: frozenset[str] = frozenset(
             parent_of(p) for p in tracked if p.rsplit("/", 1)[-1] == MANIFEST
         )
-        self.python_files: tuple[str, ...] = tuple(sorted(p for p in tracked if p.endswith(".py")))
-        self.typescript_files: tuple[str, ...] = tuple(
-            sorted(
-                p
-                for p in tracked
-                if p.endswith((".ts", ".tsx", ".mts", ".cts"))
-                and not p.endswith((".d.ts", ".d.mts", ".d.cts"))
-            )
-        )
-        self.roots: frozenset[str] = frozenset(
-            name.removesuffix(".py") for name in self.children.get("", ())
-        )
-        self.standalone_projects = projects
-        self._project = project
-        active = next((item for item in projects if item.directory == project), None)
-        self._python_aliases = dict(active.packages) if active is not None else {}
-        self.roots = self.roots | frozenset(self._python_aliases)
-        self._modules: dict[str, Module | None] = {}
-        self._project_views: dict[str | None, Universe] = {project: self}
         self._digests: dict[str, str] | None = None
+        self._memo: dict[str, object] = {}
+
+    # A universe crosses into worker processes without what a language derived from it: the views
+    # in `memo` are rebuilt where they are asked for.
+    def __getstate__(self) -> dict[str, object]:
+        return {key: value for key, value in self.__dict__.items() if key != "_memo"}
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        self.__dict__.update(state)
+        self._memo = {}
 
     @staticmethod
     def _add_chain(children: dict[str, set[str]], path: str) -> None:
@@ -212,66 +185,22 @@ class Universe:
             if depth < len(parts) - 1:
                 children.setdefault("/".join(parts[: depth + 1]), set())
 
-    def context(self, origin: str) -> Universe:
-        owner = next(
-            (
-                item.directory
-                for item in self.standalone_projects
-                if origin == item.directory or origin.startswith(item.directory + "/")
-            ),
-            None,
-        )
-        if owner not in self._project_views:
-            view = Universe(
-                self.repo, sorted(self.files), projects=self.standalone_projects, project=owner
-            )
-            view._project_views = self._project_views
-            self._project_views[owner] = view
-        return self._project_views[owner]
+    # The tracked files whose name ends in one of `suffixes`, sorted.
+    def files_ending(self, suffixes: tuple[str, ...]) -> tuple[str, ...]:
+        key = f"ending:{suffixes}"
+        found = self._memo.get(key)
+        if found is None:
+            found = tuple(sorted(p for p in self.files if p.endswith(suffixes)))
+            self._memo[key] = found
+        return found if isinstance(found, tuple) else ()
 
-    def context_for_module(self, dotted: str) -> Universe:
-        head = dotted.split(".", 1)[0]
-        for project in self.standalone_projects:
-            if any(name == head for name, _ in project.packages):
-                return self.context(project.directory)
-        return self.context("")
-
-    def canonical_name(self, dotted: str) -> str:
-        head, separator, tail = dotted.partition(".")
-        physical = self._python_aliases.get(head)
-        return physical.replace("/", ".") + separator + tail if physical else dotted
-
-    # Resolve root imports and explicit standalone wheel names to physical source.
-    def resolve_module(self, dotted: str) -> Module | None:
-        if dotted in self._modules:
-            return self._modules[dotted]
-        path = self.canonical_name(dotted).replace(".", "/")
-        found: Module | None = None
-        if f"{path}.py" in self.files:
-            found = Module(f"{path}.py", f"{path}.py")
-        elif f"{path}/__init__.py" in self.files:
-            found = Module(f"{path}/__init__.py", path)
-        elif path in self.dirs and path:
-            found = Module(None, path)
-        self._modules[dotted] = found
-        return found
-
-    def is_first_party_name(self, dotted: str) -> bool:
-        return dotted.split(".", 1)[0] in self.roots
+    # What a language derives from this universe and keeps beside it, built once by `build`.
+    def memo(self, key: str, build: Callable[[], object]) -> object:
+        if key not in self._memo:
+            self._memo[key] = build()
+        return self._memo[key]
 
     def file_digests(self) -> dict[str, str]:
         if self._digests is None:
             self._digests = self.repo.file_digests()
         return self._digests
-
-    def source_files(
-        self, ts_scopes: tuple[str, ...] = (), ts_extensions: tuple[str, ...] = (".ts", ".tsx")
-    ) -> tuple[str, ...]:
-        if not ts_scopes:
-            return self.python_files
-        ts = tuple(
-            p
-            for p in self.typescript_files
-            if p.endswith(ts_extensions) and any(p == s or p.startswith(f"{s}/") for s in ts_scopes)
-        )
-        return (*self.python_files, *ts)
