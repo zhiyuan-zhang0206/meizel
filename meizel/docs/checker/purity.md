@@ -93,7 +93,4 @@ max-params = 6
 max-attr-hops = 3
 ```
 
-Explicit TS holder receipts and their non-gating limits:
-[TypeScript holder source evidence](typescript-evidence.md).
-
 Parent: [the checker](checker.md).

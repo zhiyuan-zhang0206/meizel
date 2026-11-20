@@ -15,7 +15,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TypeGuard
 
-from meizel.allowances import NAMES, PER_NAME, POLICY, REASONS, RULES, Policy, parse, parse_snapshot
+from meizel.allowances import NAMES, POLICY, REASONS, RULES, Policy, parse, parse_snapshot
 from meizel.contracts.manifest import Manifest, load_manifests
 from meizel.graph.model import Code, Diagnostic, MeizelError
 from meizel.graph.universe import Universe
@@ -340,6 +340,10 @@ class Item:
     table: str
     name: str
     value: str = ""
+    # meiva:note
+    # The shape a host rule's table is declared in (`[sections]`); None for the checker's own tables,
+    # whose shape this module knows.
+    shape: str | None = None
 
     # meiva:note
     # The entry as one line, the way `policy diff` writes it.
@@ -373,8 +377,6 @@ def _shape(table: str) -> str | None:
     rule, _, section = table.partition(".")
     if rule in ("ambient", "ambient-readers"):
         return NAMES
-    if rule in PER_NAME:
-        return REASONS
     return RULES.get(rule, {}).get(section)
 
 
@@ -383,8 +385,8 @@ def _shape(table: str) -> str | None:
 # goes widens it; a vocabulary does the opposite. A value edit, and a table whose shape this file
 # does not know, are `unknown`: a direction is only ever read off the table's own format, never
 # guessed from the entry's name.
-def _direction(table: str, kind: str) -> str:
-    shape = _shape(table)
+def _direction(table: str, kind: str, declared: str | None = None) -> str:
+    shape = declared or _shape(table)
     if shape is None or kind not in (ADDED, REMOVED):
         return UNKNOWN
     narrows = (shape == REASONS) == (kind == ADDED)
@@ -418,7 +420,7 @@ def _policy_items(policy: Policy) -> list[Item]:
     )
     found.extend(Item(POLICY, "default-arguments", name) for name in policy.default_arguments)
     found.extend(
-        Item(POLICY, f"{rule}.{section}", name, reason)
+        Item(POLICY, f"{rule}.{section}", name, reason, _host_shape(policy, rule, section))
         for (rule, section), entries in policy.listed.items()
         for name, reason in entries.items()
     )
@@ -428,11 +430,15 @@ def _policy_items(policy: Policy) -> list[Item]:
         for name, parameter in parameters.items()
     )
     found.extend(
-        Item(POLICY, f"{rule}.{section}", name)
+        Item(POLICY, f"{rule}.{section}", name, shape=_host_shape(policy, rule, section))
         for (rule, section), names in policy.named.items()
         for name in names
     )
     return found
+
+
+def _host_shape(policy: Policy, rule: str, section: str) -> str | None:
+    return policy.section_shape(rule, section) if rule in policy.sections else None
 
 
 # meiva:note
@@ -446,7 +452,7 @@ def _one_side(items: Mapping[Key, Item], taken: set[Key], kind: str) -> list[Cha
             item.table,
             item.name,
             item.value,
-            direction=_direction(item.table, kind),
+            direction=_direction(item.table, kind, item.shape),
         )
         for key, item in sorted(items.items())
         if key not in taken

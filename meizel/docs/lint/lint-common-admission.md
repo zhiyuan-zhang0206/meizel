@@ -76,7 +76,7 @@ log and in a direct run.
 an unrelated touch does not change the admitted set) and the link rule itself (a
 file that is a link, a linked directory, a link two levels up, a rejected link
 beside a regular sibling, a directory replaced by a link between two reads);
-`meizel/owners/tests/test_lint_clock_lattice.py` covers it end to end — a
+a host lint driven twice over one checkout covers it end to end — a
 violation created between two runs fails the second one, and a touched unrelated
 file keeps the verdict. Restoring a cross-run cache turns that end-to-end case red
 (`assert 0 == 1`), which is the point of keeping it.

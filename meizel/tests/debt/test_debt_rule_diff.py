@@ -207,56 +207,6 @@ def test_editing_only_a_test_file_under_meizel_keeps_the_single_column(
     assert "no growth" in out
 
 
-def test_a_rule_code_change_under_meizel_is_detected_without_a_flag(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
-) -> None:
-    root = make_repo(
-        {
-            **DECLARED_BASE,
-            "meizel.toml": '[roles]\napplication = ["app"]\ntooling = ["meizel", "rules"]\n',
-            "meizel/rule.py": "RULE = 1\n",
-        }
-    )
-    commit(root)
-    write(root, {"meizel/rule.py": "RULE = 2\n"})
-    capsys.readouterr()
-    assert plain_diff(root) == 0
-    out = capsys.readouterr().out
-    assert "meizel: rules +0 / content +0" in out
-    assert "what this change edits in the measurement" in out
-    assert "  meizel/rule.py" in out
-
-
-# meiva:note
-# Only the rule code is the device: everything else under `meizel/` is measured as it was, including
-# the three allowances readers the rule-code pathspecs exclude by name.
-@pytest.mark.parametrize("probe", ["meizel/state/probe.py", "meizel/allowances.py"])
-def test_a_violation_the_change_adds_under_meizel_is_content_growth(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str], probe: str
-) -> None:
-    root = make_repo(
-        {
-            **DECLARED_BASE,
-            "meizel.toml": '[roles]\napplication = ["app"]\ntooling = ["meizel", "rules"]\n',
-            "meizel/rule.py": "RULE = 1\n",
-            probe: "VALUE = 1\n",
-        }
-    )
-    commit(root)
-    write(
-        root,
-        {
-            "meizel/rule.py": "RULE = 2\n",
-            probe: "import os\n\nVALUE = os.environ['A']\n",
-        },
-    )
-    assert run(root, "debt", "record", ".") == 0
-    write(root, {})
-    capsys.readouterr()
-    assert plain_diff(root) == 1
-    assert f"{probe.rsplit('/', 1)[-1]}#environ os.environ" in capsys.readouterr().out
-
-
 def test_a_content_change_that_moves_a_file_is_not_growth(make_repo: RepoFactory) -> None:
     root = base_repo(make_repo)
     record(root)
@@ -329,18 +279,6 @@ def test_comparison_preserves_the_working_tree_and_removes_its_checkout(
     assert worktrees.count("worktree ") == 1
 
 
-LEGACY_POLICY = """
-[ambient-state]
-config-modules = ["base.config"]
-config-readers = ["settings"]
-db-modules = ["base.db"]
-db-primitives = ["connect"]
-db-handles = ["base.db:Database"]
-bus-handles = ["base.events:EventBus"]
-endpoint-handles = ["base.endpoints:ServiceEndpoints"]
-[no-os-environ.files]
-"app/env.py" = "the process environment boundary"
-"""
 AMBIENT_POLICY = """
 [ambient]
 settings = ["settings"]
@@ -354,7 +292,7 @@ endpoints = ["ServiceEndpoints.from_settings()"]
 # This base is committed with violations and no `[debt]` table — the tests that use it record afterwards.
 # Its record is therefore not what its own device finds in its own content, which `rules` already reads as
 # the device's +1 and `repaid` reads as -1: `app/env.py` reads the environment and nothing records it.
-def ambient_base(make_repo: RepoFactory, policy: str = LEGACY_POLICY) -> Path:
+def ambient_base(make_repo: RepoFactory, policy: str = "") -> Path:
     return base_repo(
         make_repo,
         {
@@ -384,24 +322,6 @@ def ambient_rule_change(root: Path) -> None:
             '"env.py" = { kinds = ["environ", "settings"], why = "the process environment boundary" }\n',
         },
     )
-
-
-@pytest.mark.parametrize("added", [False, True])
-def test_retired_schema_comparison_counts_old_reads_but_rejects_new_reads(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str], added: bool
-) -> None:
-    root = ambient_base(make_repo)
-    ambient_rule_change(root)
-    if added:
-        write(root, {"app/x.py": "from base.db import connect\nx = connect()\ny = connect()\n"})
-    record(root)
-    capsys.readouterr()
-    assert diff(root) == (1 if added else 0)
-    out = capsys.readouterr().out
-    row = next(line.split() for line in out.splitlines() if line.startswith("ambient-read"))
-    assert row[1:] == ["0", "1", "2" if added else "1", "+1", "+1" if added else "+0", "-1"]
-    if added:
-        assert "2 recorded, 1 found" in out
 
 
 DECLARED_BASE = {
@@ -441,11 +361,11 @@ def test_taking_a_root_away_is_a_rule_change_and_not_new_debt(
 @pytest.mark.parametrize(
     "policy",
     [
-        LEGACY_POLICY + "\n[unknown]\n",
-        LEGACY_POLICY.replace('db-handles = ["base.db:Database"]', "db-handles = [3]"),
+        '[sections.purity]\nfiles = "reasons"\n',
+        "[type-checking]\nfiles = [3]\n",
     ],
 )
-def test_retired_schema_never_bypasses_the_unreadable_policy_gate(
+def test_an_unreadable_base_policy_stops_the_comparison(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str], policy: str
 ) -> None:
     root = ambient_base(make_repo, policy)
@@ -811,6 +731,22 @@ def test_a_deleted_top_level_directory_is_not_measured_under_the_new_roles(
         },
     )
     rule_change(root)
+    record(root)
+    capsys.readouterr()
+    assert diff(root) == 0, capsys.readouterr().err
+
+
+# meiva:note
+# The same base, measured by a change that declares the host tables the base wrote without
+# `[sections]`: the base's checkout is normalized before it is read, and nothing is refused.
+def test_a_base_policy_from_before_section_declarations_is_measured(
+    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
+) -> None:
+    old = '[clock-lattice]\nfamily-modules = ["a.py"]\n'
+    root = base_repo(make_repo, {"meizel.policy.toml": old})
+    write(
+        root, {"meizel.policy.toml": '[sections.clock-lattice]\nfamily-modules = "names"\n\n' + old}
+    )
     record(root)
     capsys.readouterr()
     assert diff(root) == 0, capsys.readouterr().err

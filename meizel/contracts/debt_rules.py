@@ -84,24 +84,11 @@ _UNREADABLE = frozenset(
 _DEBT_ROWS = 5
 
 # meiva:note
-# The rule code and the policy: what the checker judges with, apart from the manifests' declarations.
-# CI passes the same set as `--waive-if-changed`; `debt diff` detects it by itself now, and the flag
-# only adds pathspecs. The excluded paths are the ones that are not the device even though they live
-# under `meizel/`: the tests are exempt from the codes the checker records, and the state rules and the
-# three allowance readers are measured as content, so a violation the change adds there is caught.
-RULE_PATHS = (
-    ":(glob)meizel/**/*.py",
-    ":(exclude,glob)meizel/**/tests/**",
-    ":(exclude,glob)meizel/state/**",
-    ":(exclude)meizel/language/path_imports.py",
-    ":(exclude)meizel/language/no_script_sibling_imports.py",
-    ":(exclude)meizel/allowances.py",
-    POLICY,
-)
-
-# meiva:note
-# The rule code alone: the policy is listed entry by entry in `measurement_lines`, never as a path.
-RULE_CODE = tuple(path for path in RULE_PATHS if path != POLICY)
+# What the checker judges with, apart from the manifests' declarations: the policy. The rule code is
+# the installed checker, which no path of the checked tree holds; a host names what moves it (the
+# lockfile that pins the checker) with `--waive-if-changed`, and those pathspecs are the rule code of
+# a comparison.
+RULE_PATHS = (POLICY,)
 
 
 # meiva:note
@@ -337,7 +324,7 @@ def measurement_lines(
         entries = [POLICY]
     decls = declarations_changed(repo, ref) if changed_decls is None else changed_decls
     return [
-        *_changed_under(repo, ref, [*RULE_CODE, *extra]),
+        *(_changed_under(repo, ref, list(extra)) if extra else []),
         *decls,
         *entries,
     ]

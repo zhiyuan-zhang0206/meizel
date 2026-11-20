@@ -12,19 +12,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from meizel import installation
 from meizel.checkout import GitRepo, read_roles, read_text, source_tree, toplevel
 from meizel.contracts import cli
 from meizel.frontend_deps import FrontendDepsError
 from meizel.graph.model import MeizelError
 
 __all__ = ["main", "open_repository"]
-
-# meiva:note
-# The installation this process runs from: the one seat that answers where the checker's own files
-# are (the parent of the installed package) and which Node package supplies its compiler, read once
-# here and handed down as values (`source_evidence.Evidence`).
-_TOOL_ROOT = installation.PACKAGE_DIR.parent
 
 
 # meiva:note
@@ -79,15 +72,13 @@ def main(argv: list[str]) -> int:
         repo = open_repository(options.repo if options.repo is not None else toplevel(base))
         root = repo.root.resolve()
         deps = cli.CommandDeps(
-            tool_root=_TOOL_ROOT,
-            toolchain=installation.typescript_toolchain(),
             read_roles=read_roles,
             read_text=read_text,
             relative_target=relative_targets(root, base),
             source_tree=source_tree,
             today=datetime.now(UTC).date().isoformat(),
         )
-        return cli.dispatch(repo, root, base, args, deps)
+        return cli.dispatch(repo, base, args, deps)
     except FrontendDepsError as error:
         print(f"meizel: {error}", file=sys.stderr)
         return 3

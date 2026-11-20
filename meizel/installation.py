@@ -8,14 +8,12 @@ from pathlib import Path
 from meizel.graph.model import MeizelError
 
 # meiva:note
-# Where this installation is: the package directory the checker's own files (its node producers and
-# adapters) are read from, and the project whose environment installed it, whose Node package supplies
-# the TypeScript compiler. The project is the directory that holds the environment (`<project>/.venv`),
-# the layout `uv` and `python -m venv .venv` produce; its `meizel.policy.toml` names the Node package
+# Where this installation is: the project whose environment installed the checker, whose Node package
+# supplies the TypeScript compiler. The project is the directory that holds the environment
+# (`<project>/.venv`), the layout `uv` and `python -m venv .venv` produce; its `meizel.policy.toml` names the Node package
 # under `[typescript] package-dir`, and a project that names none is its own Node package. The checked
 # repository never supplies the compiler: a tree under judgment cannot change the analyzer judging it.
 # meiva:link meizel/docs/frontend-deps.md
-PACKAGE_DIR = Path(__file__).resolve().parent
 TOOLCHAIN_ENV = "MEIZEL_TS_PACKAGE_DIR"
 
 

@@ -59,54 +59,21 @@ keep production governance separate from the root distribution environment.
 - `lint_common.py` — the shared scan vocabulary of the standalone lints: test-path
   detection, scan-root resolution and the `--only` changed-files mode, over the
   `SourceTree` its caller built. Changed-files runs widen to a full scan when
-  `meizel/` itself changes, because that changes the verdict of untouched files.
+  the lockfile that pins the checker changes, because that changes the verdict of untouched files.
 - `budgets/` — the 800-line file ceiling and the 20-entry directory cap: every
   judgment is in `budget_plans.py` (both ceilings, which directory entries are
   candidates, what counts as a Python file, which of a target and a structure
   directory is judged, which directories a target selects with their entry counts,
   what counts as a line, and the wording and order of hard violations), while
   `limits.py` walks and reads the checkout and `directory_budget.py` lists a
-  directory and tests a judged path's links. `scripts/lint/code_structure.py`
-  drives them. Near-cap reporting shares `check`'s changed-only, ten-percent
+  directory and tests a judged path's links. A host's structure gate drives them. Near-cap reporting shares `check`'s changed-only, ten-percent
   headroom summary; it does not add a failure condition.
-- `owners/` — one owner per external capability: `decisions.py` holds Rule 5
-  (`decision_table(policy)`: each design decision has exactly one owning module,
-  every other site is a bypass, and a listed exemption that goes stale fails; the
-  owners and the exemptions are in `meizel.policy.toml`, and the caller that reads
-  that policy hands the table down, so a run judging another checkout judges it
-  by that checkout's policy) and
-  `clock_lattice.py` keeps lattice-vocabulary timing constants in the
-  clock-lattice family modules or as aliases of a registered clock.
-- `state/` — dependency injection rules: `ambient_state/` (Rule 9, module-level
-  state read to decide and free-floating background work; see
-  [ambient state](ambient-state.md)),
-  `machine_role.py` (Rule 3, the retired ambient machine-role reader),
-  `no_os_environ.py` (a test does not set a variable `Settings` models) and
-  `turn_scoped_config.py` (no per-agent config through a process global). Both
-  config rules are effect shells: the shell walks the scan directories, reads each
-  file and prints, while `no_os_environ_plan.py` and
-  `turn_scoped_config_plan.py` decide which directories the scan reads, which files
-  the rule judges, which lines of a file are findings and what each finding says,
-  and `lint_paths.py` owns the two decisions both rules share — which explicit
-  targets are Python files and how a path is labelled. The two
-  config rules take the application's config registry as an injected argument;
-  their launchers in `scripts/lint/` bind it, because `meizel` imports no
-  application package. Where production code reads the world is `ambient-read` in
-  `check` ([ambient reads](checker/ambient.md)).
-- `language/` — restrictions on how Python is written:
-  `path_imports.py` (code under `meiva_builtins/` reaches other code
-  through packages, never a file path) and the sibling-import rule, split the
-  way the config rules are: `no_script_sibling_imports.py` is the effect shell
-  that walks the scan roots, reads each file and prints, and
-  `script_siblings.py` decides script mode, guard order, whether a
-  same-directory name is a module file or a package (a file wins), and what each
-  finding says. The shell states what a directory holds — its regular `.py`
-  stems and its directories with an `__init__.py` — and the rule decides which
-  of the two a name means.
+- `test_graph/` — test selection: the tests a change can affect, from the import graph and the
+  scanned test facts (`meizel impacted`, `meizel tests`).
 
-Each rule group keeps its tests in its own `tests/` directory. The gate-level
-tests that drive `scripts/lint/code_structure.py` end to end stay with that
-script.
+Rules a repository runs from its own gates, rather than through `meizel check`, belong to that
+repository. They use this package as a library and keep their exemptions in the same policy file,
+declared under `[sections]` ([the policy file](checker/policy/policy.md)).
 
 ## Type-only guards
 

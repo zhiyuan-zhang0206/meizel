@@ -4,9 +4,6 @@
 [typescript]
 package-dir = ["toolchain"]
 
-[external]
-"meizel/state/ambient_state/tests/test_task_owner.py" = "executes sample source the lint rule is exercised on"
-"meizel/state/ambient_state/tests/test_thread_owner.py" = "executes sample source the lint rule is exercised on"
 
 # injected-calls (meizel/language/scan): a call whose receiver is a parameter holding a callable, not a
 # path. The purity rule matches a path method by its attribute name, so `deps.read_text(...)` is
@@ -19,7 +16,7 @@ package-dir = ["toolchain"]
 # makes fails as `stale-approval`. A declared site is counted apart from the reads it does not excuse
 # (`meizel check` says "N sites declared an injected callable, not a read"), so the two never merge.
 [injected-calls]
-"max-sites" = ["9"]
+"max-sites" = ["8"]
 
 # meizel/ — the reads behind `meizel.graph.universe.SourceTree`. The port's fields are named after the
 # `pathlib` methods they hold (`is_file`, `is_dir`, `resolve`, `rglob`, `read_bytes`), so the purity
@@ -35,5 +32,4 @@ package-dir = ["toolchain"]
 "meizel/lint_common.py#read_utf8_text#tree.read_bytes" = "the reader around `decode_source`: the bytes come from the tree the lint was handed, so this module owns the decoding and not the read"
 "meizel/frontend_deps.py#observe#tree.is_dir" = "the frontend install is observed through the tree the analyzer was handed, so the probe is a value here rather than a `pathlib` call"
 "meizel/frontend_deps.py#observe#tree.is_file" = "the pnpm metadata probe is the same tree: `meizel.checkout.source_tree` bound the predicate and this module decides what the answer means"
-"meizel/source_evidence/loader.py#_adapter_files#tool_tree.rglob" = "the adapter files are listed through the installation tree the entry bound, so which of them the index must name is decided here and the walk stays the shell's"
 "meizel/frontend_deps.py#_digest#tree.read_bytes" = "the locked compiler's digest is read through the tree, so hash and comparison stay here and the bytes stay the shell's"

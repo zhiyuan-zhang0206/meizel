@@ -12,25 +12,24 @@ import re
 import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from enum import StrEnum
 from functools import cache
-from typing import TypeGuard, assert_never
+from typing import TypeGuard
 
 from meizel.graph.model import OS_KINDS
 from meizel.graph.universe import Checkout
 from meizel.source_text import object_mapping
 
 __all__ = [
+    "ANY_SECTION",
     "POLICY",
-    "RETIRED_AMBIENT_SECTIONS",
     "RULES",
+    "SECTIONS_TABLE",
     "Declaration",
     "Policy",
     "Removal",
     "RemovalReport",
     "invalidate_cache",
     "load",
-    "load_snapshot",
     "parse",
     "parse_snapshot",
     "removal_report",
@@ -39,6 +38,9 @@ __all__ = [
 POLICY = "meizel.policy.toml"
 CHECKER_TABLES = ("external", "dynamic-attrs", "loads", "default-arguments")
 _KIND_NAME = re.compile(r"[a-z][a-z0-9_]*")
+_RULE_NAME = re.compile(r"[a-z][a-z0-9-]*")
+SECTIONS_TABLE = "sections"
+ANY_SECTION = "*"
 
 # meiva:note
 # The shapes a section takes: `reasons` is a table of `name = reason`; `readers` is that table too,
@@ -48,47 +50,18 @@ READERS = "readers"
 NAMES = "names"
 
 # meiva:note
-# rule -> section -> shape. A rule listed in `PER_NAME` has one reasons table per name it governs.
-# `ambient` has no fixed sections: each key of that table declares one kind of state the repository
+# The checker's own rules: rule -> section -> shape. A host's rules declare theirs in the policy's
+# `[sections]` table (`Policy.sections`), so the checker reads and reviews their tables without
+# knowing what they mean. `ambient` has no fixed sections: each key of that table declares one kind of state the repository
 # keeps itself (`Policy.state_kinds`), so its entry here is empty. `ambient-readers` has a table for
 # every kind of the standard library listed below and one more for each declared state kind.
 RULES: dict[str, dict[str, str]] = {
     "ambient": {},
     "ambient-readers": dict.fromkeys(OS_KINDS, READERS),
-    "ambient-state": {
-        "sink-callees": NAMES,
-        "sink-callee-suffixes": NAMES,
-        "wiring-callees": NAMES,
-        "pure-callees": NAMES,
-        "pure-chain-callees": NAMES,
-        "skill-script-patterns": NAMES,
-        "config-modules": NAMES,
-        "config-readers": NAMES,
-        "sink-facades": REASONS,
-        "pure-repo-callees": REASONS,
-        "sites": REASONS,
-    },
-    "clock-lattice": {"family-modules": NAMES, "independent-clocks": REASONS},
-    "no-os-environ": {
-        "test-only-dirs": NAMES,
-        "rule-inputs": NAMES,
-        "provider-key-vars": REASONS,
-        "live-read-vars": REASONS,
-        "files": REASONS,
-    },
-    "path-imports": {"scope": NAMES, "skills-scope": NAMES},
     "python-commands": {"argv-wrappers": NAMES},
-    "turn-scoped-config": {
-        "scan-dirs": NAMES,
-        "extra-files": NAMES,
-        "rule-inputs": NAMES,
-        "files": REASONS,
-        "plugin-mechanism-files": REASONS,
-    },
     "type-checking": {"files": REASONS},
     "approved-patches": {"files": REASONS, "max-files": NAMES},
     "injected-calls": {"sites": REASONS, "max-sites": NAMES},
-    "single-owner": {"postgres-dial-owners": NAMES},
     "purity": {
         "impure-imports": NAMES,
         "pure-third-party": NAMES,
@@ -112,36 +85,27 @@ RULES: dict[str, dict[str, str]] = {
         "package-dir": NAMES,
     },
 }
-PER_NAME = frozenset({"single-owner"})
 
 
 # meiva:note
-# These five lists belonged to the replaced ambient registries. Only an explicit historical
-# snapshot decoder accepts them; the live format continues to reject every retired section.
-RETIRED_AMBIENT_SECTIONS = frozenset(
-    {"db-modules", "db-primitives", "db-handles", "bus-handles", "endpoint-handles"}
-)
-
-
-class _PolicySource(StrEnum):
-    CURRENT = "current"
-    SNAPSHOT = "snapshot"
-
-
-def _sections(rule: str, source: _PolicySource, state: Sequence[str]) -> dict[str, str]:
+# The sections one rule may hold: the checker's own for its rules, the host's declaration for a host
+# rule. `ambient` takes its sections from the declared state kinds, and `ambient-readers` adds one
+# readers table per declared kind to the standard library's.
+def _sections(
+    rule: str, state: Sequence[str], host: Mapping[str, Mapping[str, str]]
+) -> Mapping[str, str]:
     if rule == "ambient":
         return dict.fromkeys(state, NAMES)
     if rule == "ambient-readers":
         return RULES[rule] | dict.fromkeys(state, READERS)
-    if source is _PolicySource.CURRENT:
-        return RULES[rule]
-    if source is _PolicySource.SNAPSHOT:
-        return (
-            RULES[rule] | dict.fromkeys(RETIRED_AMBIENT_SECTIONS, NAMES)
-            if rule == "ambient-state"
-            else RULES[rule]
-        )
-    assert_never(source)
+    return RULES.get(rule) or host.get(rule, {})
+
+
+# meiva:note
+# The shape one section of one rule is written in. A host rule that declares `"*"` holds a table per
+# name it governs, each in that shape, besides the sections it names.
+def _shape_in(sections: Mapping[str, str], section: str) -> str | None:
+    return sections.get(section, sections.get(ANY_SECTION))
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +132,16 @@ class Policy:
     # keys of that table. Each is a kind a manifest's `[state]` and `[roots]` may name besides the
     # standard library's own, and each may have an `[ambient-readers.<kind>]` table.
     state_kinds: tuple[str, ...] = ()
+    # meiva:note
+    # The host's rules as `[sections]` declares them: rule -> section -> shape, `"*"` for a table per
+    # governed name.
+    sections: dict[str, dict[str, str]] = field(default_factory=dict[str, dict[str, str]])
+
+    # meiva:note
+    # The shape `[rule] section` is written in, or None when neither the checker nor the host's
+    # declaration knows it.
+    def section_shape(self, rule: str, section: str) -> str | None:
+        return _shape_in(_sections(rule, self.state_kinds, self.sections), section)
 
     # meiva:note
     # Every kind a reader may be listed under: the standard library's and the declared ones.
@@ -210,15 +184,13 @@ class Policy:
         self._known(rule, section, READERS)
         return dict(self.unless.get((rule, section), {}))
 
+    # meiva:note
+    # A host rule this policy does not declare holds no table here, so it lists nothing; a section a
+    # declared rule does not name is a reader's typo, refused like one of the checker's own.
     def _known(self, rule: str, section: str, *shapes: str) -> None:
-        wanted = (
-            RULES[rule].get(section, REASONS)
-            if rule in PER_NAME
-            else _sections(rule, _PolicySource.CURRENT, self.state_kinds).get(section)
-            if rule in RULES
-            else None
-        )
-        if wanted not in shapes:
+        if rule not in RULES and rule not in self.sections:
+            return
+        if self.section_shape(rule, section) not in shapes:
             raise KeyError(f"{POLICY} has no {' or '.join(shapes)} section [{rule}] {section}")
 
 
@@ -364,16 +336,20 @@ def _names_section(rule: str, section: str, value: object, where: str, into: _Se
 
 
 def _rule(
-    rule: str, table: object, into: _Sections, source: _PolicySource, state: Sequence[str]
+    rule: str,
+    table: object,
+    into: _Sections,
+    state: Sequence[str],
+    host: Mapping[str, Mapping[str, str]],
 ) -> None:
     if not _is_table(table):
         into.problems.append(f"[{rule}] must be a table")
         return
-    sections = _sections(rule, source, state)
+    sections = _sections(rule, state, host)
     for section, value in table.items():
         if rule == "ambient" and section not in state:
             continue
-        shape = sections.get(section, REASONS) if rule in PER_NAME else sections.get(section)
+        shape = _shape_in(sections, section)
         where = f"[{rule}] {section}" if shape == NAMES else f"[{rule}.{section}]"
         if shape == REASONS:
             into.listed[(rule, section)] = _reasons(value, where, into.problems)
@@ -415,24 +391,73 @@ def _checker(
 
 
 # meiva:note
-# Both entry points use the same shape checks. Historical input adds only the five retired
-# NAMES lists, retained in Policy.named so policy diff and baseline migration can still see them.
-def _parse(text: str, source: _PolicySource) -> tuple[Policy, list[str]]:
+# The host's rules a document declares under `[sections]`: one table per rule, naming each section and
+# its shape. A rule the checker owns, a malformed name or a shape that is neither `names` nor
+# `reasons` is reported and declares nothing.
+def _host_sections(
+    document: Mapping[str, object], problems: list[str]
+) -> dict[str, dict[str, str]]:
+    table = document.get(SECTIONS_TABLE, {})
+    if not _is_table(table):
+        problems.append(f"[{SECTIONS_TABLE}] must be a table")
+        return {}
+    found: dict[str, dict[str, str]] = {}
+    for rule, declared in table.items():
+        if rule in RULES or rule in CHECKER_TABLES or rule == SECTIONS_TABLE:
+            problems.append(f"[{SECTIONS_TABLE}.{rule}] names a table the checker owns")
+        elif _RULE_NAME.fullmatch(rule) is None:
+            problems.append(f"[{SECTIONS_TABLE}] {rule!r} must be a lowercase rule name")
+        elif not _is_table(declared) or not all(
+            shape in (NAMES, REASONS) for shape in declared.values()
+        ):
+            problems.append(
+                f"[{SECTIONS_TABLE}.{rule}] maps each section to {NAMES!r} or {REASONS!r}"
+            )
+        else:
+            found[rule] = {section: str(shape) for section, shape in declared.items()}
+    return found
+
+
+# meiva:note
+# The shapes an older policy wrote its host tables in, read off the values themselves: a list is a
+# names section, a table is a reasons table. A policy from before `[sections]` existed is read this way
+# when a comparison needs the base's declarations; the live file never is.
+def _inferred_sections(
+    document: Mapping[str, object], declared: Mapping[str, Mapping[str, str]]
+) -> dict[str, dict[str, str]]:
+    found: dict[str, dict[str, str]] = {}
+    for name, table in document.items():
+        if name in (*CHECKER_TABLES, *RULES, *declared, SECTIONS_TABLE) or not _is_table(table):
+            continue
+        found[name] = {
+            section: NAMES if _is_object_list(value) else REASONS
+            for section, value in table.items()
+        }
+    return found
+
+
+def _parse(text: str, *, infer: bool) -> tuple[Policy, list[str]]:
     lines = text.splitlines()
     try:
         document = object_mapping(tomllib.loads(text))
     except tomllib.TOMLDecodeError as error:
         return Policy(lines=lines), [f"invalid TOML: {error}"]
     found = _Sections()
+    host = _host_sections(document, found.problems)
+    if infer:
+        host |= _inferred_sections(document, host)
     for name in document:
-        if name not in CHECKER_TABLES and name not in RULES:
-            tables = ", ".join((*CHECKER_TABLES, *RULES))
-            found.problems.append(f"unknown table {name!r}; the tables are {tables}")
+        if name not in (*CHECKER_TABLES, *RULES, *host, SECTIONS_TABLE):
+            tables = ", ".join((*CHECKER_TABLES, *RULES, *host))
+            found.problems.append(
+                f"unknown table {name!r}; the tables are {tables}, and a host rule's table is "
+                f"declared under [{SECTIONS_TABLE}]"
+            )
     external, dynamic_attrs, loads, default_arguments = _checker(document, found.problems)
     state = _state_kinds(document, found.problems)
-    for rule in RULES:
+    for rule in (*RULES, *host):
         if rule in document:
-            _rule(rule, document[rule], found, source, state)
+            _rule(rule, document[rule], found, state, host)
     return (
         Policy(
             external=external,
@@ -444,50 +469,36 @@ def _parse(text: str, source: _PolicySource) -> tuple[Policy, list[str]]:
             unless=found.unless,
             lines=lines,
             state_kinds=state,
+            sections=host,
         ),
         found.problems,
     )
 
 
-# meiva:note
-# Current working-tree policy never accepts the retired ambient registry vocabulary.
 def parse(text: str) -> tuple[Policy, list[str]]:
-    return _parse(text, _PolicySource.CURRENT)
+    return _parse(text, infer=False)
 
 
 # meiva:note
-# A Git snapshot may use the immediately preceding registry format. Unknown tables, unknown
-# sections, invalid TOML and invalid values still fail through the common parser.
+# A policy from another revision, as a comparison reads its base: the same reader, except that a host
+# table the revision does not declare under `[sections]` takes the shape its values are written in.
 def parse_snapshot(text: str) -> tuple[Policy, list[str]]:
-    return _parse(text, _PolicySource.SNAPSHOT)
+    return _parse(text, infer=True)
 
 
 # meiva:note
 # The policy of the checkout the caller already holds, read through the checkout's own port: this
 # module decides the file's format and never opens it, so the read belongs to whatever entry built
-# the checkout (a process entry, a lint script, the comparison snapshot a command runs in).
-def _load(repo: Checkout, source: _PolicySource) -> Policy:
+# the checkout (a process entry, a lint script, the comparison snapshot a command runs in). An
+# absent file lists nothing; malformed input fails.
+@cache
+def load(repo: Checkout) -> Policy:
     if not repo.has_file(POLICY):
         return Policy()
-    policy, problems = _parse(repo.load_text(POLICY), source)
+    policy, problems = parse(repo.load_text(POLICY))
     if problems:
         raise ValueError(f"{POLICY}: {problems[0]}")
     return policy
-
-
-# meiva:note
-# The live policy never accepts the retired snapshot vocabulary. An absent file lists nothing;
-# malformed input fails through the shared policy reader.
-@cache
-def load(repo: Checkout) -> Policy:
-    return _load(repo, _PolicySource.CURRENT)
-
-
-# meiva:note
-# Historical consumers share the policy owner's absent-file and input validation boundary.
-# The explicit entry never relaxes live parsing or caches a mutable temporary snapshot.
-def load_snapshot(repo: Checkout) -> Policy:
-    return _load(repo, _PolicySource.SNAPSHOT)
 
 
 # meiva:note

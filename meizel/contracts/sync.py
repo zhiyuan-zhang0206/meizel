@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from meizel.allowances import POLICY, RETIRED_AMBIENT_SECTIONS, Policy, load_snapshot, parse
+from meizel.allowances import POLICY, Policy, parse, parse_snapshot
 from meizel.contracts.analysis import Analysis, analyze
 from meizel.contracts.debt_edit import prune as prune_debt
 from meizel.contracts.declare import declare
@@ -232,22 +232,34 @@ def sync_manifests(
 
 
 # meiva:note
-# Normalize only a disposable historical checkout. Decode first, so malformed or unknown input
-# fails before any write. Retired metadata remains in the returned Policy for migration and diff;
-# every surviving policy entry and its reason keeps its original text for the current scanner.
+# The policy of a disposable comparison checkout, read once before anything is written there: a
+# malformed or unknown table fails the comparison as unreadable instead of being judged.
 def prepare_policy_snapshot(repo: Checkout) -> Policy:
-    try:
-        policy = load_snapshot(repo)
-    except ValueError as error:
-        raise MeizelError(f"cannot read the manifests of snapshot: {error}") from error
-    text = "\n".join(policy.lines) + ("\n" if policy.lines else "")
-    removals = {"ambient-state": {key: {"*"} for key in RETIRED_AMBIENT_SECTIONS}}
-    current = remove_entries(text, removals)
-    _, remaining = parse(current)
-    if remaining:
-        raise MeizelError(f"cannot normalize {POLICY} snapshot: {remaining[0]}")
-    if current != text:
-        _apply(repo, {POLICY: removals})
+    if not repo.has_file(POLICY):
+        return Policy()
+    text = repo.load_text(POLICY)
+    policy, problems = parse_snapshot(text)
+    if problems:
+        raise MeizelError(f"cannot read the manifests of snapshot: {POLICY}: {problems[0]}")
+    declared, _ = parse(text)
+    missing = {
+        rule: shapes for rule, shapes in policy.sections.items() if rule not in declared.sections
+    }
+    if missing:
+        # meiva:note
+        # A base from before `[sections]` is normalized in its disposable checkout: the shapes its
+        # values were written in are declared there, so every later reader of that tree reads it as
+        # the live format.
+        lines = [
+            line
+            for rule, shapes in missing.items()
+            for line in (
+                f"[sections.{rule}]",
+                *(f'"{section}" = "{shape}"' for section, shape in shapes.items()),
+                "",
+            )
+        ]
+        repo.apply_plan(EditPlan(writes={repo.root / POLICY: "\n".join(lines) + "\n" + text}))
     return policy
 
 

@@ -12,6 +12,8 @@ from meizel.tests.synthetic import RepoFactory
 # The reference host: a snapshot of a working repository's policy.
 HOST_POLICY = Path(__file__).resolve().parents[1] / "host/policy.toml"
 POLICY = (
+    '[sections.ambient-state]\npure-callees = "names"\nwiring-callees = "names"\nsites = "reasons"\n\n'
+    '[sections.single-owner]\n"*" = "reasons"\n\n'
     '[ambient-state]\npure-callees = ["re.compile", "typing.TypeVar"]\n\n'
     '[ambient-state.sites]\n"a.py::hidden-cache:f" = "a pure derivation"\n\n'
     '[single-owner.postgres-dial]\n"b.py" = "cannot go through the owner"\n'
@@ -43,7 +45,6 @@ def test_an_absent_policy_lists_nothing(make_repo: RepoFactory) -> None:
     ("rule", "section", "shape"),
     [
         ("ambient-state", "no-such-section", "reasons"),
-        ("no-such-rule", "files", "reasons"),
         ("ambient-state", "pure-callees", "reasons"),
         ("type-checking", "files", "names"),
         ("single-owner", "postgres-dial", "names"),
@@ -119,23 +120,49 @@ def test_the_public_surface_names_come_from_the_policy() -> None:
     assert allowances.parse("")[0].names("public-surface", "names") == ()
 
 
-@pytest.mark.parametrize("section", sorted(allowances.RETIRED_AMBIENT_SECTIONS))
-def test_only_the_snapshot_decoder_accepts_each_retired_names_list(section: str) -> None:
-    text = f'[ambient-state]\n{section} = ["base.db", "base.db:Database"]\n'
-    assert allowances.parse(text)[1]
-    policy, problems = allowances.parse_snapshot(text)
+# meiva:note
+# A host rule's tables are read once `[sections]` declares their shape: names lists and reasons tables
+# by section, and `"*"` for a reasons table per governed name.
+DECLARED_HOST = (
+    '[sections.clock-lattice]\nfamily-modules = "names"\nindependent-clocks = "reasons"\n\n'
+    '[sections.single-owner]\n"*" = "reasons"\n\n'
+    '[clock-lattice]\nfamily-modules = ["base/timing.py"]\n\n'
+    '[clock-lattice.independent-clocks]\nSTALL_S = "its own clock"\n\n'
+    '[single-owner.postgres-dial]\n"b.py" = "cannot go through the owner"\n'
+)
+
+
+def test_a_declared_host_rule_is_read_like_a_checker_rule() -> None:
+    policy, problems = allowances.parse(DECLARED_HOST)
     assert problems == []
-    assert policy.named[("ambient-state", section)] == ("base.db", "base.db:Database")
+    assert policy.names("clock-lattice", "family-modules") == ("base/timing.py",)
+    assert policy.reasons("clock-lattice", "independent-clocks") == {"STALL_S": "its own clock"}
+    assert policy.reasons("single-owner", "postgres-dial") == {
+        "b.py": "cannot go through the owner"
+    }
 
 
-@pytest.mark.parametrize("value", ["3", '"base.db"', '["base.db", 3]', '[""]', '{x="why"}'])
-def test_snapshot_decoder_preserves_retired_shape_validation(value: str) -> None:
-    assert allowances.parse_snapshot(f"[ambient-state]\ndb-handles = {value}\n")[1]
+def test_an_undeclared_host_table_is_refused() -> None:
+    problems = allowances.parse('[clock-lattice]\nfamily-modules = ["base/timing.py"]\n')[1]
+    assert any("[sections]" in problem for problem in problems)
 
 
-@pytest.mark.parametrize("text", ["[unknown]\n", "[ambient-state]\nunknown = []\n", "["])
-def test_snapshot_decoder_rejects_every_other_unknown_or_malformed_input(text: str) -> None:
-    assert allowances.parse_snapshot(text)[1]
+@pytest.mark.parametrize(
+    "declaration",
+    [
+        '[sections.purity]\nfiles = "reasons"\n',
+        '[sections.external]\nfiles = "reasons"\n',
+        '[sections.Bad_Name]\nfiles = "reasons"\n',
+        '[sections.mine]\nfiles = "readers"\n',
+    ],
+)
+def test_a_declaration_cannot_take_a_checker_table_or_an_unknown_shape(declaration: str) -> None:
+    assert allowances.parse(declaration)[1]
+
+
+def test_a_section_the_declaration_does_not_name_is_refused() -> None:
+    text = '[sections.mine]\nfiles = "reasons"\n\n[mine]\nother = []\n'
+    assert any("has no section 'other'" in problem for problem in allowances.parse(text)[1])
 
 
 # meiva:note
@@ -378,3 +405,10 @@ def test_a_rule_answer_does_not_cover_another_rule() -> None:
         "ambient-state.sink-callees.sink",
         "ambient-state.sink-callees.sink_now",
     ]
+
+
+def test_an_undeclared_host_rule_lists_nothing() -> None:
+    policy, problems = allowances.parse("")
+    assert problems == []
+    assert policy.reasons("single-owner", "postgres-dial") == {}
+    assert policy.names("clock-lattice", "family-modules") == ()

@@ -9,7 +9,7 @@
   record nothing (a test pins this, so the sentence stays true). The last form is the real cost:
   a path that came from the command line is relative, and a dozen lint scripts resolve exactly
   those (`scripts/lint/code_structure.py`, `scripts/lint/fixture_scope.py`,
-  `meizel/language/no_script_sibling_imports.py` and others). The table treats both names as `None`
+  the host's own sibling-import guard and others). The table treats both names as `None`
   only because a recorded `cwd` on every `resolve()` of an absolute path (about 560 sites in 290
   files) would bury the few that matter; the purity layer already judges them as file-system
   reads. `os.path.abspath` is different only because its purpose is to anchor: it is `cwd`, also

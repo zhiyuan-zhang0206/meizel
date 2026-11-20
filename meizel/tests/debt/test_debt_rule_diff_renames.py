@@ -15,9 +15,20 @@ from meizel.tests.synthetic import RepoFactory, commit, git, run, write
 
 
 # meiva:note
-# `debt diff` without extra pathspecs: it has to detect the rule change by itself.
+# `debt diff` with `meizel/` standing in for the checker's rule code: a host names what moves its
+# checker with `--waive-if-changed`, and an edit there makes the interval a rule change.
 def plain_diff(root: Path, on_growth: str = "fail") -> int:
-    return run(root, "debt", "diff", "--against", "HEAD", "--on-growth", on_growth)
+    return run(
+        root,
+        "debt",
+        "diff",
+        "--against",
+        "HEAD",
+        "--on-growth",
+        on_growth,
+        "--waive-if-changed",
+        ":(glob)meizel/**",
+    )
 
 
 # meiva:note
@@ -152,67 +163,6 @@ def renamed(root: Path) -> list[tuple[str, str]]:
             old, _, new = rest.partition("\t")
             pairs.append((old, new))
     return pairs
-
-
-# meiva:note
-# The device's own bytes are the change's, and the content's are the reference's: a file the change
-# moves across that boundary must not carry the other side's copy into the replay.
-INTO_DEVICE = {
-    "meizel.toml": '[roles]\napplication = ["app"]\ntooling = ["meizel"]\n',
-    "app/__init__.py": "",
-    "app/h.py": "def one() -> int:\n    return 1\n\n\ndef two() -> int:\n    return 2\n\n\n"
-    "def three() -> int:\n    return 3\n\n\ndef four() -> int:\n    return 4\n",
-    "meizel/rule.py": "RULE = 1\n",
-}
-
-
-def test_a_file_moved_into_the_rule_code_runs_the_change_s_own_bytes(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
-) -> None:
-    root = make_repo(INTO_DEVICE)
-    commit(root)
-    git(root, "mv", "app/h.py", "meizel/h.py")
-    write(
-        root,
-        {
-            "meizel/h.py": "import os\n\n\ndef one() -> int:\n    return int(os.environ['A'])\n\n\n"
-            "def two() -> int:\n    return 2\n\n\ndef three() -> int:\n    return 3\n\n\n"
-            "def four() -> int:\n    return 4\n"
-        },
-    )
-    assert ("app/h.py", "meizel/h.py") in renamed(root)
-    assert run(root, "debt", "record", ".") == 0
-    write(root, {})
-    capsys.readouterr()
-    assert plain_diff(root) == 0
-    out = capsys.readouterr().out
-    assert "meizel: rules +1 / content +0 / repaid +0 against HEAD" in out
-
-
-OUT_OF_DEVICE = {
-    "meizel.toml": '[roles]\napplication = ["app"]\ntooling = ["meizel"]\n',
-    "app/__init__.py": "",
-    "app/keep.py": "",
-    "app/meizel.toml": 'exports = ["keep.py"]\n',
-    "meizel/meizel.toml": '[debt.ambient-read]\n"h.py#environ os.environ" = 1\n',
-    "meizel/rule.py": "RULE = 1\n",
-    "meizel/h.py": "import os\n\nVALUE = os.environ['A']\n",
-}
-
-
-def test_a_file_moved_out_of_the_rule_code_is_measured_as_content(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
-) -> None:
-    root = make_repo(OUT_OF_DEVICE)
-    commit(root)
-    git(root, "mv", "meizel/h.py", "app/h.py")
-    write(root, {"meizel/rule.py": "RULE = 2\n"})
-    assert run(root, "debt", "carry", "--base", "HEAD") == 0
-    git(root, "add", "-A")
-    capsys.readouterr()
-    assert plain_diff(root) == 0
-    out = capsys.readouterr().out
-    assert "meizel: rules +0 / content +0 / repaid +0 against HEAD" in out
 
 
 def test_a_read_added_while_the_file_moves_is_content_growth(

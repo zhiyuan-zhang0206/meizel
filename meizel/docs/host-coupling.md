@@ -16,24 +16,15 @@ tooling. Paths are non-test code and lines are those of the commit that wrote th
     `lanes.py:51-59` `NATIVE_MODULES`.
 - Contracts: `contracts/enumerations.py:190` `_outside_rule` (`meizel/`, `docs/`);
   `contracts/ambient_read.py:50` `_GOVERNED_ROLES`, the host's role vocabulary.
-- Single decision owners (`owners/`): `decisions.py:33-54` and `:150-161` (the `postgres-dial`
-  decision, with the `psycopg` entry points it recognises); `timing_judgement_baseline.json`, a
-  baseline of the host's own test files.
-- Rules over the host's conventions (`state/`): `no_os_environ.py:2-5`, `:48` and `:75` and
-  `no_os_environ_plan.py` (the `Settings` singleton and its config registry);
-  `turn_scoped_config.py` and `turn_scoped_config_plan.py` (the `settings.<a>.<b>` form);
-  `machine_role.py:4` and `:34` (`machine_role()` and `MachineIdentity`);
-  `ambient_state/allowlist.py:56` and `:78` (`settings_names`), `ambient_state/__init__.py:117`
-  and `ambient_state/scan.py:23` and `:168-194` (the `settings` vocabulary in the text and the
-  detection).
 - Paths of the host's tooling: `lint_common.py:67-74` (`scripts/lint/`, `scripts/structure/`, ...);
-  `language/purity.py:72` (`scripts/<top>.py`); `language/python_commands.py:8` and
-  `language/path_imports.py:37`; `graph/python_layout.py:176-183` (the standalone-project CI
-  contract: `uv.lock`, a `cpu` extra).
-- Documentation paths in diagnostics: `budgets/budget_plans.py:53`, `language/path_imports.py:37`,
-  `language/scan.py:69` and `owners/decisions.py:132` point at
+  `language/purity.py:72` (`scripts/<top>.py`); `language/python_commands.py:8`;
+  `graph/python_layout.py:176-183` (the standalone-project CI contract: `uv.lock`, a `cpu` extra).
+- Documentation paths in diagnostics: `budgets/budget_plans.py` and `language/scan.py` point at
   `docs/conventions/python-conventions.md`.
-- Toolchain conventions, a weaker coupling: `source_evidence/loader.py:25`, `:26` and `:69` read
-  `pnpm-lock.yaml`.
+
+The rules that were the host's own (single decision owners, the clock lattice, the timing judgement,
+ambient state, the `Settings` rules, the machine-role reader, path imports and the script-sibling
+guard) left this package for the host in 0.2.0, and the policy tables they read are declared by the
+host under `[sections]`.
 
 Parent: [the meizel node](meizel.md).

@@ -40,5 +40,3 @@ Explicit [static ownership and refusal canaries](../../../tests/fixtures/docs/st
 continue to own static-test admission. Explain neither admits a test to that lane
 nor measures its setup cost or authorizes removal of native services.
 
-Explicit [TypeScript holder receipts](typescript-evidence.md)
-add independent non-gating source evidence only when an index is supplied.

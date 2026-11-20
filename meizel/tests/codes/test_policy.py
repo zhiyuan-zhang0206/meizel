@@ -17,7 +17,6 @@ from meizel.tests.synthetic import (
     diagnostics,
     git,
     run,
-    seat,
     write,
 )
 
@@ -108,6 +107,9 @@ def test_a_malformed_policy_fails_at_its_own_path(make_repo: RepoFactory, policy
 
 
 LINTS = (
+    '[sections.ambient-state]\npure-callees = "names"\nsink-facades = "reasons"\n\n'
+    '[sections.clock-lattice]\nfamily-modules = "names"\n\n'
+    '[sections.single-owner]\n"*" = "reasons"\n\n'
     '[ambient-state]\npure-callees = ["re.compile"]\n\n'
     '[ambient-state.sink-facades]\n"a.py" = "a write-only sink"\n\n'
     '[clock-lattice]\nfamily-modules = ["a.py"]\n\n'
@@ -129,7 +131,9 @@ def test_policy_diff_lists_the_lint_tables_too(
     commit(root)
     changed = (
         POLICY
-        + '\n[ambient-state]\npure-callees = ["re.compile", "typing.TypeVar"]\n\n'
+        + "\n"
+        + LINTS.split("[ambient-state]", 1)[0]
+        + '[ambient-state]\npure-callees = ["re.compile", "typing.TypeVar"]\n\n'
         + '[ambient-state.sink-facades]\n"a.py" = "another reason"\n\n'
         + '[single-owner.postgres-dial]\n"d.py" = "added"\n'
     )
@@ -198,29 +202,6 @@ def test_policy_diff_treats_an_unborn_policy_as_empty(
     assert run(root, "policy", "diff", "--against", "HEAD") == 0
     assert "+ [external] app/runner.py" in capsys.readouterr().out
     assert analysis_of(root).verdict is not None
-
-
-def test_historical_policy_diff_keeps_retired_entries_and_surviving_reasons(
-    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
-) -> None:
-    from meizel.contracts.sync import prepare_policy_snapshot
-
-    old = (
-        '[ambient-state]\ndb-modules = ["base#db"]\ndb-handles = ["base:Database"]\n'
-        '[ambient-state.sites]\n"a.py::cache" = "keep # and this reason"\n'
-    )
-    root = make_repo({"meizel.policy.toml": old})
-    commit(root)
-    metadata = prepare_policy_snapshot(seat(root).repo)
-    assert metadata.named[("ambient-state", "db-handles")] == ("base:Database",)
-    normalized = (root / "meizel.policy.toml").read_text()
-    assert '"a.py::cache" = "keep # and this reason"' in normalized
-    assert "db-modules" not in normalized and "db-handles" not in normalized
-    assert run(root, "policy", "diff", "--against", "HEAD") == 0
-    out = capsys.readouterr().out
-    assert "- [ambient-state.db-modules] base#db" in out
-    assert "- [ambient-state.db-handles] base:Database" in out
-    assert "ambient-state.sites" not in out
 
 
 TABLE = "approved-patches.files"
@@ -529,3 +510,25 @@ def test_third_party_imports_fail_closed_unless_in_pure_third_party(
     assert len(diags) == 1
     assert "impure import `some_unknown_third_party` in strict module" in diags[0].message
     assert diags[0].path == "pkg/blocked.py"
+
+
+# meiva:note
+# A base written before `[sections]` existed is still compared: its host tables take the shape of their
+# values, so declaring them in the change is no change of the entries.
+def test_a_base_without_section_declarations_is_compared_by_the_shape_of_its_values(
+    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
+) -> None:
+    old = (
+        '[clock-lattice]\nfamily-modules = ["a.py"]\n\n[single-owner.postgres-dial]\n"b.py" = "x"\n'
+    )
+    root = repo(make_repo, old)
+    commit(root)
+    declared = (
+        '[sections.clock-lattice]\nfamily-modules = "names"\n\n'
+        '[sections.single-owner]\n"*" = "reasons"\n\n' + old
+    )
+    write(root, {"meizel.policy.toml": declared})
+    assert run(root, "policy", "diff", "--against", "HEAD") == 0
+    out = capsys.readouterr().out
+    assert "clock-lattice" not in out
+    assert "single-owner" not in out

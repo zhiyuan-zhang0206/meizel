@@ -34,31 +34,45 @@ new manifest of its own, its existing reads turn into recorded debt, and the
 recorded-debt gate reports the growth as the rules' doing rather than the
 change's. Narrowing again is a decision review must see.
 
-## Lint-rule tables
+## Rule tables
 
-The same file holds the exemptions of the lint rules that live in `meizel/`, one top-level
-table per rule, so no rule keeps a list of exceptions in its code. A table has sections of
-two shapes: `name = "reason"` entries (a file, a site, an environment variable; the reason is
-required) and lists of names (a vocabulary of callees). The rules and their sections are the
-closed list `RULES` in `meizel/allowances.py`, which is also the only reader: a typo in a
-table or section name is `policy-syntax`, not an exemption that silently allows nothing.
+The same file holds the exemptions of the checker's rules, one top-level table per rule, so no
+rule keeps a list of exceptions in its code. A table has sections of two shapes:
+`name = "reason"` entries (a file, a site, an environment variable; the reason is required) and
+lists of names (a vocabulary of callees). The checker's rules and their sections are the closed
+list `RULES` in `meizel/allowances.py`, which is also the only reader: a typo in a table or
+section name is `policy-syntax`, not an exemption that silently allows nothing.
 
 | Table | Rule | Sections |
 |---|---|---|
 | `ambient` | the state kinds the repository keeps itself and the names through which each is reached (`meizel/contracts/ambient_read.py`, [ambient reads](../ambient.md)) | no fixed sections: each key declares one kind (a lowercase name that is not a standard-library kind) and lists its names (`name()` acquires only when called) |
 | `ambient-readers.<kind>` | functions that read the world on their caller's behalf (`meizel/contracts/ambient_read.py`, [readers](../ambient-readers.md)) | one table per kind of `AmbientKind` and one per kind `[ambient]` declares: `pkg.module.name()` or `pkg.module.Class.method()`, or `pkg.module.NAME` for an object read at every use, and what it reads |
-| `ambient-state` | module-level state (`meizel/state/ambient_state`) | `sink-callees`, `sink-callee-suffixes`, `wiring-callees`, `pure-callees`, `pure-chain-callees`, `skill-script-patterns`, `config-modules`, `config-readers` (lists); `sink-facades`, `pure-repo-callees`, `sites` |
-| `clock-lattice` | lattice-vocabulary constants | `family-modules` (list); `independent-clocks` (`path::NAME`) |
-| `single-owner.<decision>` | one owner per decision | one table of module paths per decision, e.g. `postgres-dial`, plus `<decision>-owners` lists |
-| `no-os-environ` | a test sets an environment variable that `Settings` models | `provider-key-vars`, `live-read-vars`, `files` (test files that exercise the settings-free boundary); `test-only-dirs`, `rule-inputs` (lists) |
-| `turn-scoped-config` | per-agent settings reads | `files`, `plugin-mechanism-files`; `scan-dirs`, `extra-files`, `rule-inputs` (lists) |
-| `path-imports` | runtime `sys.path` mutation | `scope`, `skills-scope` (lists) |
 | `python-commands` | bare Python subprocess invocations | `argv-wrappers` (list) |
 | `approved-patches` | test-support files that patch on purpose (`meizel/contracts/analysis.py`, [patching](../patching/patching.md)) | `files`; `max-files` (the list's budget: past it a run fails as `approved-budget`) |
 | `purity` | mechanical purity rules (`strict` / `strict-to-be`) | `pure-third-party`, `impure-imports`, `impure-calls`, `impure-fixtures`, `max-uses`, `max-exports`, `max-public-symbols`, `max-params`, `max-attr-hops` (lists) |
 | `public-surface` | module-level names, besides `__all__`, whose list value names what a module exports. The selection cutoff that read it was removed, so a repository declares no names; the table stays known so an earlier tree still parses | `names` (list) |
 | `type-checking` | `if TYPE_CHECKING:` | `files` |
 | `typescript` | TypeScript/TSX scanning (`meizel/language/typescript.py`) | `scopes`, `import-sources`, `aliases`, `extensions`, `impure-calls`, `impure-hooks`, `inlined-env-roots`, `package-dir` (lists) |
+
+## Host rules
+
+A repository's own rules, the ones its gates run and `meizel check` does not, keep their
+exemptions in the same file. The `[sections]` table declares the shape of each of their tables,
+section by section: `"names"` for a list, `"reasons"` for a `name = "reason"` table, and `"*"`
+for a reasons table per name the rule governs:
+
+```toml
+[sections.clock-lattice]
+family-modules = "names"
+independent-clocks = "reasons"
+
+[sections.single-owner]
+"*" = "reasons"
+```
+
+A declared table is read by the same reader (`Policy.names`, `Policy.reasons`), and its entries are
+part of `policy diff` and the removal record like the checker's own. An undeclared table, a section
+the declaration does not name, or a declaration that takes a checker table is `policy-syntax`.
 
 An entry that names a file or a site still goes stale when the file is gone or the site is no
 longer reported; the lint fails and says which table to remove it from. A lint reads the file

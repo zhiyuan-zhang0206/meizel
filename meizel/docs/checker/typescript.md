@@ -86,8 +86,7 @@ surfaces still permit collection-content changes. Unknown factory results are
 not claimed to be mutable allocations. Static rule results do not establish
 whole-program purity, deep immutability, runtime cycle behavior or domain-level
 architectural quality. Counts from different policies and coverage are not quality
-rankings. The optional [[meizel/docs/checker/typescript-evidence.md|holder
-receipt]] supplies separate, bounded provenance observations.
+rankings.
 
 ## Environment reads
 

@@ -25,7 +25,6 @@ from meizel.contracts.sync import Sync, sync_manifests
 from meizel.graph import ReachabilityScope, python_reverse_closure, reachability_analysis
 from meizel.graph.model import Diagnostic, MeizelError
 from meizel.graph.universe import Checkout, SourceTree
-from meizel.source_evidence import Evidence, load_report
 from meizel.test_graph.model import TestLanes, TestSelection
 
 __all__ = ["CommandDeps", "build_parser", "dispatch"]
@@ -65,8 +64,6 @@ class Repository(Checkout, Protocol):
 # entry nobody has reviewed and a strict module may not read the clock.
 @dataclass(frozen=True, slots=True)
 class CommandDeps:
-    tool_root: Path
-    toolchain: Path
     read_roles: Callable[[Checkout], Mapping[str, tuple[str, ...]]]
     read_text: Callable[[Path, str], str]
     relative_target: Callable[[str], str]
@@ -283,11 +280,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     show = commands.add_parser("explain", help="show a node's view of the graph")
     show.add_argument("path")
-    show.add_argument(
-        "--typescript-index",
-        type=Path,
-        help="explicit additional holder-evidence index; ordinary analysis still uses the compiler",
-    )
     impacted = commands.add_parser(
         "impacted",
         help="print tracked Python files in the reverse-import closure of changed files",
@@ -582,7 +574,7 @@ def _run_sync(repo: Repository, deps: CommandDeps, opts: Sync) -> int:
 def _run_surface(repo: Repository, against: str) -> int:
     # meiva:note
     # The base is a worktree of its own, so both sides are read by the same readers: the policy's
-    # written for a historical tree, and the manifests' as they stand there. A ref whose tree cannot
+    # and the manifests' as they stand there. A ref whose tree cannot
     # be checked out is a run that cannot compare, and exits as one.
     with repo.checkout(against) as base:
         before = Surface.of(base.universe(), historical=True)
@@ -599,20 +591,9 @@ def _run_policy(repo: Repository, opts: PolicyQuery) -> int:
     return 0
 
 
-def _run_explain(repo: Repository, root: Path, opts: Explain, deps: CommandDeps) -> int:
+def _run_explain(repo: Repository, opts: Explain, deps: CommandDeps) -> int:
     analysis = analyze(repo.universe(), jobs=opts.jobs)
-    node = deps.relative_target(opts.path)
-    report = load_report(
-        Evidence(
-            tree=deps.source_tree(root),
-            tool_tree=deps.source_tree(deps.tool_root),
-            toolchain_tree=deps.source_tree(deps.toolchain),
-        ),
-        set(analysis.universe.files),
-        node,
-        opts.typescript_index,
-    )
-    print(explain(analysis, node, report))
+    print(explain(analysis, deps.relative_target(opts.path)))
     return 0
 
 
@@ -769,9 +750,7 @@ class Command:
 # The command a parsed argv names: a table of commands and nothing else. The entry parsed the argv
 # and opened the repository; this decides which command sees which values, and hands the two shell
 # readers down to the one command that needs them.
-def dispatch(
-    repo: Repository, root: Path, base: Path, args: argparse.Namespace, deps: CommandDeps
-) -> int:
+def dispatch(repo: Repository, base: Path, args: argparse.Namespace, deps: CommandDeps) -> int:
     cmd = read_args(args, Command).command
     if cmd == "check":
         return _run_check(repo, deps, read_args(args, Check))
@@ -780,7 +759,7 @@ def dispatch(
     if cmd == "policy":
         return _run_policy(repo, read_args(args, PolicyQuery))
     if cmd == "explain":
-        return _run_explain(repo, root, read_args(args, Explain), deps)
+        return _run_explain(repo, read_args(args, Explain), deps)
     if cmd == "impacted":
         return _run_impacted(repo, deps, read_args(args, Impacted))
     if cmd == "tests":

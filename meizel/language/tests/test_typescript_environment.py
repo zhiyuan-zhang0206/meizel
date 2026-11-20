@@ -6,14 +6,14 @@ from typing import Protocol
 
 import pytest
 
-from meizel.allowances import parse_snapshot
+from meizel.allowances import parse
 from meizel.checkout import GitRepo
 from meizel.graph.model import Sources
 from meizel.graph.universe import Universe
 from meizel.language.typescript import scan_batch
 
 BUNDLED = "ui/web/src/lib/x.ts"
-_POLICY, _ = parse_snapshot('[typescript]\ninlined-env-roots = ["ui/web/src/"]\n')
+_POLICY, _ = parse('[typescript]\ninlined-env-roots = ["ui/web/src/"]\n')
 UNBUNDLED_READ = "export const base = process.env.NEXT_PUBLIC_API_BASE;\n"
 UNBUNDLED_PATHS = (
     "ui/web/next.config.ts",

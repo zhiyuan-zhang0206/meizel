@@ -1,3 +1,45 @@
+# sections: the tables of this repository's own rules (`scripts/rules/`), section by section, with the
+# shape each is written in. The checker reads and reviews them like its own tables (`policy diff`, the
+# `Policy-Removal` gate) without knowing what they mean; `"*"` is a reasons table per governed name.
+[sections.ambient-state]
+sink-callees = "names"
+sink-callee-suffixes = "names"
+wiring-callees = "names"
+pure-callees = "names"
+pure-chain-callees = "names"
+skill-script-patterns = "names"
+config-modules = "names"
+config-readers = "names"
+sink-facades = "reasons"
+pure-repo-callees = "reasons"
+sites = "reasons"
+
+[sections.clock-lattice]
+family-modules = "names"
+independent-clocks = "reasons"
+
+[sections.no-os-environ]
+test-only-dirs = "names"
+rule-inputs = "names"
+provider-key-vars = "reasons"
+live-read-vars = "reasons"
+files = "reasons"
+
+[sections.path-imports]
+scope = "names"
+skills-scope = "names"
+
+[sections.single-owner]
+"*" = "reasons"
+postgres-dial-owners = "names"
+
+[sections.turn-scoped-config]
+scan-dirs = "names"
+extra-files = "names"
+rule-inputs = "names"
+files = "reasons"
+plugin-mechanism-files = "reasons"
+
 [external]
 "agent/execution/child.py" = "executes the agent-authored code of one execute_code call"
 "agent/graph/tests/test_agent_traceback.py" = "executes agent-style code to check how its traceback is rendered"
