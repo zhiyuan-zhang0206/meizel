@@ -18,7 +18,10 @@ through a small Node adapter.
 
 ## Install
 
-meizel has no runtime Python dependencies. It needs Python 3.12 or newer. To use it as a git
+meizel has no runtime Python dependencies. It runs on Python 3.12: its standard-library tables (which
+modules are the standard library's, and what each public name of `os`, `time`, `pathlib`, ... reads)
+are judged on that interpreter, and it refuses to run on another rather than judge new names by a
+default. To use it as a git
 dependency of a project managed by uv:
 
 ```toml

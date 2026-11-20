@@ -50,9 +50,29 @@ class _EntryOptions:
     repo: Path | None
 
 
+# The interpreter the standard-library tables were judged on: which modules are the standard
+# library's, and what each public name of a channel module reads (`meizel.graph.ambient_surface`). A
+# newer interpreter adds names no table has judged, so the checker refuses to answer there rather
+# than judge them by a default.
+SUPPORTED_PYTHON = (3, 12)
+
+
+def unsupported_python(version: tuple[int, int]) -> str | None:
+    if version == SUPPORTED_PYTHON:
+        return None
+    wanted = ".".join(map(str, SUPPORTED_PYTHON))
+    return (
+        f"the standard-library tables are judged on Python {wanted}; this is "
+        f"{'.'.join(map(str, version))}, whose new names no table has judged — run meizel on {wanted}"
+    )
+
+
 # Run one checker command from argv and return the process exit status.
 def main(argv: list[str]) -> int:
     args = cli.build_parser().parse_args(argv)
+    if (refused := unsupported_python(sys.version_info[:2])) is not None:
+        print(f"meizel: {refused}", file=sys.stderr)
+        return 2
     options = cli.read_args(args, _EntryOptions)
     # The one place the processor count is read: below the entry, `jobs=None` is serial.
     jobs = options.jobs if options.jobs is not None else min(os.cpu_count() or 1, 8)

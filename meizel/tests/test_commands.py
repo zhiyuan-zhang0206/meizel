@@ -553,3 +553,14 @@ def test_no_snapshot_coverage_is_visible_in_command_output_and_full_artifact(
     table = (root / ".cache/meizel/budgets.md").read_text()
     assert "Memory-pool coverage: not-provided" in table
     assert "memory-index-characters | 0" not in table
+
+
+# The standard-library tables are judged on one interpreter; any other is refused with the version
+# it needs, never judged by a default.
+def test_an_unjudged_interpreter_is_refused_with_the_one_it_needs() -> None:
+    from meizel.entry import SUPPORTED_PYTHON, unsupported_python
+
+    assert unsupported_python(SUPPORTED_PYTHON) is None
+    refused = unsupported_python((3, 14))
+    assert refused is not None
+    assert "3.12" in refused and "3.14" in refused
