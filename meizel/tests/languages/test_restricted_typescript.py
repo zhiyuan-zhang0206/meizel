@@ -158,3 +158,23 @@ def test_both_languages_exempt_source_text_under_external(
         }
     )
     assert run(root, "check") == 0
+
+
+@pytest.mark.parametrize(
+    ("source", "advice"),
+    [
+        (EVAL, "[external]"),
+        (KEY, "[dynamic-attrs]"),
+        ("export * from './dep';\n", "name what is re-exported"),
+        ("declare global { interface Window { x: number } }\nexport {};\n", ".d.ts"),
+    ],
+)
+def test_a_hint_names_only_what_can_repair_the_form(
+    make_repo: RepoFactory, source: str, advice: str
+) -> None:
+    root = _repo(make_repo, {"app/dep.ts": DEP, "app/run.ts": source})
+    [found] = diagnostics(root, "restricted-typescript")
+    hint = " ".join(found.hints)
+    assert advice in hint
+    assert ("[dynamic-attrs]" in hint) == (advice == "[dynamic-attrs]")
+    assert ("[external]" in hint) == (advice == "[external]")

@@ -41,6 +41,30 @@ With the table absent every built-in frontend runs. A repository that enables on
 starts Node and never reads a `.ts` file; a name no frontend answers to is refused with the list of
 the ones that exist.
 
+## Planned: language-neutral rules
+
+Python and TypeScript are separate packages that share only the record (`file_scan.py`) and the
+`Frontend` shape, but the checker still holds some Python-specific judgments outside `language/python/`.
+Moving them is the precondition of a third frontend (Rust) that touches no checker code, and it waits
+for that: **prerequisite: a Rust frontend is approved**. With one consumer the abstraction would take the
+shape of Python's habits; with two the common part is visible. Today the checker holds:
+
+- `contracts/ambient_read.py`: `sources_from` resolves the policy's reader names through Python module
+  bindings into the `Sources` both frontends read. Plan: `Frontend.sources(manifests, policy, universe)`,
+  merged by the checker.
+- `contracts/rule.py`: pytest fixture purity and the standard-library purity tables;
+  `contracts/analysis.py`: the `TYPE_CHECKING` diagnostic, pytest plugin mounts and conftest scanning.
+  Plan: `Frontend.rules(scans, manifests, policy, universe)`, and the Python-only fields of `FileScan`
+  (fixtures, `type_checking`, `input_appends`, `entropy`, `deps`, `injected`) move into a record the
+  frontend owns.
+- `graph/`: Python import resolution (`imports.py`, `python_layout.py`, `Universe.resolve_module`,
+  `python_files`) and the hard-coded `typescript_files`. Plan: files per frontend in `Universe`; done
+  together with the Rust frontend, since both need the same change.
+
+Each step is accepted by running the whole repository before and after and comparing everything the
+run reports (the check output, recorded debt, the test lanes, every file's `FileScan`, every fact and
+diagnostic), byte for byte.
+
 ## Top-level packages and their roles
 
 The root `meizel.toml` declares which top-level directories exist and what each is,

@@ -9,7 +9,7 @@ from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.typescript.adapter import scan_source, typescript_extensions, typescript_files
 from meizel.language.typescript.cache import scan_typescript_cached
-from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
+from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS, restricted_hint
 
 __all__ = ["TYPESCRIPT"]
 
@@ -40,6 +40,5 @@ TYPESCRIPT = Frontend(
     DYNAMIC_ATTR_FORMS,
     Code.RESTRICTED_TS,
     "TypeScript",
-    "write the dependency statically (a literal import specifier, named re-exports, ambient "
-    "declarations in a .d.ts file) and pass an imported collaborator in instead of rewriting it",
+    restricted_hint,
 )

@@ -30,6 +30,15 @@ def _scan_source(
     return scan_source(universe, path, source, sources, policy=policy)
 
 
+def _restricted_hint(_form: str, manifest: str) -> str:
+    return (
+        "use a static import, and inject a collaborator instead of patching it; a file that genuinely "
+        f"owns a dynamic load declares it under [loads] in {manifest}; "
+        "a file that runs code from outside the repository declares it under [external] with a reason; "
+        "a file that owns an attribute name only the run knows declares it under [dynamic-attrs] with a reason"
+    )
+
+
 PYTHON = Frontend(
     "python",
     _owns,
@@ -40,5 +49,5 @@ PYTHON = Frontend(
     DYNAMIC_ATTR_FORMS,
     Code.RESTRICTED,
     "Python",
-    "use a static import, and inject a collaborator instead of patching it",
+    _restricted_hint,
 )

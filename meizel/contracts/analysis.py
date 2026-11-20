@@ -206,12 +206,7 @@ def _source_diagnostics(
                     item.line,
                     frontend.restricted_code,
                     f"{form} is outside the restricted {frontend.restricted_subset} subset",
-                    (
-                        f"{frontend.restricted_advice}; a file that genuinely "
-                        f"owns a dynamic load declares it under [loads] in {manifest_path(owner)}; "
-                        "a file that runs code from outside the repository declares it under [external] with a reason; "
-                        "a file that owns an attribute name only the run knows declares it under [dynamic-attrs] with a reason",
-                    ),
+                    (frontend.restricted_hint(item.form, manifest_path(owner)),),
                     DebtKey(owner, file_key(owner, scan.path, form)),
                 )
             )

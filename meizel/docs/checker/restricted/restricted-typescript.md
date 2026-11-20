@@ -42,8 +42,10 @@ or recorded as debt.
 - Rewriting a **global** rather than an import: `Object.defineProperty(window, ...)`,
   `Element.prototype.m = ...`, `document.x = ...`. Test setup does this routinely, and the object is
   not part of the repository's dependency graph; the form above is about what an `import` names.
-- Code strings through the timers (`setTimeout("code")`), `(function () {}).constructor("code")` and
-  other ways to reach `Function` without naming it, `Reflect.get(globalThis, key)`, and a computed key
+- Code strings through the timers (`setTimeout("code")`). `Function` is judged where the source
+  calls or constructs it by name: `const F = Function; F("code")`, `(function () {}).constructor("code")`
+  and other ways to reach it without naming it are not found, which is less than `eval`, judged in any
+  use. Also not found: `Reflect.get(globalThis, key)`, and a computed key
   on any other object.
 - Whether a literal-typed key is the right one: the compiler's type is the source's statement.
 

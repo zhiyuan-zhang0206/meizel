@@ -30,7 +30,8 @@ class Frontend:
     external_forms: frozenset[str]
     dynamic_attr_forms: frozenset[str]
     # How a restricted form of this language is reported: the code (a debt of the file's directory),
-    # the name of the subset the form is outside of, and the first thing to try instead.
+    # the name of the subset the form is outside of, and what to do about a form in the directory
+    # whose manifest is given.
     restricted_code: Code
     restricted_subset: str
-    restricted_advice: str
+    restricted_hint: Callable[[str, str], str]
