@@ -14,7 +14,12 @@ from meizel.language.python.record import python_record
 from meizel.language.python.scanner import TYPE_CHECKING_MESSAGE
 from meizel.roles import select_packages
 
-__all__ = ["python_rules", "type_checking_in_scope", "type_checking_violations"]
+__all__ = [
+    "python_rules",
+    "type_checking_in_scope",
+    "type_checking_lines",
+    "type_checking_violations",
+]
 
 
 _WRAPPER_HINTS = (
@@ -68,6 +73,11 @@ def type_checking_in_scope(path: str, packages: tuple[str, ...]) -> bool:
         and not path.rsplit("/", 1)[-1].startswith("test_")
         and path.split("/", 1)[0] in packages
     )
+
+
+# The lines of a Python scan that open a `TYPE_CHECKING` block: what `type_checking_violations` judges.
+def type_checking_lines(scan: FileScan) -> tuple[int, ...]:
+    return python_record(scan).type_checking
 
 
 def type_checking_violations(

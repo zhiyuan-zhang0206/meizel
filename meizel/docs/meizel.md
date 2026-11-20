@@ -68,6 +68,9 @@ shape of Python's habits; with two the common part is visible. Today the checker
   (`language/python/record.py`), the codec carries it as an opaque object, and
   `tests/languages/test_kernel_door.py` pins that no `contracts/` or `graph/` module imports the
   Python package or reads `FileScan.extra`. A scan cached before 0.10.0 is read again.
+  **Breaking for a host that reads a Python scan** (`meizel.api.scan_tree`): those six fields are no
+  longer attributes of `FileScan`; the one a host used, `type_checking`, is `type_checking_lines(scan)`
+  (0.10.1), which `type_checking_violations` takes as before.
 - `graph/`: Python import resolution (`imports.py`, `python_layout.py`, `Universe.resolve_module`,
   `python_files`) and the hard-coded `typescript_files`. Plan: files per frontend in `Universe`; done
   together with the Rust frontend, since both need the same change.

@@ -10,7 +10,7 @@ from meizel.entry import open_repository
 from meizel.graph.model import Code, FactKind, Sources
 from meizel.graph.universe import Universe
 from meizel.language import scan_source
-from meizel.language.python import python_record
+from meizel.language.python import type_checking_lines
 from meizel.tests.synthetic import STANDALONE_PROJECT, RepoFactory, run, seat, write
 
 GUARD = "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    import decimal\n"
@@ -45,7 +45,7 @@ def test_import_identity_records_direct_guards(tmp_path: Path, source: str) -> N
         Sources(),
         policy=allowances.Policy(),
     )
-    assert len(python_record(scan).type_checking) == 1
+    assert len(type_checking_lines(scan)) == 1
 
 
 @pytest.mark.parametrize(
@@ -73,7 +73,7 @@ def test_text_other_objects_and_shadowed_bindings_are_not_guards(
         Sources(),
         policy=allowances.Policy(),
     )
-    assert python_record(scan).type_checking == ()
+    assert type_checking_lines(scan) == ()
 
 
 @pytest.mark.parametrize(
@@ -195,7 +195,7 @@ def test_guard_records_do_not_skip_body_or_else_facts(tmp_path: Path) -> None:
         Sources(),
         policy=allowances.Policy(),
     )
-    assert python_record(scan).type_checking == (2,)
+    assert type_checking_lines(scan) == (2,)
     assert {f.dst for f in scan.facts if f.kind is FactKind.IMPORT} == {"pkg/a.py", "pkg/b.py"}
 
 
