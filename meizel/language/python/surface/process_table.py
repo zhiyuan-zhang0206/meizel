@@ -1,9 +1,9 @@
 # The judgments of the process channels: the `os` and `os.path` modules, `sys`, `time` and
-# `datetime`. The host, identity, entropy and anchor channels are in `ambient_surface.py`.
+# `datetime`. The host, identity, entropy and anchor channels are in `surface.py`.
 
 from __future__ import annotations
 
-from meizel.graph.ambient_judgments import (
+from meizel.language.python.surface.judgments import (
     BUILD,
     CONSTANT,
     FILES,

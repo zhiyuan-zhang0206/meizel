@@ -42,6 +42,7 @@ from meizel.graph.universe import Universe
 from meizel.language import (
     DYNAMIC_ATTR_FORMS,
     EXTERNAL_FORMS,
+    FRONTENDS,
     FileScan,
     RunView,
     enabled_frontends,
@@ -50,7 +51,6 @@ from meizel.language import (
     stale_readers,
 )
 from meizel.language.test_files import is_test_file
-from meizel.language.typescript import typescript_scopes
 from meizel.lint_common import is_test_path
 
 _EMPTY_POLICY = Policy()
@@ -102,20 +102,22 @@ class Analysis:
     # Warnings the run cannot turn into a violation: (manifest, the line to print).
     inert: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     stale_dynamic_attrs: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
+    # The policy the run read: it says which language owns which file.
+    policy: Policy = _EMPTY_POLICY
 
     def language_counts(self) -> dict[str, int]:
-        return {
-            "python_ast": sum(path.endswith(".py") for path in self.scans),
-            "typescript_compiler_ast": sum(not path.endswith(".py") for path in self.scans),
-        }
+        counts = {frontend.coverage_key: 0 for frontend in FRONTENDS.values()}
+        for path in self.scans:
+            counts[frontend_of(path, self.policy).coverage_key] += 1
+        return counts
 
     def coverage_line(self) -> str:
         counts = self.language_counts()
-        return (
-            f"meizel: analyzed {counts['python_ast']} Python files (stdlib AST), "
-            f"{counts['typescript_compiler_ast']} TypeScript files (compiler AST); "
-            "selection and rule coverage follow repository policy"
+        found = ", ".join(
+            f"{counts[frontend.coverage_key]} {frontend.coverage_phrase}"
+            for frontend in FRONTENDS.values()
         )
+        return f"meizel: analyzed {found}; selection and rule coverage follow repository policy"
 
     def ok_line(self) -> str:
         scope = "" if self.changed is None else f"{len(self.changed)} changed paths, "
@@ -545,13 +547,14 @@ def _inert_roots(
     *,
     analysed: Collection[str],
     tracked: Collection[str],
-    scopes: tuple[str, ...],
+    policy: Policy,
 ) -> list[tuple[str, str]]:
     judged = frozenset(path.rpartition("/")[0] for path in analysed)
     source_dirs = {
         path.rpartition("/")[0] for path in tracked if path.rsplit("/", 1)[-1] != "meizel.toml"
     }
-    covered = ", ".join(scopes) if scopes else "none declared"
+    frontends = enabled_frontends(policy)
+    reads = " and ".join(frontend.reads_scope(policy) for frontend in frontends)
     found: list[tuple[str, str]] = []
     for directory, manifest in sorted(manifests.items()):
         if not manifest.roots or directory in judged or directory not in source_dirs:
@@ -559,14 +562,14 @@ def _inert_roots(
         names = ", ".join(f'"{name}"' for name in sorted(manifest.roots))
         line = min(manifest.line_of(name) for name in manifest.roots)
         where = directory or "the repository root"
+        advice = [a for frontend in frontends if (a := frontend.scope_advice(where)) is not None]
+        repair = "delete the entries" + "".join(f", or {a}" for a in advice)
         found.append(
             (
                 manifest_path(directory),
                 f"meizel: warning: {manifest_path(directory)}:{line}: [roots] {names} exempt "
-                f"nothing: this run reads Python and the files inside [typescript].scopes "
-                f"({covered}); no file directly in {where} is judged -- delete the entries, or "
-                f"add {where} to the scopes so the TypeScript it names is read, unless a "
-                f"`.d.ts` declaration is all it names, which no scope can make readable",
+                f"nothing: this run reads {reads}; no file directly in {where} is judged -- "
+                f"{repair}",
             )
         )
     return found
@@ -643,7 +646,7 @@ def analyze(
             manifests,
             analysed=scans,
             tracked=universe.files,
-            scopes=typescript_scopes(policy),
+            policy=policy,
         )
         diagnostics.extend(stale_readers(universe, policy))
         diagnostics.extend(
@@ -668,4 +671,5 @@ def analyze(
         stale.exports,
         inert,
         stale.dynamic_attrs,
+        policy,
     )

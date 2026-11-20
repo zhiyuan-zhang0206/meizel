@@ -29,8 +29,8 @@ import ast
 import re
 from collections.abc import Callable, Iterator
 
-from meizel.graph import INTERVAL_CLOCKS
 from meizel.graph.model import EntropySite
+from meizel.language.python.surface import INTERVAL_CLOCKS
 
 __all__ = [
     "COUNTER_FACTORIES",

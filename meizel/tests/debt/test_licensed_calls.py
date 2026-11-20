@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from meizel.graph import SLEEP_CALLS
 from meizel.graph.model import OS_KINDS, AmbientKind
 from meizel.language.python import DEFAULT_IMPURE_CALLS
+from meizel.language.python.surface import SLEEP_CALLS
 from meizel.tests.synthetic import RepoFactory, analysis_of, diagnostics, failures
 
 ROOT = '[roles]\napplication = ["app"]\n'
@@ -59,7 +59,7 @@ def test_a_licensed_call_in_a_strict_root_is_no_violation(make_repo: RepoFactory
 
 
 # The boundary this rule keeps: sleeping is an effect, not a read of any ambient kind
-# (`meizel/graph/ambient_process_table.py`, the `time` table), so a clock root that waits still owes
+# (`meizel/language/python/surface/process_table.py`, the `time` table), so a clock root that waits still owes
 # the record. Suppressing it would turn `[roots]` into a waiver of every effect in that file.
 def test_a_wait_in_a_clock_root_keeps_its_record(make_repo: RepoFactory) -> None:
     manifest = (

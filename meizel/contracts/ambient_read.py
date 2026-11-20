@@ -14,7 +14,6 @@ from collections.abc import Iterable, Mapping
 from meizel.contracts.debt import file_key
 from meizel.contracts.manifest import Manifest, effective_purity, unlicensed
 from meizel.contracts.policy import POLICY, Policy
-from meizel.graph import FILESYSTEM_READS, SLEEP_CALLS
 from meizel.graph.model import (
     OS_KINDS,
     READER_CALL_MARK,
@@ -29,7 +28,7 @@ from meizel.graph.model import (
     covered_kinds,
 )
 from meizel.graph.universe import Universe
-from meizel.language import FileScan, ambient_sources
+from meizel.language import FileScan, ambient_sources, frontend_of
 
 __all__ = [
     "ambient_diagnostics",
@@ -38,6 +37,7 @@ __all__ = [
     "stale_roots",
 ]
 
+_NO_POLICY = Policy()
 _CALL_MARK = READER_CALL_MARK
 _READERS = READERS_RULE
 # The roles whose source code is governed: what ships, the runnable templates and the tooling.
@@ -181,10 +181,9 @@ def stale_roots(
             scan = scans.get(path)
             if scan is None:
                 continue
-            acquired = (
-                {acquisition.kind for acquisition in scan.ambient}
-                | {AmbientKind.FILESYSTEM for item in scan.purity if item.key in FILESYSTEM_READS}
-                | {AmbientKind.SLEEP for item in scan.purity if item.key in SLEEP_CALLS}
+            reads = frontend_of(path, _NO_POLICY).item_reads
+            acquired = {acquisition.kind for acquisition in scan.ambient}.union(
+                *(reads(item).door for item in scan.purity)
             )
             found.extend(
                 Diagnostic(

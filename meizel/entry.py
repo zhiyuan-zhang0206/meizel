@@ -66,7 +66,7 @@ class _EntryOptions:
 
 
 # The interpreter the standard-library tables were judged on: which modules are the standard
-# library's, and what each public name of a channel module reads (`meizel.graph.ambient_surface`). A
+# library's, and what each public name of a channel module reads (`meizel.language.python.surface`). A
 # newer interpreter adds names no table has judged, so the checker refuses to answer there rather
 # than judge them by a default.
 SUPPORTED_PYTHON = (3, 12)

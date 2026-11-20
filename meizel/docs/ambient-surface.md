@@ -1,6 +1,6 @@
 # meizel/ — Ambient Surface
 
-`ambient_surface.py` holds, for the modules that carry the channels (`CHANNEL_MODULES`: `os`,
+`language/python/surface/surface.py` holds, for the modules that carry the channels (`CHANNEL_MODULES`: `os`,
 `os.path`, `sys`, `time`, `datetime`, `platform`, `socket`, `getpass`, `pwd`, `grp`, `tempfile`,
 `shutil`, `locale`, `uuid`, `random`, `secrets`, `threading`, `multiprocessing`, `resource`,
 `sysconfig`, `pathlib`, `zoneinfo`, `fileinput`, `site`, `email.utils`, `netrc`, `ssl`, `ctypes.util`,
@@ -54,7 +54,7 @@ never looked at:
   the module, is what is judged: `import os.path` alone is not a use. A private name
   (`sys._getframe`) is outside the interface and is judged only where an entry lists it
   (`sys._xoptions`).
-- `meizel/graph/tests/test_ambient_surface.py` compares the table with the modules themselves: every
+- `meizel/language/python/surface/tests/test_surface.py` compares the table with the modules themselves: every
   public name of every channel module on this interpreter, and every name the type checker's
   typeshed lists for any platform or interpreter version, must be judged by an entry of its own
   (or by a pattern for a whole family, as `os.O_*`); an entry that names nothing, or a name two
@@ -68,7 +68,7 @@ never looked at:
   by hand, not derived from the table; a name of several kinds is listed under each): moving `socket.if_nametoindex` into the network group, or
   dropping it from the host group, turns it red, which the completeness test alone would not do
   when the name stays judged by some entry. The names each module defines are read from a child
-  that runs `channel_module_names.py`, a script that imports the standard library only, in a
+  that runs `language/python/surface/tests/channel_module_names.py`, a script that imports the standard library only, in a
   `python -I` interpreter, so that a library another test imported cannot add names.
 
 ### Judging a new name

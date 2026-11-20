@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable, Collection, Iterator, Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
@@ -15,17 +14,14 @@ from typing import Protocol
 
 __all__ = [
     "MANIFEST",
-    "SOURCE_EXTENSIONS",
     "Checkout",
     "EditPlan",
     "SourceTree",
     "Universe",
-    "is_private_module",
     "parent_of",
 ]
 
 MANIFEST = "meizel.toml"
-SOURCE_EXTENSIONS = (".py", ".ts", ".tsx", ".mts", ".cts")
 
 
 # What a command decided to write, delete or create; `meizel.checkout.apply_plan` does it.
@@ -35,17 +31,6 @@ class EditPlan:
     byte_writes: dict[Path, bytes] = field(default_factory=dict[Path, bytes])
     deletes: tuple[Path, ...] = ()
     dirs: tuple[Path, ...] = ()
-
-
-_DUNDER_MODULE = re.compile(r"__\w+__(\.py)?")
-
-
-def is_private_module(child: str) -> bool:
-    """A module or package whose name starts with an underscore is private to its directory.
-
-    A dunder name (`__init__.py`, `__main__.py`) is the language's own protocol, not a private one.
-    """
-    return child.startswith("_") and _DUNDER_MODULE.fullmatch(child) is None
 
 
 def parent_of(path: str) -> str:
@@ -120,7 +105,7 @@ class Checkout(Protocol):
 
     def grep_words(self, words: Collection[str], suffix: str) -> list[str]: ...
 
-    def untracked_files(self) -> tuple[str, ...]: ...
+    def untracked_files(self, suffixes: tuple[str, ...]) -> tuple[str, ...]: ...
 
     def file_digests(self) -> dict[str, str]: ...
 
@@ -141,10 +126,6 @@ class Checkout(Protocol):
 
 class Universe:
     """Tracked regular files and every directory above them: data, whatever the language."""
-
-    DOOR_FILES: frozenset[str] = frozenset(
-        {"__init__.py", "index.ts", "index.tsx", "index.mts", "index.cts"}
-    )
 
     def __init__(self, repo: Checkout, tracked: list[str]) -> None:
         self.repo = repo

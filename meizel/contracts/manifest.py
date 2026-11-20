@@ -10,7 +10,7 @@ from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass, field
 from typing import TypeGuard
 
-from meizel.allowances import POLICY
+from meizel.allowances import POLICY, Policy
 from meizel.contracts.debt import (
     CYCLE_EDGE,
     TABLE_KEY,
@@ -23,9 +23,17 @@ from meizel.contracts.debt import (
 from meizel.graph import licensed
 from meizel.graph.graphs import cycle_through, strongly_connected, unneeded_back_edges
 from meizel.graph.model import OS_KINDS, Code, Diagnostic, KindName, PurityItem, covered_kinds
-from meizel.graph.universe import MANIFEST, SOURCE_EXTENSIONS, Universe, is_private_module
-from meizel.language import FileScan, source_candidates
+from meizel.graph.universe import MANIFEST, Universe
+from meizel.language import (
+    SOURCE_EXTENSIONS,
+    FileScan,
+    frontend_of,
+    is_private_module,
+    source_candidates,
+)
 from meizel.roles import check_table
+
+_NO_POLICY = Policy()
 
 __all__ = [
     "Manifest",
@@ -232,7 +240,13 @@ def unlicensed(manifests: Mapping[str, Manifest], scan: FileScan) -> list[Purity
     return [
         item
         for item in scan.purity
-        if not (item.code is Code.IMPURE_CALL and allowed and licensed(allowed, scan.ambient, item))
+        if not (
+            item.code is Code.IMPURE_CALL
+            and allowed
+            and licensed(
+                allowed, scan.ambient, item, frontend_of(scan.path, _NO_POLICY).item_reads(item)
+            )
+        )
     ]
 
 

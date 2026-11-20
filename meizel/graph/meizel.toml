@@ -2,23 +2,15 @@ exports = ["graphs.py", "model.py", "universe.py"]
 
 [purity]
 "." = "strict"
-"ambient_judgments.py" = "strict"
-"ambient_process_table.py" = "strict"
-"ambient_surface.py" = "strict"
 "graphs.py" = "strict"
 "licensing.py" = "strict"
 "model.py" = "strict"
 "reachability.py" = "strict"
 
 [uses]
-"ambient_judgments.py" = ["model.py"]
-"ambient_process_table.py" = ["ambient_judgments.py"]
-"ambient_surface.py" = ["ambient_judgments.py", "ambient_process_table.py", "model.py"]
-"licensing.py" = ["ambient_surface.py", "model.py"]
+"licensing.py" = ["model.py"]
 "__init__.py" = [
-    "ambient_surface.py",
     "licensing.py",
     "reachability.py",
 ]
-"tests" = ["ambient_judgments.py", "ambient_surface.py", "model.py"]
 "reachability.py" = ["model.py", "universe.py"]

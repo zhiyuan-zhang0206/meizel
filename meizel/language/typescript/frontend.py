@@ -5,7 +5,15 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, Diagnostic, Fact, Sources, WorldReads
+from meizel.graph.model import (
+    Code,
+    Diagnostic,
+    Fact,
+    ItemReads,
+    PurityItem,
+    Sources,
+    WorldReads,
+)
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
@@ -15,6 +23,7 @@ from meizel.language.typescript.files import (
     typescript_candidates,
     typescript_extensions,
     typescript_files,
+    typescript_scopes,
 )
 from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS, restricted_hint
 
@@ -78,14 +87,43 @@ def _world_reads(
     return WorldReads()
 
 
+def _item_reads(_item: PurityItem) -> ItemReads:
+    return ItemReads(frozenset(), frozenset())
+
+
 def _scan_source(
     universe: Universe, path: str, source: bytes, sources: Sources, policy: Policy
 ) -> FileScan:
     return scan_source(universe, path, source, sources, policy=policy)
 
 
+def _protocol_name(_child: str) -> bool:
+    return False
+
+
+def _reads_scope(policy: Policy) -> str:
+    scopes = typescript_scopes(policy)
+    covered = ", ".join(scopes) if scopes else "none declared"
+    return f"the files inside [typescript].scopes ({covered})"
+
+
+def _scope_advice(where: str) -> str | None:
+    return (
+        f"add {where} to the scopes so the TypeScript it names is read, unless a `.d.ts` "
+        "declaration is all it names, which no scope can make readable"
+    )
+
+
 TYPESCRIPT = Frontend(
     "typescript",
+    frozenset({"index.ts", "index.tsx", "index.mts", "index.cts"}),
+    frozenset(),
+    (".ts", ".tsx", ".mts", ".cts"),
+    _protocol_name,
+    "typescript_compiler_ast",
+    "TypeScript files (compiler AST)",
+    _reads_scope,
+    _scope_advice,
     _owns,
     typescript_candidates,
     typescript_files,
@@ -102,6 +140,7 @@ TYPESCRIPT = Frontend(
     _impacted,
     _projects,
     _world_reads,
+    _item_reads,
     Code.RESTRICTED_TS,
     "TypeScript",
     restricted_hint,

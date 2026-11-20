@@ -14,8 +14,8 @@ from meizel.contracts.manifest import manifest_path
 from meizel.contracts.rule import Projection
 from meizel.graph.graphs import cycle_through, strongly_connected, transitive_reduction_size
 from meizel.graph.model import Code, Fact, FactKind
-from meizel.graph.universe import Checkout, EditPlan, Universe, is_private_module, parent_of
-from meizel.language import candidates_of
+from meizel.graph.universe import Checkout, EditPlan, parent_of
+from meizel.language import DOOR_FILES, candidates_of, is_private_module
 
 __all__ = ["Bootstrap", "bootstrap", "is_test_path", "plan_bootstrap", "render_manifest"]
 
@@ -106,7 +106,7 @@ def _exports(projections: list[Projection]) -> tuple[dict[str, set[str]], list[d
         if proj.exempt:
             continue
         for position, (directory, child) in enumerate(proj.steps):
-            if child in Universe.DOOR_FILES and position == len(proj.steps) - 1:
+            if child in DOOR_FILES and position == len(proj.steps) - 1:
                 continue
             if is_private_module(child):
                 blocked.setdefault((directory, child), proj.fact)

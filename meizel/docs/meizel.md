@@ -89,6 +89,23 @@ shape of Python's habits; with two the common part is visible. Today the checker
   name and meaning), and the metadata of an independently packaged project is read when Python first
   needs a module, not when the repository is opened, so a command that reads no Python no longer
   stops on a project whose metadata is invalid. `meizel.api` names are otherwise unchanged.
+- Done (0.11.1): the remaining language names in `graph/` and the kernel. A `Frontend` says its own door
+  files, source suffixes, package init files, which underscore names are its protocol, how a run's coverage
+  names it, what it reads of a repository (for the warning of a `[roots]` table no file it reads can use)
+  and what it reads of a call by name (`item_reads`); the checker takes the union (`DOOR_FILES`,
+  `SOURCE_EXTENSIONS`, `PACKAGE_INITS`, `is_private_module` in `meizel.language`). The tables of
+  the standard library's reads (`ambient_surface`, `ambient_process_table`, `ambient_judgments`) and the
+  calls a `filesystem` or `sleep` root licenses are the Python frontend's (`language/python/surface/`);
+  `graph/licensing.py` joins a `[roots]` declaration to a call by the line it was recorded on and by
+  the language's `item_reads`. The licensing join used to ask the Python table for items of every
+  language; a TypeScript item is keyed by its site (`scope#call`) and a site-keyed item licenses by
+  line only, so no TypeScript item reached the table, and now none can. `tests/languages/test_kernel_door.py`
+  has an empty list: `contracts/` and `graph/` import no frontend package, either language.
+  **Breaking for a host that reads these**: `Universe.DOOR_FILES`, `SOURCE_EXTENSIONS` and
+  `is_private_module` leave `meizel.graph.universe`; `meizel.graph` no longer exports the ambient
+  tables, `FILESYSTEM_READS`, `SLEEP_CALLS` or `licensed`'s old signature; `Checkout.untracked_files`
+  takes the suffixes to list; `ReachabilityScope` takes `source_suffixes` and `package_inits`;
+  `Analysis` carries the `policy` it read. `meizel.api` names are unchanged.
 
 Each step is accepted by running the whole repository before and after and comparing everything the
 run reports (the check output, recorded debt, the test lanes, every file's `FileScan`, every fact and

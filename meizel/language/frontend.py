@@ -6,7 +6,17 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, KindName, Sources, WorldReads
+from meizel.graph.model import (
+    Code,
+    DebtKey,
+    Diagnostic,
+    Fact,
+    ItemReads,
+    KindName,
+    PurityItem,
+    Sources,
+    WorldReads,
+)
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 
@@ -44,6 +54,23 @@ class RunView:
 @dataclass(frozen=True, slots=True)
 class Frontend:
     name: str
+    # The file names that open a directory as a module (`__init__.py`, `index.ts`), the suffixes of
+    # this language's source files, and whether a name beginning with an underscore is the language's own
+    # protocol (`__init__`) rather than private to its directory.
+    door_files: frozenset[str]
+    # The files that run when their directory is imported (`__init__.py`); a language that imports
+    # no directory has none.
+    package_inits: frozenset[str]
+    extensions: tuple[str, ...]
+    protocol_name: Callable[[str], bool]
+    # How a run's coverage names this language: the key of its count in a report, and the phrase after
+    # the count in the summary line.
+    coverage_key: str
+    coverage_phrase: str
+    # What this language reads of a repository, for the warning of a declaration no file it reads can
+    # use; and what a reader can do about it in `where` (None when nothing).
+    reads_scope: Callable[[Policy], str]
+    scope_advice: Callable[[str], str | None]
     # Whether a path is a file of this language, under the policy the run reads.
     owns: Callable[[str, Policy], bool]
     # Every tracked file of this language, whatever the policy scopes, and the files of it the checker
@@ -87,6 +114,8 @@ class Frontend:
     # The world reads that travel through the functions of the given files, from the acquisitions of
     # their records.
     world_reads: Callable[[Universe, Sequence[str], Mapping[str, FileScan]], WorldReads]
+    # What this language reads of a call recorded as an impure effect, from its name alone.
+    item_reads: Callable[[PurityItem], ItemReads]
     # How a restricted form of this language is reported: the code (a debt of the file's directory),
     # the name of the subset the form is outside of, and what to do about a form in the directory
     # whose manifest is given.
