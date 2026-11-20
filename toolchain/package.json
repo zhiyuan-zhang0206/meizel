@@ -1,0 +1,8 @@
+{
+  "name": "meizel-typescript-toolchain",
+  "private": true,
+  "description": "The TypeScript compiler meizel's own tests analyze with. A host project supplies its own through [typescript] package-dir.",
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

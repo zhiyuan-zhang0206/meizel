@@ -1,0 +1,73 @@
+[project]
+name = "meizel"
+version = "0.1.0"
+description = "Locality rules for a repository: module manifests, ambient-state and purity checks, recorded debt, file budgets and test selection."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.40.2",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "pytest-xdist>=3.8",
+    "ruff>=0.16.7,<0.17",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["meizel"]
+exclude = ["**/tests/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["meizel"]
+addopts = ["-ra", "--strict-markers", "--import-mode=importlib"]
+markers = [
+    "registry: asserts that a whole-repository table equals what the tracked files hold",
+]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+cache-dir = ".cache/ruff"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF", "ARG", "C4", "PTH", "PIE", "RET", "Q",
+    "RSE", "DTZ", "S", "LOG", "PL", "TRY", "FBT",
+]
+ignore = [
+    "E501",     # the formatter owns line length
+    "PLR0911",  # dispatch-style match/case has many returns
+    "PLR0912",
+    "PLR0913",
+    "PLR0917",
+    "PLR2004",
+    "PLC0415",
+    "TRY003",
+    "TRY300",
+    "S607",     # git and node are resolved through PATH
+    "S102",     # tests execute the sample source a rule is exercised on
+    "S112",     # a skipped unreadable entry is the reported outcome, not a swallowed error
+]
+
+[tool.ruff.lint.flake8-bandit]
+check-typed-exception = true
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["S101", "PLR2004", "SLF001", "ARG001", "ARG002", "FBT", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+exclude = ["*.md"]
+
+[tool.pyright]
+include = ["meizel"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"

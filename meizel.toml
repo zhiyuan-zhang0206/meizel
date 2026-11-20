@@ -1,0 +1,3 @@
+# The roles of this repository's top-level directories.
+[roles]
+tooling = ["meizel"]

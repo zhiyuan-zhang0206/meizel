@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: |
+          uv sync --locked
+          (cd toolchain && pnpm install --frozen-lockfile)
+      - name: Ruff
+        run: uv run ruff check meizel && uv run ruff format --check meizel
+      - name: Type check
+        run: uv run basedpyright meizel
+      - name: Self-check
+        run: uv run python -m meizel check
+      - name: Tests
+        run: uv run pytest -n auto

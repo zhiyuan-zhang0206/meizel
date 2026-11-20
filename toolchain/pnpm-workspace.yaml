@@ -1,0 +1,5 @@
+# A real hoisted node_modules with no symlinks: the analyzer names compiler files by their path
+# under this directory, which a symlinked virtual store would move.
+nodeLinker: hoisted
+packageImportMethod: clone-or-copy
+enableGlobalVirtualStore: false

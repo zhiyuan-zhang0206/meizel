@@ -1,0 +1,620 @@
+[external]
+"agent/execution/child.py" = "executes the agent-authored code of one execute_code call"
+"agent/graph/tests/test_agent_traceback.py" = "executes agent-style code to check how its traceback is rendered"
+"agent/tests/plugins/test_register_namespace.py" = "imports SDK namespaces that plugins install at run time; they have no module file"
+"meiva/tests/namespaces/sdk_surface/test_help_renderer.py" = "executes generated module source to render help for it"
+"meiva/tests/test_self_evolution_evaluate.py" = "loads a built-in skill script by path to test it; skill content is discovered, core does not depend on it"
+"meiva_builtins/plugins/meiva_fleet/tests/child_launched_boot.py" = "resolves the plugin namespaces (meiva.tasks, meiva.memory) the SDK installs at run time; they have no module file to import statically"
+"meiva_builtins/tests/test_watcher_wake_delivery.py" = "executes skill reference scripts up to a marker assignment"
+"base/agents/sdk/tests/test_sdk_telemetry.py" = "wraps builtins.__import__ so one import raises"
+"base/lm/factory.py" = "imports the module named by MEIVA_LLM_OVERRIDE"
+"base/packages/dashboard_supply.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"base/packages/plugin_providers.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"base/packages/plugins/config_face.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"base/packages/plugins/loading/plugin_loader.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"base/packages/plugins/loading/schedule_face.py" = "loads discovered plugin schedule and ui_stats faces and syntax-checks contributed schedule scripts"
+"cli/commands/agents/impersonation.py" = "runs the Python the operator pipes in or names as a file"
+"cli/commands/harness.py" = "runs the Python file or stdin the operator names, inside a harness attachment: the operator-authored program is run content, not a dependency of this repository"
+"cli/commands/extensions/_plugin_scaffold.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"cli/commands/management/schedule_verify_child.py" = "dry-runs the imports of a user-written schedule script and checks its syntax"
+"gateway/inspect/_plugin_metrics.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"gateway/inspect/_plugin_widgets.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"gateway/schedules/router.py" = "compiles a user-written schedule script to reject syntax errors"
+"meizel/state/ambient_state/tests/test_task_owner.py" = "executes sample source the lint rule is exercised on"
+"meizel/state/ambient_state/tests/test_thread_owner.py" = "executes sample source the lint rule is exercised on"
+"scripts/audit/module_moves.py" = "imports the old and new module names the operator passes on the command line"
+"scripts/ci/tests/test_watch_pr.py" = "executes the watcher template the workflow embeds"
+"scripts/host_ops/update_schedule_script.py" = "compiles a user-written schedule script before replacing the stored copy"
+"services/supervision/meiva_root/probes.py" = "resolves the healthcheck module an operator-installed plugin names"
+"services/supervision/meiva_root/wiring.py" = "resolves the --wiring module:attr the operator passes to the daemon"
+"services/supervision/meiva_root_glue/tests/test_plugin_services.py" = "imports the plugin module the test writes under tmp_path"
+"services/supervision/roster/plugin_services.py" = "loads discovered plugins, built-in or user-installed; core does not depend on them"
+"services/wake/schedule_manager/engine.py" = "runs schedule scripts (the one materialized from the database under $MEIVA_HOME/schedules, and the built-in templates in schedules/); run content, not a dependency"
+"tests/ci/test_structure_codegen.py" = "executes the selector script embedded in the CI workflow"
+"tests/e2e/fakes/child_budget_writer.py" = "executes the generated scenario program passed on its command line"
+
+[dynamic-attrs]
+"agent/execution/child.py" = "_LazyStateSlot forwards every attribute read and write to the agent state object it builds on first use; the names are the plugin-declared state fields, which exist only once the plugins have loaded"
+"agent/graph/prompt/live.py" = "walks the operator-configured expand paths (meiva.<namespace>.<member>) and the namespaces plugins registered on the live SDK tree; both name sets come from configuration and plugin loading"
+"agent/state.py" = "plugin state handles read and write the graph-state channels named <plugin>__<field>; the fields come from each plugin's own declared state class, which exists only after the plugins load"
+"base/agents/context/clients.py" = "a lazy connection proxy that forwards every attribute to the connection it builds on first use; the names are whatever the driver exposes"
+"base/agents/context/external_attachment/plugin_state_codec.py" = "applies a plugin's state delta by plugin-declared field name; the state classes are built from plugin declarations at run time"
+"base/agents/context/external_attachment/state_schema.py" = "builds the meiva.state.<plugin> namespace from the fields each plugin declares; the plugins and their fields are known only at run time"
+"base/clock/configuration.py" = "_DynamicView is the structural type of the configuration view, which answers any domain name by forwarding to the live settings (base/config/_lite.py); a declaration with no body"
+"base/config/__init__.py" = "module __getattr__ forwards the eager-only names (Settings, the metadata and service-read re-exports) through the boot-lite gate; which names exist is decided by the build that installs them at run time"
+"base/config/_full.py" = "the Settings aggregate omits the domains its process profile does not construct; __getattr__ turns a read of an absent domain into a named error, so the attribute set depends on the profile chosen at run time"
+"base/config/_lite.py" = "the boot-lite configuration views forward any domain or field read to whichever backend (lite snapshot or full Settings) is live; the backend is chosen at run time"
+"base/config/service_read.py" = "_DeferredReadModel forwards every attribute read to the model it builds on first use, and the reader helpers read domain fields by registry name from whichever model is live"
+"base/db/protocols.py" = "_DynamicView is the structural type of the configuration view, which answers any slice name by forwarding to the live settings (base/config/_lite.py); a declaration with no body"
+"base/lm/factory.py" = "resolves the 'module:factory_name' reference in MEIVA_LLM_OVERRIDE; the attribute name is operator input"
+"base/packages/plugins/loading/plugin_loader.py" = "binds a plugin submodule as an attribute of its parent package after a by-path load, as the import system does; the names are the plugin's own module names"
+"cli/commands/lifecycle/stop/restart.py" = "a tee wrapper around a text stream that forwards every other attribute to the stream it wraps"
+"cli/commands/management/schedule_verify_checks.py" = "resolves the callee chains a user-written schedule script names against the live SDK namespace; the names are the script author's"
+"meiva/__init__.py" = "the meiva package hook serves the settings constants and the names plugins contribute; the plugin names are known only after the plugins load, and a missing name triggers that load"
+"meiva/mcps/__init__.py" = "meiva.mcps.<server> returns a proxy for a configured MCP server; the server names come from the operator's MCP configuration"
+"meiva/mcps/_tools.py" = "ServerProxy exposes <server>.<tool> for the tools the MCP server itself lists; the tool names are the server's"
+"meiva/sdk_surface/discovery.py" = "reads the members each SDK namespace lists in __all_for_meiva__; the names are the live surface, framework and plugins together"
+"meiva/sdk_surface/help.py" = "finds the SDK namespace that holds a documented target by walking the live surface names; the namespaces include those plugins register"
+"meiva/sdk_surface/install.py" = "reverts wrap layers at the (parent, attr) pair recorded when a plugin's wrap was applied; the targets are plugin-declared SDK paths"
+"meiva/sdk_surface/metering.py" = "wraps and restores the (parent, attr) routines of the meter surface, which is the live SDK surface including plugin namespaces"
+"meiva/sdk_surface/plugins.py" = "installs and removes plugin namespaces on the meiva package; the names are what each plugin declares"
+"meiva/sdk_surface/sdk_disable.py" = "applies the operator's MEIVA_SDK_DISABLE entries by name, and DisabledSDKModule is a sentinel that answers any attribute with the disable error"
+"meiva/sdk_surface/settings.py" = "the plugin-config proxy meiva.sdk_surface.settings.plugins.<name> answers for the plugins registered at run time; the module hook also serves the three lazy URL constants"
+"meiva/sdk_surface/wraps.py" = "applies plugin wrap declarations to (parent, attr) targets that plugins name in the live SDK tree"
+"meiva/self/__init__.py" = "the module hook lazily serves AGENT_ID, MACHINE_SPEC and InvalidConfigOverlay by name, each resolved on first read because an eager import would close a cycle through the bound context"
+"meiva/self/wake.py" = "_LazyRedis is the structural type of a proxy that forwards any attribute to the redis client it builds on first use; a declaration with no body"
+"meiva/skills/__init__.py" = "meiva.skills.<name> returns the skill or namespace node of the installed skill tree; skill names come from the skills installed on the machine"
+"meiva/skills/skill_proxies.py" = "Namespace descends the installed skill tree by attribute; skill names come from the skills installed on the machine"
+"scripts/audit/module_moves.py" = "checks that every name a module-move map references exists on the moved module; the names are the data being audited"
+"services/supervision/meiva_root/wiring.py" = "resolves the factory attribute named by the operator's wiring reference ('module:attribute')"
+
+[loads]
+"scripts/ci/pull_requests/gate/merge_ready.py" = ["scripts/ci/pull_requests/gate"]
+"schedules/jobs/dry_import_child.py" = ["schedules"]
+"meiva/boot.py" = ["agent/extensions"]
+"meiva_builtins/skills/coordination/meiva-being-a-long-running-agent/tests/test_agent_usage.py" = ["meiva_builtins/skills"]
+"meiva_builtins/skills/coordination/meiva-dynamic-workflow/tests/test_minimal_dispatch.py" = ["meiva_builtins/skills"]
+"meiva_builtins/skills/tests/skill_script.py" = ["meiva_builtins/skills"]
+"meiva_builtins/skills/tests/test_rss_feed.py" = ["meiva_builtins/skills"]
+"meiva_builtins/skills/tests/test_youtube_feed.py" = ["meiva_builtins/skills"]
+"meiva_builtins/tests/test_watcher_wake_delivery.py" = ["meiva_builtins/skills"]
+"base/events/loader.py" = ["base/events/declarations"]
+"base/events/tests/test_declarations_layout.py" = ["base/events/declarations"]
+"cli/tests/bootstrap/_logging_entry_child.py" = ["services/agent_runner/agent_ops"]
+"schedules/tests/children/run_scripts.py" = ["schedules"]
+"scripts/host_ops/tcc/tests/test_tcc_onboard_helper_grants.py" = ["scripts/host_ops/tcc"]
+"services/agent_runner/agent_host/tests/agent_host/child_sdk_host_posture.py" = ["services/agent_runner/agent_host"]
+"services/backup/scheduler/operation/worker_bootstrap.py" = ["services/backup/scheduler"]
+"services/supervision/meiva_root/probes.py" = ["services/supervision/healthchecks"]
+"tests/ci/test_path_scopes.py" = ["tests/path_scoped"]
+"tests/components/schedules/test_goal_watch_filter.py" = ["meiva_builtins/skills"]
+"tests/e2e/process_support.py" = ["services/agent_runner"]
+"tests/fixtures/path_scopes.py" = ["tests/path_scoped"]
+"tests/skills/test_inspect_a_trace_fetch.py" = [".agents/skills/inspect-a-trace/scripts"]
+"tests/ui/test_android_overlay.py" = ["ui/app/android"]
+
+[default-arguments]
+
+# ---------------------------------------------------------------------------------------------
+# Lint-rule allowances. A rule lets a file, a site or a name through only where it is listed
+# here, with the reason beside it. Each table is read by one rule (meizel/allowances.py owns the
+# format); `python -m meizel policy diff` reports every change to any of them.
+# ---------------------------------------------------------------------------------------------
+
+# ambient (meizel/contracts/ambient_read.py): the kinds of state this repository keeps itself, and
+# the names through which each is reached. Each key below declares one kind (the checker has no
+# such kinds of its own): a manifest's [state] and [roots] may name it, and an [ambient-readers.<kind>]
+# table may list readers of it. A module declares under [state] in its meizel.toml that it holds
+# state of a kind; the names, resolved against those modules, are the points where a file acquires
+# it. A bare name acquires when imported or read as an attribute, `name()` only when called. The
+# kinds of the standard library (argv, environ, clock, home, cwd, platform, pid, random) are the
+# checker's and cannot be declared here.
+[ambient]
+settings = [
+    "settings",
+    "get_field()",
+    "set_field()",
+    "ensure_eager()",
+    "ConfigBoot()",
+]
+db = [
+    "connect()",
+    "pool()",
+    "async_pool()",
+    "Database.from_settings()",
+]
+bus = [
+    "EventBus.from_settings()",
+]
+
+# ambient-readers (meizel/contracts/ambient_read.py): repository functions and objects that read the
+# world on their caller's behalf, by kind. A call to one (or, without parentheses, an import or
+# attribute read of one) is an acquisition of that kind at the use, so a wrapper around `os.environ`,
+# `Path.home()` or the process settings does not hide the read behind a root that may make it. Each
+# name is fully qualified, in the module that defines it (`pkg.module.name()`,
+# `pkg.module.Class.method()`, `pkg.module.NAME`), with the reason it reads the world; a module that
+# re-exports it is followed. An entry whose function reads the world only when it is not handed the
+# value says which parameter carries it:
+#   "pkg.module.name()" = { why = "reads the world when no value is passed", unless = "parameter" }
+# A call that passes that parameter a value is not an acquisition - the caller supplied what the
+# world would have answered - while an explicit `None` and a call that leaves it out both are. A name that is only imported where it is listed, or is gone, fails as
+# stale. What belongs here, and what is not followed:
+# meizel/docs/checker/ambient-readers.meiva.okf.md. Changing the list is a rule change.
+[ambient-readers.environ]
+"base.host.env.registry.process_environment()" = "returns the live os.environ"
+"base.host.git.gitenv.git_env()" = { why = "copies the live os.environ when no mapping is passed", unless = "environ" }
+"base.native_process.child_env.daemon_process_env()" = "filters the live os.environ"
+"base.native_process.child_env.inherited_process_env()" = "copies the live os.environ"
+"meiva.boot.is_launched_process()" = "judges the launch facts from the live os.environ"
+"meiva.boot.process_disable_entries()" = "reads the SDK disable entries from the live os.environ"
+
+[ambient-readers.home]
+"base.config.base.is_default_unit_home()" = "compares against user_home() (and unit_home() when no home is passed)"
+"base.config.base.unit_home()" = "resolve_meiva_home() for config sub-model path defaults"
+"base.paths.home.resolve_meiva_home()" = "reads MEIVA_HOME from os.environ and falls back to Path.home()"
+"base.paths.home.user_home()" = "returns Path.home()"
+"base.paths.meiva_home()" = "resolve_meiva_home() plus creating the directory"
+"meiva.files.workspace_base()" = "the agent's workspace directory, or the home when no agent is bound"
+
+[ambient-readers.platform]
+"base.host.system.hostport.Host.system()" = "builds the host of this process: its platform, uid and system commands"
+"base.native_process.os_platform.Platform.current()" = "reads sys.platform and platform.machine()"
+
+[ambient-readers.pid]
+"base.native_process.os_platform.resolve_pid()" = "returns os.getpid() when no pid is passed"
+"base.native_process.root_control.client.current_uid()" = "returns os.getuid()"
+"base.paths.private_dir.is_foreign_owned()" = "compares with os.geteuid() when no euid is passed"
+
+[ambient-readers.clock]
+"base.clock.Clock()" = "builds the clock a root hands down; its Timers decide what time it is"
+"base.clock.SYSTEM_TIMERS" = "the real interval clock, sleep and wall-clock source of the process"
+"ops.cluster_status.cluster_now()" = "returns the current time"
+
+[ambient-readers.settings]
+"base.clock.Clock.from_settings()" = "reads the clock configuration from the process settings; the clock it builds runs on the system timers"
+"base.packages.plugins.flags.read_declared_flag()" = "reads a field of the process settings"
+
+# ambient-state (meizel/state/ambient_state): what module-level state may be let through.
+# Callees that build a write-only handle, framework wiring, or a constant fixed by its literals.
+[ambient-state]
+sink-callees = [
+    "logging.getLogger",
+]
+sink-callee-suffixes = [
+    ".get_meter",
+    ".get_tracer",
+    ".create_counter",
+    ".create_histogram",
+    ".create_gauge",
+    ".create_up_down_counter",
+]
+wiring-callees = [
+    "argparse.ArgumentParser",
+    "asyncio.BoundedSemaphore",
+    "asyncio.Condition",
+    "asyncio.Event",
+    "asyncio.Lock",
+    "asyncio.Semaphore",
+    "fastapi.APIRouter",
+    "fastapi.FastAPI",
+    "langgraph.graph.StateGraph",
+    "threading.BoundedSemaphore",
+    "threading.Condition",
+    "threading.Event",
+    "threading.Lock",
+    "threading.RLock",
+    "threading.Semaphore",
+    "threading.local",
+    "typer.Typer",
+]
+pure-callees = [
+    "base64.b64decode",
+    "bool",
+    "bytes",
+    "collections.namedtuple",
+    "dataclasses.field",
+    "datetime.date",
+    "datetime.datetime",
+    "datetime.timedelta",
+    "datetime.timezone",
+    "decimal.Decimal",
+    "enum.Enum",
+    "enum.IntEnum",
+    "enum.StrEnum",
+    "enum.auto",
+    "float",
+    "fractions.Fraction",
+    "frozenset",
+    "getattr",
+    "httpx.Limits",
+    "httpx.Timeout",
+    "int",
+    "ipaddress.ip_address",
+    "ipaddress.ip_network",
+    "langgraph.channels.delta.DeltaChannel",
+    "len",
+    "max",
+    "min",
+    "object",
+    "operator.attrgetter",
+    "operator.itemgetter",
+    "os.path.abspath",
+    "os.path.basename",
+    "os.path.dirname",
+    "os.path.join",
+    "pathlib.Path",
+    "pathlib.PurePath",
+    "pathlib.PurePosixPath",
+    "psycopg.sql.Identifier",
+    "psycopg.sql.Literal",
+    "psycopg.sql.SQL",
+    "pydantic.ConfigDict",
+    "pydantic.Field",
+    "pydantic.TypeAdapter",
+    "range",
+    "re.compile",
+    "repr",
+    "sorted",
+    "str",
+    "str.maketrans",
+    "string.Template",
+    "struct.Struct",
+    "tuple",
+    "type",
+    "types.MappingProxyType",
+    "typing.Annotated",
+    "typing.NamedTuple",
+    "typing.NewType",
+    "typing.ParamSpec",
+    "typing.TypeVar",
+    "typing.TypeVarTuple",
+    "typing.TypedDict",
+    "typing.cast",
+    "uuid.UUID",
+]
+pure-chain-callees = [
+    "hashlib.md5",
+    "hashlib.sha1",
+    "hashlib.sha256",
+]
+skill-script-patterns = [
+    "^meiva_builtins/(skills/|plugins/[^/]+/(.*/)?skills/)",
+]
+config-modules = [
+    "base.config",
+]
+config-readers = [
+    "settings",
+    "get_field",
+    "set_field",
+    "ensure_eager",
+]
+
+# Files that ARE a sink facade: the module-level state in them is the facade's own write-only
+# machinery. The exemption covers state only; a thread or task a facade starts is still reported.
+[ambient-state.sink-facades]
+"base/telemetry/delivery/state.py" = "the per-process event binding (pipeline, process, agent, machine, cluster, home, hostname): written once at the boot seam, read by every emit; no decision reads it to choose behaviour"
+"base/deploy/start_trace.py" = "the start-phase meter: spans are written at the call sites and read only by the one report printed at exit"
+"agent/graph/node_log/_lifecycle.py" = "snapshot cursor and node-exit aggregate buffered for the log/event stream; written by node exits, read only by the flush that emits them"
+"base/log/process.py" = "the concrete loguru startup and sink facade: its idempotency guard is read only by process logging initialization"
+"cli/database/lifecycle_audit.py" = "the lifecycle-request audit sink: the recorder one operator command installs and `record_lifecycle_request` writes through; no decision reads it"
+"base/telemetry/delivery/mirror.py" = "the JSONL mirror's consecutive-failure counter: reported by the mirror writer only"
+"base/telemetry/delivery/reporting.py" = "per-seam failure counters for best-effort reporting: read only by the reporter"
+"base/telemetry/event_store.py" = "the telemetry_events writer: its pool handle, backoff clock and failure counter are written by the emitter's drain thread and read only by the writer itself"
+"base/telemetry/metrics/observed_metrics.py" = "the observed-metrics writer: its pool handle and failure counter are written by emitters and read only by the writer itself"
+"base/telemetry/pipeline_build.py" = "the exit hook that stops the bound pipeline and closes its sinks; registered once at import because it must run for every process that built a pipeline"
+"base/telemetry/process_logging.py" = "the loguru event-sink adapter: its sample counter and registered sink handle are read only by sink registration and the record filter"
+"base/telemetry/tracing.py" = "the tracer facade: the global OTel provider and owned exporter/retry workers, used only to write spans"
+"base/telemetry/otlp/trace_readiness.py" = "the same process tracer facade initialization result formerly held in tracing.py: one admitted SDK attempt, observed only to admit span writes; no application policy"
+"gateway/http/middleware/latency.py" = "latency aggregation buffer flushed to the event pipeline; written by requests, read only by the flush"
+"gateway/http/middleware/runtime_metrics.py" = "active-SSE-connection gauge state, incremented and decremented by the stream handler and read only by the metrics exporter"
+
+# Repo functions that return a constant derived from literals only. A listed function that no
+# longer exists fails as stale.
+[ambient-state.pure-repo-callees]
+"base.events.contract._sql_keys" = "derives a tuple of key names from the static event registry"
+"base.events.contract.family_events" = "a tuple over the static event registry"
+"base.events.loader.load_events" = "merges the static per-domain event declarations"
+"base.packages.skills.scan._rx" = "compiles a regex from a literal pattern"
+"services.backup.artifact.passphrase.derive" = "a key derivation of a literal: a fixed value"
+
+# Exact sites let through, `path::rule:name`: a memoized pure function or a namespace built once.
+# A site that stops being reported fails as stale.
+[ambient-state.sites]
+"agent/startup/__init__.py::ambient-instance:_PUSH" = "LangGraph's PUSH channel name, a constant fixed by the library, read once through object_of so the module __getattr__'s Any never binds to a name; measured alternatives: reading it inline at the comparison costs a module __getattr__ per write and raised 56 LangGraph deprecation warnings in the 61-test selection (6 with this constant), and a zero-argument @cache reader is hidden-singleton and needs this same entry plus a function"
+"meiva/__init__.py::ambient-instance:extend" = "a namespace of functions built once and never rebound or filled afterwards"
+"meiva/files.py::ambient-instance:cwd" = "a namespace of functions built once and never rebound or filled afterwards"
+"meiva_builtins/plugins/meiva_memory/sdk.py::hidden-cache:_documented_pool" = "wraps one home's pool path in a documented constant"
+"base/config/admin/candidate.py::hidden-cache:_candidate_validation_model" = "builds a validation subclass of a given Settings class"
+"base/deploy/release/editable_install.py::hidden-cache:_read_editable_install" = "caches the parsed allowlist violation state of an editable install to avoid repeating disk file-stats on every execute_code"
+"base/config/config_registry.py::hidden-singleton:build_registry" = "the static config registry derived from the Settings classes"
+"base/config/config_registry.py::hidden-singleton:field_infos" = "a static view of the config registry"
+"base/host/env/registry.py::hidden-singleton:agent_runner_cluster_aliases" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:cluster_scope_aliases" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:derived_env_keys" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:env_identity_keys" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:health_port_env_aliases" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:launch_input_keys" = "a static view of the env registry"
+"base/host/env/registry.py::hidden-singleton:session_forward_keys" = "a static view of the env registry"
+"base/native_process/pidfd.py::hidden-singleton:pidfd_libc" = "a ctypes loader of the pidfd syscalls: code, not state"
+
+# clock-lattice (meizel/owners/clock_lattice): where lattice vocabulary may be defined, and the
+# constants that use it without being part of the lattice (`path::NAME`).
+[clock-lattice]
+family-modules = [
+    "base/deploy/timing.py",
+    "base/deploy/progress_timeout.py",
+    "base/native_process/stop_timing.py",
+    "base/deploy/schedule_timing.py",
+]
+
+[clock-lattice.independent-clocks]
+"meiva_builtins/plugins/lm_anthropic/provider.py::_CLAUDE_EXTENDED_THINKING_DEFAULT_BUDGET" = "LLM thinking-token budget, not a wall-clock constant"
+"base/agents/observation/ended_with.py::BUDGET" = "the turn-end value 'budget', not a clock: the string a turn_end record carries when a budget rail (a truncated stream or an exhausted retry budget) ended the turn"
+"base/agents/recovery/breaker.py::HALT_REASON_TURN_STALLED" = "the stored halt reason 'turn_stalled' (a string in agents_meta.last_permanent_reject_reason), not a clock; the stall threshold is the agent setting harness_turn_stall_seconds"
+"base/daemon/schedules/watcher.py::AT_SESSION_TTL_GRACE_SECONDS" = "independent: the at-watcher session's post-fire reclamation window (wake delivery + exit-notice latency); the TTL reaper's poll cadence only delays the kill beyond it — no lattice neighbour and no ordering safety depends on this value"
+"base/events/contract.py::DELIVERY_STALLED_KEYS" = "SQL key set for the delivery_stalled view, not a clock"
+"base/events/live/redis_listener.py::_CONSUME_ABANDON_GRACE" = "independent: pubsub consume-abandon window, no lattice neighbour"
+"base/host/proc.py::_REAP_TIMEOUT_S" = "independent: single wait_procs bound when reaping a process tree, no lattice neighbour"
+"base/host/proc.py::_TERMINATE_GRACE_S" = "independent: TERM->KILL ladder wait in the terminate step, no lattice neighbour"
+"base/lm/registry.py::claude_thinking_budget_tokens" = "token/character budget, not a time value"
+"base/native_process/exec_domain.py::KILL_GRACE_S" = "independent: SIGINT/SIGTERM -> SIGKILL grace ladder for the exec child, no lattice neighbour"
+"services/backup/scheduler/operation/staging.py::TERMINATE_GRACE_S" = "independent: bounded TERM grace for a scheduled worker to unwind private cleanup; no family-disappearance proof or lattice neighbour"
+"services/desktop/computer/config.py::_MIN_STALL_S" = "not a clock: a sanity floor on the operator-configured loop-stall window (settings.daemon.computer_use_loop_stall_s) — it only keeps a below-floor misconfiguration from restart-looping a healthy daemon, no lattice neighbour"
+"services/upkeep/ttl_reaper/shells.py::STALE_ROW_GRACE" = "independent: the stale sweep's exemption window for a young tracking row — the host's session listing can lag the row's creation, so a younger row is never judged; not a deadline and no lattice neighbour or ordering depends on it"
+
+# single-owner (meizel/owners/decisions): modules that bypass a decision's one owner, per decision.
+[single-owner]
+postgres-dial-owners = [
+    "base/db/connections.py",
+]
+
+[single-owner.postgres-dial]
+"base/cluster/dataplane/pg_admin.py" = "the OS-user administrator's peer-socket authority (roles, grants, schema DDL, owner sessions) behind its own postmaster custody check; the FC-10 cutover scripts dial through it, so its transport stays as rehearsed until the cutover lands"
+"base/cluster/dataplane/pg_foreground.py" = "readiness probe of the foreground throwaway postmaster base/cluster/dataplane/pg_tools.py started, under the same home-free constraint"
+"base/cluster/dataplane/pg_stall_watchdog.py" = "probes the throwaway Postgres base/cluster/dataplane/pg_tools.py started, under the same home-free constraint"
+"base/cluster/dataplane/pg_tools.py" = "provisions the throwaway Postgres it just started; run config-free by scripts/ci/migration_smoke.py"
+"base/host/db_authority/unit.py" = "probes an installed unit capability's own runner login at the served endpoint, the credential under test"
+"cli/commands/data_plane/cluster_instance.py" = "proves the running postmaster demands a password by dialing a role that cannot exist, with no credential"
+
+# no-os-environ (meizel/state/no_os_environ): environment variables that tests may set live, and
+# the test files that exercise the settings-free boundary. Production files that read the
+# environment are declared under [roots] in their directory's meizel.toml.
+[no-os-environ]
+test-only-dirs = [
+    "meiva_builtins",
+    "cli",
+    "ops",
+]
+rule-inputs = [
+    "base/config/",
+    "base/host/env/",
+]
+
+[no-os-environ.provider-key-vars]
+"ANTHROPIC_API_KEY" = "read live by meiva_builtins/plugins/lm_anthropic"
+"DASHSCOPE_API_KEY" = "read live by meiva_builtins/plugins/lm_alibaba"
+"DEEPSEEK_API_KEY" = "read live by meiva_builtins/plugins/lm_deepseek"
+"GEMINI_API_KEY" = "read live by meiva_builtins/plugins/lm_google"
+"GLM_API_KEY" = "read live by meiva_builtins/plugins/lm_zhipu"
+"MIMO_API_KEY" = "read live by meiva_builtins/plugins/lm_xiaomi"
+"MOONSHOT_API_KEY" = "read live by meiva_builtins/plugins/lm_moonshot"
+"OPENAI_API_KEY" = "read live by meiva_builtins/plugins/lm_openai"
+"TYPESAFE_API_KEY" = "read live by meiva_builtins/plugins/lm_typesafe"
+
+[no-os-environ.live-read-vars]
+"MEIVA_TELEMETRY_OTLP_CHILD_DEFER" = "read live by agent/execution/child.py (the delivery plan is parsed in base/telemetry/delivery/defer_plan.py)"
+"MEIVA_TELEMETRY_OTLP_CHILD_DEFER_MAX_AGE_S" = "read live by agent/execution/child.py (the delivery plan is parsed in base/telemetry/delivery/defer_plan.py)"
+
+[no-os-environ.files]
+"cli/tests/bootstrap/test_start_identity.py" = "Exercises the settings-free birth boundary; environment is the actual input before Settings exists."
+"tests/components/cli/test_start_repo_guard.py" = "Verifies checkout/home routing before Settings can be constructed."
+
+# turn-scoped-config (meizel/state/turn_scoped_config): files that read per-agent fields off the
+# singleton by design, and the two files that are the plugin-config mechanism.
+[turn-scoped-config]
+scan-dirs = [
+    "agent",
+    "meiva",
+    "meiva_builtins",
+    "base/lm",
+]
+extra-files = [
+    "base/packages/plugins/activation.py",
+]
+rule-inputs = [
+    "base/config/",
+    "base/host/env/",
+]
+
+[turn-scoped-config.files]
+"base/host/env/agent_slices.py" = "The slices resolve a field's live default off the singleton by design."
+
+[turn-scoped-config.plugin-mechanism-files]
+"base/packages/plugins/config_registration.py" = "the plugin-config mechanism itself: the registry owns the process-global map, the view layers an agent's overrides over it"
+"base/packages/plugins/config_view.py" = "the plugin-config mechanism itself: the registry owns the process-global map, the view layers an agent's overrides over it"
+
+# type-checking (meizel/language/type_checking): files allowed an `if TYPE_CHECKING:` block.
+[type-checking.files]
+"agent/graph/__init__.py" = "PEP 562 lazy re-export: the node set is a heavy import on paths (the exec child) that never use the names; TYPE_CHECKING restores the real signatures for static checkers without putting them back on the import path."
+"agent/process_boot.py" = "Exec-child start path: `agent/tests/execution/test_lazy_child_imports.py` probes that importing this module leaves the LM stack unloaded, while `boot_agent_scope` answers the caller's `AgentRuntime.llm` — the chat-model class is annotation-only here, and the model itself is built by `base.lm.factory` at that call site."
+"meiva_builtins/plugins/meiva_fleet/_task_update.py" = "Boot-path trim: the fleet plugin (autoloaded into every exec child) keeps psycopg off its module import graph — `psycopg` is annotation-only here, imported at the raise sites."
+"meiva_builtins/plugins/meiva_fleet/task_registry.py" = "Boot-path trim: the fleet plugin (autoloaded into every exec child) keeps psycopg off its module import graph — `psycopg` is annotation-only here, imported at the raise sites."
+"meiva_builtins/plugins/lm_alibaba/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_anthropic/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_deepseek/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_google/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_moonshot/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_openai/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_xiaomi/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"meiva_builtins/plugins/lm_zhipu/provider.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"base/agents/context/__init__.py" = "The exec child builds an `MeivaContext` from its request envelope: the handle types (psycopg pool, redis bus, chat model) are annotation-only fields it never holds, and importing them would put the whole DB / LM stack on its boot path."
+"base/agents/context/clients.py" = "The same exec-child boot path: a ClientSet builds psycopg / redis / httpx clients on first use only, so its client types are annotation-only."
+"base/agents/messages/kwargs.py" = "LangChain message-stack trim on the same registration path: message types appear in annotations only, or (pricing) import at the call site of a runtime isinstance."
+"base/agents/tasks/reparent.py" = "Boot-path trim: the fleet plugin (autoloaded into every exec child) keeps psycopg off its module import graph — `psycopg` is annotation-only here, imported at the raise sites."
+"base/agents/tasks/rules.py" = "Boot-path trim: the fleet plugin (autoloaded into every exec child) keeps psycopg off its module import graph — `psycopg` is annotation-only here, imported at the raise sites."
+"base/config/__init__.py" = "Boot-lite facade: the names are served at runtime by the lite latch; TYPE_CHECKING keeps `from base.config import X` consumers resolving without an eager import that would rebuild the config chain the lite facade defers."
+"base/config/domain_shape.py" = "Boot-lite view: the per-domain sub-models are pydantic_settings classes a lite process must not import (test_default_boot_is_lite_and_pydantic_settings_free), so they are annotation-only here, giving `ConfigBoot.view.<domain>` its type without the eager import — the same boot-lite reason as the base/config/__init__.py entry."
+"base/lm/catalog/provider_contract.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"base/lm/compat/stop.py" = "LangChain message-stack trim on the same registration path: message types appear in annotations only, or (pricing) import at the call site of a runtime isinstance."
+"base/lm/content.py" = "LangChain message-stack trim on the same registration path: message types appear in annotations only, or (pricing) import at the call site of a runtime isinstance."
+"base/lm/factory.py" = "LM provider registration surface: the chat-model stack is a heavy import on the exec-child boot path, which never uses the type (annotation-only references; an earlier change)."
+"base/lm/pricing/__init__.py" = "LangChain message-stack trim on the same registration path: message types appear in annotations only, or (pricing) import at the call site of a runtime isinstance."
+"cli/main.py" = "Settings-free entry: importing cli.main must not import base.log or base.config (the cli/tests/bootstrap defer_logging probe); the producer-factory and database-opener types of run_command are annotation-only here."
+"cli/database/__init__.py" = "`meiva --help` must not load the configuration chain: Database, DbConfig, ProcessDbGate and ClusterDirectUrl are annotation-only in the OpenDatabase alias."
+
+# approved-patches (meizel/contracts/analysis): test-support files that patch on purpose, none of whose
+# patches is recorded. Only fixture infrastructure qualifies: a guard that keeps the suite off the host, the
+# entry of a subprocess the test starts, the global setup of the test runner. Production code and test modules
+# never do; a test that patches is converted. A file that patches nothing any more is `stale-approval`.
+# `max-files` is the list's budget: every entry hides every patch it holds from the baseline, so past the
+# ceiling the run fails as `approved-budget`. Repay an entry and lower the number, or raise it in the same
+# review and say what the new file hides.
+[approved-patches]
+"max-files" = ["5"]
+
+[approved-patches.files]
+"tests/fixtures/guards.py" = "Guards that keep every test off the host: autouse ones refuse process exec, the helper converge and the native Postgres and Redis drivers and keep the suite outside the exec domain, and the port guard a home requests gives it its own ports; stub_everywhere and stub_boundaries take their targets as arguments, so no fixed list of targets exists to inject."
+"tests/e2e/fakes/child_budget_writer.py" = "The entry of a child process the test starts: it holds the handoff snapshot writes of one generated scenario by wrapping Path.open and os.fdopen inside that process, a place no parameter of the code under test reaches."
+"cli/tests/bootstrap/child_main_dispatch.py" = "Fresh-interpreter probes of the CLI entry's import and admission boundaries: each probe must see the import order of a new interpreter, and forbids network there by replacing socket.create_connection and socket.socket.connect."
+"ui/web/tests/vitest.setup.ts" = "The global setup of the vitest suite: it replaces next-intl with a double that reads the English catalog so no component test mounts a provider; a test that needs the real bridge mocks it back."
+
+# injected-calls (meizel/language/scan): a call whose receiver is a parameter holding a callable, not a
+# path. The purity rule matches a path method by its attribute name, so `deps.read_text(...)` is
+# reported as `Path.read_text`; narrowing the match to receivers provably of type Path would miss
+# `p = some_path(); p.read_text()`, and missing a read costs more than reporting one. The false
+# positive gets an exit instead: a site is `path.py#function#receiver.method`, the receiver must be a
+# parameter of that function (a receiver built there -- `Path("x")`, a local, `self.path` -- is a path
+# and is refused), and the entry states why. `max-sites` is the list's budget: every site hides one
+# `impure-call`, so a run past the ceiling fails as `approved-budget`, and a site the file no longer
+# makes fails as `stale-approval`. A declared site is counted apart from the reads it does not excuse
+# (`meizel check` says "N sites declared an injected callable, not a read"), so the two never merge.
+[injected-calls]
+"max-sites" = ["8"]
+
+# meizel/ — the reads behind `meizel.graph.universe.SourceTree`. The port's fields are named after the
+# `pathlib` methods they hold (`is_file`, `is_dir`, `resolve`, `rglob`, `read_bytes`), so the purity
+# rule matches them by attribute name: the receiver is a parameter holding a callable the entry
+# handed in, not a path, and the read already happened where the tree was bound. Declaring the site
+# is what lets `meizel.lint_common` and `meizel.frontend_deps` stay decisions; the ledger's
+# `impure-call` rows for those reads are gone, and `meizel check` counts these apart from a read.
+[injected-calls.sites]
+"meizel/lint_common.py#_is_file#tree.is_file" = "the tree is the caller's: `meizel.checkout.source_tree` binds the predicate where the checkout is owned, and this module only asks which targets a lint judges"
+"meizel/lint_common.py#_is_dir#tree.is_dir" = "the same tree answers whether a target is a directory; the walk below it is `tree.rglob`, also the caller's"
+"meizel/lint_common.py#_resolved_target#tree.resolve" = "`--only` and explicit targets arrive as typed text, and resolving one into a real path is the read the entry's tree answers"
+"meizel/lint_common.py#_files_in_target#tree.rglob" = "a directory target outside the admitted set has no listing to reuse, so the walk is asked here and the caller's tree performs it"
+"meizel/lint_common.py#read_utf8_text#tree.read_bytes" = "the reader around `decode_source`: the bytes come from the tree the lint was handed, so this module owns the decoding and not the read"
+"meizel/frontend_deps.py#observe#tree.is_dir" = "the frontend install is observed through the tree the analyzer was handed, so the probe is a value here rather than a `pathlib` call"
+"meizel/frontend_deps.py#observe#tree.is_file" = "the pnpm metadata probe is the same tree: `meizel.checkout.source_tree` bound the predicate and this module decides what the answer means"
+"meizel/frontend_deps.py#_digest#tree.read_bytes" = "the locked compiler's digest is read through the tree, so hash and comparison stay here and the bytes stay the shell's"
+
+[path-imports]
+scope = [
+    "meiva_builtins/",
+]
+skills-scope = [
+    "meiva_builtins/skills/",
+]
+
+[python-commands]
+argv-wrappers = [
+    "base.host.proc.run_bounded",
+]
+
+[purity]
+pure-third-party = [
+    "anthropic",
+    "dotenv",
+    "feedparser",
+    "langchain_anthropic",
+    "langchain_core",
+    "langchain_openai",
+    "langgraph",
+    "loguru",
+    "mcp",
+    "opentelemetry",
+    "ormsgpack",
+    "pydantic",
+    "pydantic_core",
+    "pydantic_settings",
+    "trafilatura",
+    "yaml",
+]
+impure-calls = [
+    "datetime.datetime.now",
+    "datetime.datetime.utcnow",
+    "datetime.now",
+    "datetime.utcnow",
+    "io.open",
+    "meizel.checkout.GitRepo",
+    "meizel.checkout.load_universe",
+    "open",
+    "os.environ",
+    "os.getcwd",
+    "os.getenv",
+    "os.kill",
+    "os.killpg",
+    "time.monotonic",
+    "time.sleep",
+    "time.time",
+    "uuid.uuid1",
+    "uuid.uuid4",
+]
+impure-fixtures = []
+max-uses = ["8"]
+max-exports = ["4"]
+max-public-symbols = ["6"]
+max-params = ["6"]
+max-attr-hops = ["3"]
+
+[typescript]
+inlined-env-roots = [
+    "ui/web/src/",
+]
+package-dir = [
+    "ui/web",
+]
+# `ui/web/src/components` is enumerated child by child: every subdirectory is judged except
+# `timeline`, whose view tests import the package door and close a local cycle the checker cannot
+# record on first adoption (see the debt-gate note in docs/checker/typescript.meiva.okf.md). Add
+# every new subdirectory here: a file placed directly in `components/` belongs to no scope and is
+# not judged.
+scopes = [
+    "ui/web/messages",
+    "ui/web/next.config.ts",
+    "ui/web/scripts",
+    "ui/web/src/app",
+    "ui/web/src/components/agent-sidebar",
+    "ui/web/src/components/agents",
+    "ui/web/src/components/app",
+    "ui/web/src/components/auth",
+    "ui/web/src/components/connection",
+    "ui/web/src/components/content",
+    "ui/web/src/components/context",
+    "ui/web/src/components/conversation",
+    "ui/web/src/components/fleet",
+    "ui/web/src/components/inspector",
+    "ui/web/src/components/notifications",
+    "ui/web/src/components/ops",
+    "ui/web/src/components/plugins",
+    "ui/web/src/components/run-timeline",
+    "ui/web/src/components/shell",
+    "ui/web/src/components/ui",
+    "ui/web/src/i18n",
+    "ui/web/src/lib",
+    "ui/web/src/proxy.ts",
+    "ui/web/src/test-support",
+    "ui/web/tests",
+]
+import-sources = [
+    "ui/web/src/app",
+    "ui/web/src/components",
+    "ui/web/src/proxy.ts",
+]
+aliases = [
+    "@/=ui/web/src/",
+]
+extensions = [
+    ".ts",
+    ".tsx",
+]
