@@ -4,7 +4,7 @@ exports = ["__init__.py"]
 "__init__.py" = ["adapter.py", "frontend.py"]
 "adapter.py" = ["compiler"]
 "cache.py" = ["adapter.py", "compiler"]
-"frontend.py" = ["adapter.py", "cache.py"]
+"frontend.py" = ["adapter.py", "cache.py", "forms.py"]
 "tests" = ["adapter.py", "compiler"]
 
 [purity]

@@ -18,14 +18,11 @@ from meizel.language.python.purity import (
     IMPURE_DOTTED_STDLIB_MODULES,
     IMPURE_STDLIB_MODULES,
 )
-from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
 from meizel.language.python.scanner import TYPE_CHECKING_MESSAGE, scan_tree
 
 __all__ = [
     "ALLOWED_STDLIB_MODULES",
     "DEFAULT_IMPURE_CALLS",
-    "DYNAMIC_ATTR_FORMS",
-    "EXTERNAL_FORMS",
     "IMPURE_DOTTED_STDLIB_MODULES",
     "IMPURE_STDLIB_MODULES",
     "PYTHON",

@@ -24,6 +24,8 @@ from meizel.language.python import PYTHON
 from meizel.language.typescript import TYPESCRIPT
 
 __all__ = [
+    "DYNAMIC_ATTR_FORMS",
+    "EXTERNAL_FORMS",
     "FRONTENDS",
     "enabled_frontends",
     "invalidate_policy_caches",
@@ -32,6 +34,12 @@ __all__ = [
 ]
 
 FRONTENDS = {frontend.name: frontend for frontend in (PYTHON, TYPESCRIPT)}
+# The restricted forms any frontend lets a declaration exempt: a form names its language, so a file
+# is judged against the union without asking which frontend read it.
+EXTERNAL_FORMS = frozenset().union(*(frontend.external_forms for frontend in FRONTENDS.values()))
+DYNAMIC_ATTR_FORMS = frozenset().union(
+    *(frontend.dynamic_attr_forms for frontend in FRONTENDS.values())
+)
 
 
 # The frontends a run uses, in the order the policy names them: every built-in one when the policy

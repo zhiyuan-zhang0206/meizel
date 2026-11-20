@@ -24,8 +24,6 @@ _RESTRICTED_REFS = {
 # The forms a file may use once `[external]` declares that it runs code from outside the repository.
 EXTERNAL_FORMS = frozenset(
     {
-        "import()",
-        "require()",
         "importlib.import_module",
         "runpy.run_module",
         "runpy.run_path",

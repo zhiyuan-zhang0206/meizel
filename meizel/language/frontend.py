@@ -24,3 +24,8 @@ class Frontend:
     scan: Callable[[Universe, list[str], Sources, int | None, Policy], dict[str, FileScan]]
     # The record of one file's text, as if it were the file at `path` (a version not in the tree).
     scan_source: Callable[[Universe, str, bytes, Sources, Policy], FileScan]
+    # The restricted forms (`FileScan.restricted`) a file of this language may use once `[external]`
+    # declares that it runs code from outside the repository, and once `[dynamic-attrs]` declares
+    # that it owns an attribute name only the running program knows.
+    external_forms: frozenset[str]
+    dynamic_attr_forms: frozenset[str]

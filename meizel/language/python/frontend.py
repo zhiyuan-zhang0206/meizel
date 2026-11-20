@@ -10,6 +10,7 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.python.cache import scan_python_cached
+from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
 from meizel.language.python.scanner import scan_source
 
 __all__ = ["PYTHON"]
@@ -29,4 +30,12 @@ def _scan_source(
     return scan_source(universe, path, source, sources, policy=policy)
 
 
-PYTHON = Frontend("python", _owns, _files, scan_python_cached, _scan_source)
+PYTHON = Frontend(
+    "python",
+    _owns,
+    _files,
+    scan_python_cached,
+    _scan_source,
+    EXTERNAL_FORMS,
+    DYNAMIC_ATTR_FORMS,
+)
