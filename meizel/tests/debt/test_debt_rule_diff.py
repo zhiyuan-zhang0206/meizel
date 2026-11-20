@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from meizel.tests.synthetic import RepoFactory, commit, run, write
+from meizel.tests.synthetic import RepoFactory, commit, git, run, write
 
 RULES = ":(glob)rules/**"
 # `app` imports through an underscore module: a violation the base's old rules did not record, and one
@@ -776,3 +776,24 @@ def test_the_growth_failure_says_why_and_where_to_look(
     assert "only shrink" in err
     assert "debt diff --by-target" in err
     assert "meizel/docs/checker/debt/debt.md" in err
+
+
+# meiva:note
+# A change that removes a whole top-level directory and its role is measured at its own paths: the
+# base's content loses what the change deleted before the change's roles judge it, so the comparison
+# runs instead of refusing a base whose directory the new roles no longer name.
+def test_a_deleted_top_level_directory_is_not_measured_under_the_new_roles(
+    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
+) -> None:
+    roles = '[roles]\napplication = ["app", "lib"]\ntooling = ["old", "rules"]\n'
+    root = base_repo(
+        make_repo, {"meizel.toml": roles, "old/__init__.py": "", "old/tool.py": "VALUE = 1\n"}
+    )
+    record(root)
+    commit(root)
+    git(root, "rm", "-rq", "old")
+    write(root, {"meizel.toml": roles.replace('"old", ', "")})
+    rule_change(root)
+    record(root)
+    capsys.readouterr()
+    assert diff(root) == 0, capsys.readouterr().err

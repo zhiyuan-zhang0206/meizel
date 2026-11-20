@@ -431,6 +431,26 @@ def _apply_renames(base: Checkout, moved: Mapping[str, str]) -> None:
 
 
 # meiva:note
+# The reference's content at the change's paths also lacks what the change deleted: a deleted file is
+# not unchanged code, so the change's device does not measure it, and a top-level directory the change
+# removes together with its role is not read under roles that no longer name it. Manifests are the
+# device and stay `_apply_declarations`'; a renamed file was already moved by `_apply_renames`.
+def _apply_deletions(repo: Checkout, ref: str, base: Checkout, moved: Mapping[str, str]) -> None:
+    deletes = tuple(
+        base.root / rel
+        for rel in _changed_under(repo, ref, [])
+        if rel not in moved
+        and rel.rsplit("/", 1)[-1] != MANIFEST
+        and not repo.has_file(rel)
+        and base.has_file(rel)
+    )
+    if not deletes:
+        return
+    base.apply_plan(EditPlan(deletes=deletes))
+    base.stage_all()
+
+
+# meiva:note
 # The head's manifests, minus their debt tables, over the base's content: what is measured is the
 # head's device, and what it is measured in is the base's code. A manifest the head dropped is dropped
 # from the base too, so deleting a declaration reads as a rule change as well.
@@ -477,7 +497,24 @@ def _apply_content(repo: Checkout, ref: str, checkout: Checkout, moved: Mapping[
             byte_writes[path] = repo.load_bytes(rel)
         elif checkout.has_file(target):
             deletes.append(checkout.root / target)
-    kept = [path for path in deletes if path not in byte_writes]
+    # meiva:note
+    # The ref's roles are device too: a top-level directory they name stays while the change deletes
+    # all of it, because the ref's device cannot read its own roles over a tree without that directory.
+    # Keeping the ref's files there measures their debt as unpaid, the stricter side of `repaid`.
+    head_tops = {path.split("/", 1)[0] for path in repo.universe().files} if deletes else set()
+    named = (
+        {name for names in checkout.tree.roles().values() for name in names}
+        if deletes and checkout.has_file(MANIFEST)
+        else set()
+    )
+    kept = [
+        path
+        for path in deletes
+        if path not in byte_writes
+        and not (
+            (top := path.relative_to(checkout.root).parts[0]) in named and top not in head_tops
+        )
+    ]
     if not byte_writes and not kept:
         return
     checkout.apply_plan(EditPlan(byte_writes=byte_writes, deletes=tuple(kept), dirs=tuple(dirs)))
@@ -566,6 +603,7 @@ def rule_diff(
         # is a snapshot of the tree that was there when it was built.
         _refuse_unreadable(manifest_diagnostics(checkout.universe()), ref)
         _apply_renames(checkout, moved)
+        _apply_deletions(repo, ref, checkout, moved)
         _sync_rule_files(repo, ref, checkout)
         _apply_declarations(repo, checkout)
         checkout.stage_all()
