@@ -41,13 +41,15 @@ With the table absent every built-in frontend runs. A repository that enables on
 starts Node and never reads a `.ts` file; a name no frontend answers to is refused with the list of
 the ones that exist.
 
-## Planned: language-neutral rules
+## Language-neutral rules (done)
 
 Python and TypeScript are separate packages that share only the record (`file_scan.py`) and the
-`Frontend` shape, but the checker still holds some Python-specific judgments outside `language/python/`.
-Moving them is the precondition of a third frontend (Rust) that touches no checker code, and it waits
-for that: **prerequisite: a Rust frontend is approved**. With one consumer the abstraction would take the
-shape of Python's habits; with two the common part is visible. Today the checker holds:
+`Frontend` shape, and the checker kernel (`contracts/`, `graph/`) imports neither: the Python-specific
+judgments that used to sit there were moved into `language/python/` in four steps, listed below with the
+release that did each. A third frontend (Rust) is then a package of its own plus one entry in the
+registry. What the kernel still holds are messages and conventions that name a language (for example the
+`typing.cast` wording of a type-cast diagnostic, the pytest-shaped test graph and the lint helpers of
+`lint_common`); none of them is a judgment about a language's code.
 
 - Done (0.9.0): the ambient sources. `Frontend.sources(state, policy, universe)` returns the `Sources`
   a frontend spells (the Python one resolves the policy's reader names through module bindings and
