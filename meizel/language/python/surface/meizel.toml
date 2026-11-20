@@ -1,0 +1,12 @@
+exports = ["__init__.py"]
+
+[uses]
+"__init__.py" = ["reads.py", "surface.py"]
+"process_table.py" = ["judgments.py"]
+"reads.py" = ["surface.py"]
+"surface.py" = ["judgments.py", "process_table.py"]
+
+"tests" = ["judgments.py", "surface.py"]
+
+[purity]
+"." = "strict"

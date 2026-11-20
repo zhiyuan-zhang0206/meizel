@@ -42,8 +42,9 @@ from pathlib import Path
 import basedpyright
 import pytest
 
-from meizel.graph.ambient_judgments import Judgment, g, later
-from meizel.graph.ambient_surface import (
+from meizel.graph.model import AmbientKind
+from meizel.language.python.surface.judgments import Judgment, g, later
+from meizel.language.python.surface.surface import (
     CHANNEL_MODULES,
     INTERVAL_CLOCKS,
     METHOD_READS,
@@ -51,7 +52,6 @@ from meizel.graph.ambient_surface import (
     judged,
     unjudged,
 )
-from meizel.graph.model import AmbientKind
 
 # The channel modules as objects, spelled with static imports.
 _MODULES: dict[str, types.ModuleType] = {

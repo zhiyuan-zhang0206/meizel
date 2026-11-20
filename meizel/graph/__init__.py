@@ -1,13 +1,5 @@
 # Public source-layout and reverse-dependency queries consumed by callers and the checkout shell.
-from meizel.graph.ambient_surface import (
-    INTERVAL_CLOCKS,
-    LOOP_CLOCK,
-    METHOD_READS,
-    SEEDABLE_GENERATORS,
-    judged,
-    unjudged,
-)
-from meizel.graph.licensing import FILESYSTEM_READS, SLEEP_CALLS, licensed
+from meizel.graph.licensing import licensed
 from meizel.graph.reachability import (
     DEFAULT_PROD_ROLES,
     IslandCluster,
@@ -19,18 +11,10 @@ from meizel.graph.reachability import (
 
 __all__ = [
     "DEFAULT_PROD_ROLES",
-    "FILESYSTEM_READS",
-    "INTERVAL_CLOCKS",
-    "LOOP_CLOCK",
-    "METHOD_READS",
-    "SEEDABLE_GENERATORS",
-    "SLEEP_CALLS",
     "IslandCluster",
     "ReachabilityReport",
     "ReachabilityScope",
     "is_test_path",
-    "judged",
     "licensed",
     "reachability_analysis",
-    "unjudged",
 ]

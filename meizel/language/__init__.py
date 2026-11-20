@@ -6,12 +6,16 @@ from meizel.language.closure import reverse_closure
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.frontends import (
+    DOOR_FILES,
     DYNAMIC_ATTR_FORMS,
     EXTERNAL_FORMS,
     FRONTENDS,
+    PACKAGE_INITS,
+    SOURCE_EXTENSIONS,
     enabled_frontends,
     frontend_of,
     invalidate_policy_caches,
+    is_private_module,
     scan_all,
     scan_source,
 )
@@ -24,9 +28,12 @@ from meizel.language.sources import (
 )
 
 __all__ = [
+    "DOOR_FILES",
     "DYNAMIC_ATTR_FORMS",
     "EXTERNAL_FORMS",
     "FRONTENDS",
+    "PACKAGE_INITS",
+    "SOURCE_EXTENSIONS",
     "FileScan",
     "Frontend",
     "RunView",
@@ -36,6 +43,7 @@ __all__ = [
     "enabled_frontends",
     "frontend_of",
     "invalidate_policy_caches",
+    "is_private_module",
     "projects",
     "reverse_closure",
     "scan_all",

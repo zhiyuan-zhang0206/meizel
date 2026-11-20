@@ -99,8 +99,8 @@ class _RecordingCheckout:
     def grep_words(self, words: Collection[str], suffix: str) -> list[str]:
         return self.inner.grep_words(words, suffix)
 
-    def untracked_files(self) -> tuple[str, ...]:
-        return self.inner.untracked_files()
+    def untracked_files(self, suffixes: tuple[str, ...]) -> tuple[str, ...]:
+        return self.inner.untracked_files(suffixes)
 
     def file_digests(self) -> dict[str, str]:
         return self.inner.file_digests()

@@ -13,6 +13,7 @@ from meizel.graph import ReachabilityScope, reachability_analysis
 from meizel.graph import universe as model
 from meizel.graph.graphs import feedback_edges, strongly_connected, unneeded_back_edges
 from meizel.graph.model import Code
+from meizel.language import PACKAGE_INITS, SOURCE_EXTENSIONS
 from meizel.language.python import python_modules
 from meizel.tests.synthetic import RepoFactory, commit, run, seat, write
 
@@ -32,6 +33,15 @@ TEST_GRAPH_POLICY = (
 
 def without(graph: dict[str, list[str]], edges: list[tuple[str, str]]) -> dict[str, list[str]]:
     return {s: [t for t in ts if (s, t) not in set(edges)] for s, ts in graph.items()}
+
+
+def _scope(*, include_inits: bool = False) -> ReachabilityScope:
+    return ReachabilityScope(
+        target_roles=("application",),
+        include_inits=include_inits,
+        source_suffixes=SOURCE_EXTENSIONS,
+        package_inits=PACKAGE_INITS,
+    )
 
 
 def test_an_acyclic_graph_has_no_feedback_edges() -> None:
@@ -440,7 +450,7 @@ def test_reachability_pure_traversal_and_ancestor_inits(make_repo: RepoFactory) 
         universe,
         facts=analysis.facts,
         manifests=analysis.manifests,
-        scope=ReachabilityScope(target_roles=("application",)),
+        scope=_scope(),
     )
 
     assert report.is_clean
@@ -454,7 +464,7 @@ def test_reachability_pure_traversal_and_ancestor_inits(make_repo: RepoFactory) 
         universe,
         facts=analysis.facts,
         manifests=analysis.manifests,
-        scope=ReachabilityScope(target_roles=("application",), include_inits=True),
+        scope=_scope(include_inits=True),
     )
     assert "app/__init__.py" in report_with_inits.reachable_production
     assert "pkg/__init__.py" in report_with_inits.reachable_production
@@ -485,7 +495,7 @@ def test_reachability_detects_disconnected_islands_and_clusters(make_repo: RepoF
         universe,
         facts=analysis.facts,
         manifests=analysis.manifests,
-        scope=ReachabilityScope(target_roles=("application",)),
+        scope=_scope(),
     )
 
     assert not report.is_clean
@@ -533,7 +543,7 @@ def test_reachability_distinguishes_fake_test_preserved_islands(make_repo: RepoF
         universe,
         facts=analysis.facts,
         manifests=analysis.manifests,
-        scope=ReachabilityScope(target_roles=("application",)),
+        scope=_scope(),
     )
 
     assert "pkg/preserved_feature.py" in report.fake_test_islands

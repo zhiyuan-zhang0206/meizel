@@ -24,7 +24,6 @@ from pathlib import Path
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import (
     MANIFEST,
-    SOURCE_EXTENSIONS,
     Checkout,
     EditPlan,
     SourceTree,
@@ -294,7 +293,8 @@ class GitRepo:
             raise MeizelError(f"git grep failed: {done.stderr.strip()}")
         return sorted(done.stdout.splitlines())
 
-    def untracked_files(self) -> tuple[str, ...]:
+    # The untracked files git does not ignore whose name ends in one of `suffixes`, and the manifests.
+    def untracked_files(self, suffixes: tuple[str, ...]) -> tuple[str, ...]:
         # Lists non-ignored untracked files via fixed git ls-files argv without invoking a shell.
         result = subprocess.run(  # noqa: S603
             ["git", "-C", str(self.root), "ls-files", "--others", "--exclude-standard", "-z"],
@@ -310,10 +310,7 @@ class GitRepo:
             name
             for raw in result.stdout.split(b"\0")
             if raw
-            and (
-                (name := raw.decode()).endswith(SOURCE_EXTENSIONS)
-                or name.rsplit("/", 1)[-1] == MANIFEST
-            )
+            and ((name := raw.decode()).endswith(suffixes) or name.rsplit("/", 1)[-1] == MANIFEST)
         ]
         if not candidates:
             return ()

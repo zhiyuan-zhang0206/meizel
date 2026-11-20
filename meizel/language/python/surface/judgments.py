@@ -1,5 +1,5 @@
 # The shape of a judgment of an ambient name, and the sentences the groups of the judged table share.
-# The table itself is `ambient_surface.py` (`ambient_process_table.py` holds the process channels).
+# The table itself is `surface.py` (`process_table.py` holds the process channels).
 
 from __future__ import annotations
 

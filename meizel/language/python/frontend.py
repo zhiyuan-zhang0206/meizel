@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from meizel.allowances import Policy
@@ -22,6 +23,7 @@ from meizel.language.python.judge import (
 from meizel.language.python.resolve import python_modules, python_reverse_closure
 from meizel.language.python.restricted import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS
 from meizel.language.python.scanner import scan_source
+from meizel.language.python.surface import python_item_reads
 
 __all__ = ["PYTHON"]
 
@@ -63,8 +65,31 @@ def _restricted_hint(_form: str, manifest: str) -> str:
     )
 
 
+_PROTOCOL = re.compile(r"__\w+__(\.py)?")
+
+
+def _protocol_name(child: str) -> bool:
+    return _PROTOCOL.fullmatch(child) is not None
+
+
+def _reads_scope(_policy: Policy) -> str:
+    return "Python"
+
+
+def _scope_advice(_where: str) -> str | None:
+    return None
+
+
 PYTHON = Frontend(
     "python",
+    frozenset({"__init__.py"}),
+    frozenset({"__init__.py"}),
+    (".py",),
+    _protocol_name,
+    "python_ast",
+    "Python files (stdlib AST)",
+    _reads_scope,
+    _scope_advice,
     _owns,
     _candidates,
     _files,
@@ -81,6 +106,7 @@ PYTHON = Frontend(
     _impacted,
     _projects,
     python_world_reads,
+    python_item_reads,
     Code.RESTRICTED,
     "Python",
     _restricted_hint,

@@ -21,6 +21,7 @@ __all__ = [
     "EnumSubsetUse",
     "Fact",
     "FactKind",
+    "ItemReads",
     "KindName",
     "MeizelError",
     "Patch",
@@ -245,6 +246,14 @@ class Acquisition:
     line: int
     kind: KindName
     target: str
+
+
+# What a language reads a call by its name alone: the kinds whose own door the call is (a read of a file
+# is `filesystem`, a wait is `sleep`), and every kind a declaration of which licenses it.
+@dataclass(frozen=True, slots=True)
+class ItemReads:
+    door: frozenset[KindName]
+    named: frozenset[KindName]
 
 
 # A call that reaches a function acquiring the world, the function it calls and where the call is.

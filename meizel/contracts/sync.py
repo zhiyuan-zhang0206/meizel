@@ -17,6 +17,7 @@ from meizel.contracts.manifest import manifest_path
 from meizel.contracts.manifest_text import ENTRY, HEADER, entry_end, items, unquote
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import MANIFEST, Checkout, EditPlan
+from meizel.language import SOURCE_EXTENSIONS
 
 __all__ = [
     "prepare_policy_snapshot",
@@ -190,7 +191,7 @@ def prune(repo: Checkout, jobs: int | None = None) -> tuple[list[str], Analysis]
 
 
 def _refuse_untracked(repo: Checkout) -> None:
-    untracked = repo.untracked_files()
+    untracked = repo.untracked_files(SOURCE_EXTENSIONS)
     if not untracked:
         return
     sample = ", ".join(untracked[:3])

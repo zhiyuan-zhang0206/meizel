@@ -98,7 +98,7 @@ nothing; what a test sets is the patch family's concern. `none` files are judged
 the point: a shell executes a plan and reads no environment.
 
 `ambient-unjudged` guards the vocabulary itself. The standard-library names that acquire a kind are
-judged in `meizel/graph/ambient_surface.py`, name by name, for every module that carries an
+judged in `meizel/language/python/surface/surface.py`, name by name, for every module that carries an
 operating-system channel; a non-test file that uses a member of such a module that no entry judges
 (a function a new interpreter added, a name nobody looked at) fails with this code. It is never
 recordable debt: the gap is in the table, not in the file, and the fix is a judgment for the name

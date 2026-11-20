@@ -25,7 +25,7 @@ from meizel.contracts.sync import Sync, sync_manifests
 from meizel.graph import ReachabilityScope, reachability_analysis
 from meizel.graph.model import Diagnostic, MeizelError
 from meizel.graph.universe import Checkout, SourceTree
-from meizel.language import reverse_closure
+from meizel.language import PACKAGE_INITS, SOURCE_EXTENSIONS, reverse_closure
 from meizel.test_graph.model import TestLanes, TestSelection
 
 __all__ = ["CommandDeps", "build_parser", "dispatch"]
@@ -230,7 +230,7 @@ def _run_check(repo: Repository, deps: CommandDeps, opts: Check) -> int:
     only = None if changed is None else frozenset(deps.relative_target(p) for p in changed)
     analysis = analyze(repo.universe(), jobs=opts.jobs, changed=only)
     known = analysis.universe
-    untracked = _untracked_for_targets(repo.untracked_files(), targets, known.dirs)
+    untracked = _untracked_for_targets(repo.untracked_files(SOURCE_EXTENSIONS), targets, known.dirs)
     if untracked:
         print(_untracked_warning(untracked), file=sys.stderr)
     for raw, target in zip(raw_paths, targets, strict=True):
@@ -612,7 +612,7 @@ def _run_sync(repo: Repository, deps: CommandDeps, opts: Sync) -> int:
     if opts.paths and not opts.declare:
         raise MeizelError("paths narrow --declare only")
     targets = [deps.relative_target(p) for p in opts.paths] if opts.paths else None
-    untracked = repo.untracked_files()
+    untracked = repo.untracked_files(SOURCE_EXTENSIONS)
     if untracked:
         print(_untracked_warning(untracked), file=sys.stderr)
     lines, left = sync_manifests(repo, targets, opts.jobs, do_declare=opts.declare)
@@ -770,6 +770,8 @@ def _run_reachability(repo: Repository, deps: CommandDeps, opts: Reachability) -
         explicit_roots=opts.roots,
         target_paths=targets if targets else None,
         include_inits=opts.include_inits,
+        source_suffixes=SOURCE_EXTENSIONS,
+        package_inits=PACKAGE_INITS,
     )
     report = reachability_analysis(
         universe,

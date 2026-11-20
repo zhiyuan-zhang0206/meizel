@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from meizel.graph.model import Code, Diagnostic, Fact
-from meizel.graph.universe import SOURCE_EXTENSIONS, Universe, parent_of
+from meizel.graph.universe import Universe, parent_of
 
 __all__ = [
     "DEFAULT_PROD_ROLES",
@@ -38,6 +38,9 @@ class ReachabilityScope:
     target_roles: Sequence[str] = DEFAULT_PROD_ROLES
     target_paths: Sequence[str] | None = None
     include_inits: bool = False
+    # The suffixes of the files that are modules, and the names that open a directory as one.
+    source_suffixes: tuple[str, ...] = ()
+    package_inits: frozenset[str] = frozenset()
 
 
 _TEST_PATTERN = re.compile(
@@ -144,13 +147,13 @@ def _resolve_prod_packages(
 
 
 def _resolve_candidate_files(
-    universe: Universe, prod_packages: Collection[str], *, include_inits: bool
+    universe: Universe, prod_packages: Collection[str], scope: ReachabilityScope
 ) -> set[str]:
     candidates: set[str] = set()
     for p in universe.files:
-        if is_test_path(p) or not p.endswith(SOURCE_EXTENSIONS):
+        if is_test_path(p) or not p.endswith(scope.source_suffixes):
             continue
-        if not include_inits and (p.endswith("/__init__.py") or p == "__init__.py"):
+        if not scope.include_inits and p.rsplit("/", 1)[-1] in scope.package_inits:
             continue
         top = p.split("/", 1)[0]
         if not prod_packages or top in prod_packages:
@@ -437,11 +440,11 @@ def reachability_analysis(
 ) -> ReachabilityReport:
     cfg = scope if scope is not None else ReachabilityScope()
     tracked_inits = frozenset(
-        p for p in universe.files if p.endswith("/__init__.py") or p == "__init__.py"
+        p for p in universe.files if p.rsplit("/", 1)[-1] in cfg.package_inits
     )
 
     prod_packages = _resolve_prod_packages(manifests, cfg.target_roles)
-    candidates = _resolve_candidate_files(universe, prod_packages, include_inits=cfg.include_inits)
+    candidates = _resolve_candidate_files(universe, prod_packages, cfg)
     roots = _resolve_roots(universe, manifests, cfg.explicit_roots, prod_packages)
 
     forward, reverse = _build_graph(facts)

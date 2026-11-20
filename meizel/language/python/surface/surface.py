@@ -7,7 +7,7 @@
 # of the modules that carry them: which kind of ambient read it is, or why it is not one. A name that
 # is not judged cannot be told from a read the vocabulary forgot, so a use of an unjudged name in a
 # channel module is a diagnostic (`ambient-unjudged`) and the table is checked against the modules
-# themselves (`meizel/graph/tests/test_ambient_surface.py`).
+# themselves (`meizel/language/python/surface/tests/test_surface.py`).
 #
 # The channels that are not ambient kinds are judged by the other layers: the contents of files and
 # the network are effects (`impure-call`), and a name that only converts or compares values reads
@@ -21,7 +21,8 @@ import fnmatch
 from dataclasses import dataclass
 from functools import cache
 
-from meizel.graph.ambient_judgments import (
+from meizel.graph.model import AmbientKind, Unless
+from meizel.language.python.surface.judgments import (
     BUILD,
     CONSTANT,
     FILES,
@@ -35,8 +36,7 @@ from meizel.graph.ambient_judgments import (
     g,
     later,
 )
-from meizel.graph.ambient_process_table import PROCESS_GROUPS
-from meizel.graph.model import AmbientKind, Unless
+from meizel.language.python.surface.process_table import PROCESS_GROUPS
 
 __all__ = [
     "CHANNEL_MODULES",

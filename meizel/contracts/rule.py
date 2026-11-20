@@ -13,8 +13,7 @@ from meizel.contracts.policy import Policy
 from meizel.contracts.purity_mode import purity_debt, test_purity_mode
 from meizel.graph.graphs import reachable
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind
-from meizel.graph.universe import Universe, is_private_module
-from meizel.language import FileScan
+from meizel.language import DOOR_FILES, FileScan, is_private_module
 from meizel.language.test_files import is_test_file
 
 __all__ = [
@@ -152,7 +151,7 @@ def _blocked(proj: Projection, manifests: dict[str, Manifest]) -> Diagnostic | N
     fact = proj.fact
     last = len(proj.steps) - 1
     for position, (directory, child) in enumerate(proj.steps):
-        if child in Universe.DOOR_FILES and position == last:
+        if child in DOOR_FILES and position == last:
             continue
         if is_private_module(child):
             hint = f"{child!r} is private to {_where(directory)} and cannot be exported; import its door `{_where(directory)}/__init__.py` or a sibling that is exported"
@@ -223,7 +222,7 @@ class _CleanEdge:
 def _steps_clean(steps: tuple[tuple[str, str], ...], manifests: dict[str, Manifest]) -> bool:
     last = len(steps) - 1
     for position, (directory, child) in enumerate(steps):
-        if child in Universe.DOOR_FILES and position == last:
+        if child in DOOR_FILES and position == last:
             continue
         if is_private_module(child):
             return False
@@ -467,7 +466,7 @@ def stale_exports(
         if "/" not in directory:
             continue
         for child in manifest.exports:
-            if child in Universe.DOOR_FILES or (directory, child) in traversed:
+            if child in DOOR_FILES or (directory, child) in traversed:
                 continue
             child_path = f"{directory}/{child}"
             mode = effective_purity(child_path, manifests)

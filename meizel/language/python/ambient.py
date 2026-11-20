@@ -9,7 +9,7 @@
 # read of a name that was already acquired.
 #
 # The standard-library names come from the judged table of the graph package
-# (`ambient_surface`). The names of the state a repository keeps are the repository's own: a file
+# (`surface`). The names of the state a repository keeps are the repository's own: a file
 # declares under `[state]` in its `meizel.toml` that it holds state of a kind, and the policy
 # lists, per kind, the names through which that state is reached.
 
@@ -19,14 +19,6 @@ import ast
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, replace
 
-from meizel.graph import (
-    INTERVAL_CLOCKS,
-    LOOP_CLOCK,
-    METHOD_READS,
-    SEEDABLE_GENERATORS,
-    judged,
-    unjudged,
-)
 from meizel.graph.model import (
     Acquisition,
     AmbientKind,
@@ -40,6 +32,14 @@ from meizel.graph.model import (
 from meizel.language.python import fake_entropy
 from meizel.language.python.patching import PatchForms
 from meizel.language.python.resolve import PythonModules, Scope
+from meizel.language.python.surface import (
+    INTERVAL_CLOCKS,
+    LOOP_CLOCK,
+    METHOD_READS,
+    SEEDABLE_GENERATORS,
+    judged,
+    unjudged,
+)
 from meizel.lint_common import is_test_path
 
 __all__ = ["AmbientAccess", "AmbientRecorder"]
@@ -395,7 +395,7 @@ class AmbientRecorder:
                 line,
                 Code.AMBIENT_UNJUDGED,
                 f"`{dotted}` is a member of a channel module that the ambient surface does not "
-                "judge: add it to a group of meizel/graph/ambient_surface.py, with the kind of read "
+                "judge: add it to a group of meizel/language/python/surface/surface.py, with the kind of read "
                 "it is or, as `None`, the reason it is not one",
             )
             for line, dotted in sorted(self._unjudged)

@@ -24,12 +24,16 @@ from meizel.language.python import PYTHON
 from meizel.language.typescript import TYPESCRIPT
 
 __all__ = [
+    "DOOR_FILES",
     "DYNAMIC_ATTR_FORMS",
     "EXTERNAL_FORMS",
     "FRONTENDS",
+    "PACKAGE_INITS",
+    "SOURCE_EXTENSIONS",
     "enabled_frontends",
     "frontend_of",
     "invalidate_policy_caches",
+    "is_private_module",
     "scan_all",
     "scan_source",
 ]
@@ -41,6 +45,18 @@ EXTERNAL_FORMS = frozenset().union(*(frontend.external_forms for frontend in FRO
 DYNAMIC_ATTR_FORMS = frozenset().union(
     *(frontend.dynamic_attr_forms for frontend in FRONTENDS.values())
 )
+# The names that open a directory as a module, and the suffixes of source files, of every frontend.
+DOOR_FILES = frozenset().union(*(frontend.door_files for frontend in FRONTENDS.values()))
+PACKAGE_INITS = frozenset().union(*(frontend.package_inits for frontend in FRONTENDS.values()))
+SOURCE_EXTENSIONS = tuple(ext for frontend in FRONTENDS.values() for ext in frontend.extensions)
+
+
+# A module or package whose name starts with an underscore is private to its directory; a name that is
+# a language's own protocol (a dunder) is not.
+def is_private_module(child: str) -> bool:
+    return child.startswith("_") and not any(
+        frontend.protocol_name(child) for frontend in FRONTENDS.values()
+    )
 
 
 # The frontends a run uses, in the order the policy names them: every built-in one when the policy

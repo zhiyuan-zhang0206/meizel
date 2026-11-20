@@ -6,10 +6,6 @@ import ast
 from pathlib import Path
 
 _KERNEL = ("contracts", "graph")
-# What still reaches into a frontend package, each to be removed by moving the judgment into the
-# frontend: the list only shrinks. Python has none; TypeScript has the scopes the inert-roots
-# warning names.
-_STILL_REACHING_TYPESCRIPT = frozenset({"contracts/analysis.py"})
 # The record a frontend keeps of a file (`FileScan.extra`) is its own: no kernel module names its
 # type or reads the field.
 _NATIVE_NAMES = frozenset({"PythonRecord", "python_record", "decode_record", "encode_record"})
@@ -43,14 +39,9 @@ def _reaching(frontend: str) -> set[str]:
     }
 
 
-def test_the_kernel_imports_no_python_frontend_code() -> None:
+def test_the_kernel_imports_no_frontend_code() -> None:
     assert _reaching("meizel.language.python") == set()
-
-
-def test_the_kernel_imports_no_more_typescript_frontend_code_than_the_listed_files() -> None:
-    reaching = _reaching("meizel.language.typescript")
-    assert reaching <= _STILL_REACHING_TYPESCRIPT, sorted(reaching - _STILL_REACHING_TYPESCRIPT)
-    assert reaching == _STILL_REACHING_TYPESCRIPT, "a file stopped reaching TypeScript: shrink it"
+    assert _reaching("meizel.language.typescript") == set()
 
 
 def test_the_kernel_never_reads_a_frontends_own_record_of_a_file() -> None:
