@@ -9,33 +9,21 @@ from meizel.test_graph.model import (
     FileTestFacts,
     ModuleTable,
     TestCheckout,
+    TestGraphPolicy,
     TestSelection,
 )
 
 __all__ = [
-    "TREE_SCAN_PINS",
     "fixture_dependency_edges",
     "propagate_test_consumers",
     "select_impacted_tests",
     "tree_scan_pins",
 ]
 
-TREE_SCAN_PINS = frozenset(
-    {
-        "scripts/ci/pull_requests/tests/test_ci_job_rerun.py",
-        "tests/harness/test_ci_rerun_workflow.py",
-        "scripts/ci/pull_requests/tests/test_ci_monitor.py",
-        "tests/contracts/test_db_check_enum_sync.py",
-        "tests/harness/test_pool_keepalives.py",
-        "tests/harness/test_env_guard_canary.py",
-        "scripts/ci/tests/test_harness_imports.py",
-        "tests/components/cli/test_main_dispatch_contract.py",
-        "tests/components/base/test_crash_row_writers.py",
-        "tests/integration/test_impersonation_audit_root_inventory.py",
-        "tests/scripts/test_alert_single_path.py",
-    }
-)
-
+# meiva:note
+# The paths whose change reaches every test in any repository: the test runner's configuration, the
+# lockfile, the interpreter pin and the checker's own policy. A repository adds its own under
+# `[test-graph] global-files` and `global-prefixes`.
 _GLOBAL_NAMES = frozenset(
     {
         "conftest.py",
@@ -44,7 +32,6 @@ _GLOBAL_NAMES = frozenset(
         "uv.lock",
         ".python-version",
         "meizel.policy.toml",
-        ".github/workflows/ci.yml",
     }
 )
 
@@ -118,6 +105,7 @@ def fixture_dependency_edges(
 def tree_scan_pins(
     collectable: frozenset[str],
     facts_by_file: Mapping[str, FileTestFacts] | None = None,
+    pins: frozenset[str] = frozenset(),
 ) -> frozenset[str]:
     lint_tests = {
         path
@@ -133,7 +121,7 @@ def tree_scan_pins(
         if facts_by_file is not None
         else set()
     )
-    return frozenset((lint_tests | registry_tests | TREE_SCAN_PINS) & collectable)
+    return frozenset((lint_tests | registry_tests | pins) & collectable)
 
 
 def _ancestor_paths(path: str) -> list[str]:
@@ -153,29 +141,34 @@ def _runtime_consumers_for_path(path: str, reverse: Mapping[str, set[str]]) -> s
     return found
 
 
-def _is_doc_only_path(path: str) -> bool:
+# meiva:note
+# A Markdown file no test reads as code: one at the root, one under a declared documentation root, or
+# one inside a `docs` directory, unless a test directory or an excluded root holds it or its name is
+# one a repository's tooling reads (`[test-graph] doc-excluded-names`).
+def _is_doc_only_path(path: str, graph: TestGraphPolicy) -> bool:
     if not path.endswith(".md"):
         return False
     parts = path.split("/")
-    if "tests" in parts or parts[0] == "schedules":
+    if "tests" in parts or parts[0] in graph.doc_excluded_roots:
         return False
-    if len(parts) == 1 or parts[0] in {"docs", "future"}:
+    if len(parts) == 1 or parts[0] in graph.doc_dirs:
         return True
-    return parts[-1] not in {"AGENTS.md", "SKILL.md"} and "docs" in parts[:-1]
+    return parts[-1] not in graph.doc_excluded_names and "docs" in parts[:-1]
 
 
-def _is_frontend_only_path(path: str) -> bool:
+def _is_frontend_only_path(path: str, graph: TestGraphPolicy) -> bool:
     return (
-        path.startswith("ui/")
+        path.startswith(graph.frontend_prefixes)
         and not path.endswith((".py", ".toml"))
-        and not _is_doc_only_path(path)
+        and not _is_doc_only_path(path, graph)
     )
 
 
 def _is_global_path(path: str, checkout: TestCheckout) -> bool:
-    if path in _GLOBAL_NAMES or path in checkout.global_files:
+    graph = checkout.graph
+    if path in _GLOBAL_NAMES or path in graph.global_files or path in checkout.global_files:
         return True
-    return path.startswith(".github/actions/")
+    return path.startswith(graph.global_prefixes)
 
 
 def _build_runtime_edges(
@@ -237,15 +230,14 @@ def _select_for_one_path(
     owner_hits = local_hits or package_local_tests(
         path, checkout.test_dirs, checkout.collectable, include_root_tests=True
     )
-    selected = runtime_hits | owner_hits
-    if path == "meizel.toml" or path.endswith("/meizel.toml"):
-        selected.update(t for t in checkout.collectable if t.startswith("meizel/"))
-    return selected
+    return runtime_hits | owner_hits
 
 
 def _first_global_changed(cleaned: tuple[str, ...], checkout: TestCheckout) -> str | None:
     for path in cleaned:
-        if not path.startswith("tests/e2e/") and _is_global_path(path, checkout):
+        if not path.startswith(checkout.graph.excluded_prefixes) and _is_global_path(
+            path, checkout
+        ):
             return path
     return None
 
@@ -260,7 +252,9 @@ def _accumulate_selected_tests(
 ) -> set[str] | TestSelection:
     selected: set[str] = set()
     for path in cleaned:
-        if path.startswith("tests/e2e/") or _is_frontend_only_path(path):
+        if path.startswith(checkout.graph.excluded_prefixes) or _is_frontend_only_path(
+            path, checkout.graph
+        ):
             continue
         if path not in checkout.all_files and not base_available:
             return TestSelection(
@@ -301,9 +295,12 @@ def select_impacted_tests(
     reverse = propagate_test_consumers(edges, checkout.collectable)
     tainted, diagnostics = _collect_tainted_and_diagnostics(reverse, facts_by_file, missing_scopes)
 
-    if all(_is_frontend_only_path(p) for p in cleaned):
+    graph = checkout.graph
+    if all(_is_frontend_only_path(p, graph) for p in cleaned):
         return TestSelection("SKIP", "frontend-only", (), ())
-    if all(_is_doc_only_path(p) and not _runtime_consumers_for_path(p, reverse) for p in cleaned):
+    if all(
+        _is_doc_only_path(p, graph) and not _runtime_consumers_for_path(p, reverse) for p in cleaned
+    ):
         return TestSelection("SKIP", "docs-only", (), ())
 
     accumulated = _accumulate_selected_tests(
@@ -314,7 +311,11 @@ def select_impacted_tests(
 
     final_tests = tuple(
         sorted(
-            (accumulated | tainted | tree_scan_pins(checkout.collectable, facts_by_file))
+            (
+                accumulated
+                | tainted
+                | tree_scan_pins(checkout.collectable, facts_by_file, graph.tree_scan_pins)
+            )
             & checkout.collectable
         )
     )

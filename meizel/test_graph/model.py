@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from dataclasses import dataclass
 from typing import TypeGuard
 
@@ -17,6 +18,7 @@ __all__ = [
     "ModuleTable",
     "RawFileTestFacts",
     "TestCheckout",
+    "TestGraphPolicy",
     "TestLanes",
     "TestSelection",
     "decode_raw_facts",
@@ -122,6 +124,62 @@ class FileTestFacts:
     flags: int
 
 
+# meiva:note
+# What a repository says about its own tests under `[test-graph]` in `meizel.policy.toml`: the
+# fixtures, markers and modules that need native services, the tests that read the whole tree, the
+# paths whose change reaches every test or none, and where its documentation lives. Every field is
+# empty by default, so a repository that declares nothing gets the import graph alone.
+@dataclass(frozen=True, slots=True)
+class TestGraphPolicy:
+    native_fixtures: frozenset[str] = frozenset()
+    native_markers: frozenset[str] = frozenset()
+    native_modules: frozenset[str] = frozenset()
+    pytester_native_tokens: tuple[str, ...] = ()
+    tree_scan_pins: frozenset[str] = frozenset()
+    global_files: frozenset[str] = frozenset()
+    global_prefixes: tuple[str, ...] = ()
+    frontend_prefixes: tuple[str, ...] = ()
+    excluded_prefixes: tuple[str, ...] = ()
+    doc_dirs: frozenset[str] = frozenset()
+    doc_excluded_roots: frozenset[str] = frozenset()
+    doc_excluded_names: frozenset[str] = frozenset()
+
+    # meiva:note
+    # The `[test-graph]` table of a policy text as a value; a policy with no such table, or none at
+    # all, declares nothing. The table's shape is the policy reader's to refuse, so a value of the wrong
+    # type here declares nothing instead of failing a selection.
+    @classmethod
+    def from_policy_text(cls, policy_text: str | None) -> TestGraphPolicy:
+        try:
+            document = tomllib.loads(policy_text or "")
+        except tomllib.TOMLDecodeError:
+            return cls()
+        table = document.get("test-graph", {})
+        if not _is_object(table):
+            return cls()
+
+        def names(key: str) -> tuple[str, ...]:
+            value = table.get(key, [])
+            return (
+                tuple(item for item in value if isinstance(item, str)) if _is_array(value) else ()
+            )
+
+        return cls(
+            native_fixtures=frozenset(names("native-fixtures")),
+            native_markers=frozenset(names("native-markers")),
+            native_modules=frozenset(names("native-modules")),
+            pytester_native_tokens=names("pytester-native-tokens"),
+            tree_scan_pins=frozenset(names("tree-scan-pins")),
+            global_files=frozenset(names("global-files")),
+            global_prefixes=names("global-prefixes"),
+            frontend_prefixes=names("frontend-prefixes"),
+            excluded_prefixes=names("excluded-prefixes"),
+            doc_dirs=frozenset(names("doc-dirs")),
+            doc_excluded_roots=frozenset(names("doc-excluded-roots")),
+            doc_excluded_names=frozenset(names("doc-excluded-names")),
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class TestCheckout:
     python_files: tuple[str, ...]
@@ -136,6 +194,7 @@ class TestCheckout:
     policy_external: frozenset[str]
     manifests: dict[str, str]
     native_spawners: frozenset[str] = frozenset()
+    graph: TestGraphPolicy = TestGraphPolicy()
 
 
 def _is_object(value: object) -> TypeGuard[dict[str, object]]:

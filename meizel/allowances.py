@@ -74,6 +74,23 @@ RULES: dict[str, dict[str, str]] = {
         "max-attr-hops": NAMES,
     },
     "public-surface": {"names": NAMES},
+    "test-graph": dict.fromkeys(
+        (
+            "native-fixtures",
+            "native-markers",
+            "native-modules",
+            "pytester-native-tokens",
+            "tree-scan-pins",
+            "global-files",
+            "global-prefixes",
+            "frontend-prefixes",
+            "excluded-prefixes",
+            "doc-dirs",
+            "doc-excluded-roots",
+            "doc-excluded-names",
+        ),
+        NAMES,
+    ),
     "typescript": {
         "scopes": NAMES,
         "import-sources": NAMES,

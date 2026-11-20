@@ -40,21 +40,6 @@ _DYN_FILE_CALLS = frozenset(
         "importlib.util.spec_from_file_location",
     }
 )
-_PYTESTER_NATIVE_TOKENS = (
-    "provisioned_db",
-    "provisioned_redis",
-    "gateway_data_plane",
-    "db_url",
-    "database",
-    "redis_url",
-    "event_bus",
-    "db_conn",
-    "adb_conn",
-    "aops_pool",
-    "postgres_access",
-    "redis_access",
-    "containers",
-)
 
 
 def _is_obj_seq(value: object) -> TypeGuard[list[object] | tuple[object, ...]]:
@@ -579,7 +564,9 @@ def _inspect_argv_sequence(elts: list[ast.expr], collector: _Collector) -> None:
 # meiva:note
 # Parses one Python source into layout-independent raw test/import facts without consulting the
 # checkout's module table.
-def scan_raw_test_facts(path: str, source: str) -> RawFileTestFacts:
+def scan_raw_test_facts(
+    path: str, source: str, pytester_native_tokens: tuple[str, ...] = ()
+) -> RawFileTestFacts:
     try:
         tree = ast.parse(source, filename=path)
     except (SyntaxError, ValueError):
@@ -605,7 +592,7 @@ def scan_raw_test_facts(path: str, source: str) -> RawFileTestFacts:
     all_fx_reqs = set(collector.test_requests)
     for _, reqs in collector.fixtures.values():
         all_fx_reqs.update(reqs)
-    if "pytester" in all_fx_reqs and any(tok in source for tok in _PYTESTER_NATIVE_TOKENS):
+    if "pytester" in all_fx_reqs and any(tok in source for tok in pytester_native_tokens):
         flags |= FACT_PYTESTER_NATIVE
     return RawFileTestFacts(
         path=path,

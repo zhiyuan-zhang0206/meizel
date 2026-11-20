@@ -48,9 +48,12 @@ from meizel.test_graph.lanes import derive_test_lanes
 from meizel.test_graph.model import (
     FileTestFacts,
     TestCheckout,
+    TestGraphPolicy,
     TestLanes,
     TestSelection,
 )
+
+POLICY_FILE = "meizel.policy.toml"
 
 __all__ = [
     "GitRepo",
@@ -717,19 +720,26 @@ def _load_test_graph_state(
     if _common_git_dir(root) is None:
         all_files = _walk_non_git_files(root)
         configs = {rel: read_text(root, rel) for rel in all_files if is_test_config_file(rel)}
+        graph = TestGraphPolicy.from_policy_text(configs.get(POLICY_FILE))
         raw_map = {
-            rel: scan_raw_test_facts(rel, read_text(root, rel))
+            rel: scan_raw_test_facts(rel, read_text(root, rel), graph.pytester_native_tokens)
             for rel in all_files
-            if rel.endswith(".py") and not rel.startswith("tests/e2e/")
+            if rel.endswith(".py") and not rel.startswith(graph.excluded_prefixes)
         }
         return resolve_test_checkout(all_files, configs, raw_map)
     tree_digests = digests if digests is not None else _git_test_digests(root)
     all_files = sorted(tree_digests)
     configs = {rel: read_text(root, rel) for rel in all_files if is_test_config_file(rel)}
-    py_files = [r for r in all_files if r.endswith(".py") and not r.startswith("tests/e2e/")]
+    graph = TestGraphPolicy.from_policy_text(configs.get(POLICY_FILE))
+    py_files = [
+        r for r in all_files if r.endswith(".py") and not r.startswith(graph.excluded_prefixes)
+    ]
     keys = fact_cache_keys(_process_scanner_digest(root), py_files, tree_digests)
     raw_map, updates = resolve_cached_raw_facts(
-        keys, repo.cache_get_many(keys.values()), partial(read_text, root)
+        keys,
+        repo.cache_get_many(keys.values()),
+        partial(read_text, root),
+        graph.pytester_native_tokens,
     )
     repo.cache_put_many(updates)
     return resolve_test_checkout(all_files, configs, raw_map)

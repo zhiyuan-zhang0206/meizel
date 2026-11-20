@@ -15,48 +15,7 @@ from meizel.test_graph.model import (
     TestLanes,
 )
 
-__all__ = [
-    "NATIVE_FIXTURES",
-    "NATIVE_MARKERS",
-    "NATIVE_MODULES",
-    "derive_test_lanes",
-]
-
-NATIVE_FIXTURES = frozenset(
-    {
-        "provisioned_db",
-        "provisioned_redis",
-        "_db_stall_guard",
-        "_clean_db",
-        "_clean_redis",
-        "gateway_data_plane",
-        "cluster_defaults_unset",
-        "db_url",
-        "database_version",
-        "database_gate",
-        "database",
-        "redis_url",
-        "event_bus",
-        "db_conn",
-        "adb_conn",
-        "aops_pool",
-        "aredis_inbound_listener",
-        "postgres_access",
-        "redis_access",
-    }
-)
-
-NATIVE_MARKERS = frozenset({"requires_host", "flaky", "native_permissions_helper"})
-
-NATIVE_MODULES = frozenset(
-    {
-        "base/deploy/tests/containers.py",
-        "base/deploy/tests/pgbouncer.py",
-        "scripts/ci/migration_smoke.py",
-        "scripts/ci/pgvector_runtime_smoke.py",
-        "scripts/ci/vendor_pg_runtime.py",
-    }
-)
+__all__ = ["derive_test_lanes"]
 
 
 def _ancestor_conftests(test_path: str, conftests: frozenset[str]) -> list[str]:
@@ -178,7 +137,7 @@ def _check_module_closure(
         if mod_path in visited:
             continue
         visited.add(mod_path)
-        if mod_path in NATIVE_MODULES or mod_path in checkout.native_spawners:
+        if mod_path in checkout.graph.native_modules or mod_path in checkout.native_spawners:
             return f"native_module:{mod_path}"
         m_facts = facts_by_file.get(mod_path)
         if m_facts is None or (m_facts.flags & FACT_SYNTAX_ERROR):
@@ -223,7 +182,7 @@ def _walk_requested_fixtures(
         if fx in seen_fx:
             continue
         seen_fx.add(fx)
-        if fx in NATIVE_FIXTURES:
+        if fx in checkout.graph.native_fixtures:
             return f"fixture:{fx}", active_fx_files
         if fx == "pytester" and (t_facts.flags & FACT_PYTESTER_NATIVE):
             return "fixture:pytester", active_fx_files
@@ -272,7 +231,7 @@ def _classify_one_test(
     t_facts = facts_by_file.get(test_path)
     if t_facts is None or (t_facts.flags & FACT_SYNTAX_ERROR):
         return "syntax_error"
-    native_marks = sorted(set(t_facts.markers) & NATIVE_MARKERS)
+    native_marks = sorted(set(t_facts.markers) & checkout.graph.native_markers)
     if native_marks:
         return f"marker:{native_marks[0]}"
     if t_facts.flags & FACT_DYNAMIC_FIXTURE:

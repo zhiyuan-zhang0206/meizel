@@ -18,6 +18,17 @@ PYPROJECT = '[tool.pytest.ini_options]\ntestpaths = ["tests", "pkg/**/tests", "a
 ROLES = '[roles]\napplication = ["pkg", "app", "base"]\ntests = ["tests"]\n'
 
 
+# meiva:note
+# The native lane of these fixtures, declared the way a repository declares it: the fixtures, markers
+# and modules that need native services.
+TEST_GRAPH_POLICY = (
+    "[test-graph]\n"
+    'native-fixtures = ["db_url", "provisioned_db", "provisioned_redis", "redis_url", "event_bus"]\n'
+    'native-markers = ["requires_host", "flaky"]\n'
+    'native-modules = ["base/deploy/tests/containers.py"]\n'
+)
+
+
 def without(graph: dict[str, list[str]], edges: list[tuple[str, str]]) -> dict[str, list[str]]:
     return {s: [t for t in ts if (s, t) not in set(edges)] for s, ts in graph.items()}
 
@@ -168,6 +179,7 @@ def test_derive_lanes_covers_fixtures_autouse_scopes_classes_markers_and_modules
     root = make_repo(
         {
             "pyproject.toml": PYPROJECT,
+            "meizel.policy.toml": TEST_GRAPH_POLICY,
             "meizel.toml": ROLES,
             "base/__init__.py": "",
             "base/deploy/__init__.py": "",
@@ -246,6 +258,7 @@ def test_sqlite_cache_persists_lanes_and_invalidates_on_dirty_or_untracked_edits
     root = make_repo(
         {
             "pyproject.toml": PYPROJECT,
+            "meizel.policy.toml": TEST_GRAPH_POLICY,
             "meizel.toml": ROLES,
             "pkg/__init__.py": "",
             "pkg/tests/test_unit.py": "def test_unit() -> None: pass\n",
@@ -288,6 +301,7 @@ def test_cli_tests_subcommand_reports_lanes_and_selects_every_consumer(
     root = make_repo(
         {
             "pyproject.toml": PYPROJECT,
+            "meizel.policy.toml": TEST_GRAPH_POLICY,
             "meizel.toml": '[uses]\n"app" = ["pkg"]\n"tests" = ["app", "pkg"]\n\n' + ROLES,
             "pkg/__init__.py": "",
             "pkg/meizel.toml": 'exports = ["calc.py"]\npurity = "strict"\n',

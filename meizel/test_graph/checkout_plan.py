@@ -14,6 +14,7 @@ from meizel.test_graph.model import (
     ModuleTable,
     RawFileTestFacts,
     TestCheckout,
+    TestGraphPolicy,
     decode_raw_facts,
     encode_raw_facts,
 )
@@ -41,7 +42,7 @@ def is_test_config_file(rel: str) -> bool:
 def hash_test_tree(scanner_ver: str, digests: Mapping[str, str]) -> str:
     hasher = hashlib.sha256(f"{scanner_ver}\0".encode())
     for rel in sorted(digests):
-        if (rel.endswith(".py") and not rel.startswith("tests/e2e/")) or is_test_config_file(rel):
+        if rel.endswith(".py") or is_test_config_file(rel):
             hasher.update(f"{rel}:{digests[rel]}\0".encode())
     return hasher.hexdigest()
 
@@ -98,11 +99,11 @@ def _matches_ini_pattern(rel: str, pattern: str) -> bool:
     return rel == pattern or rel.startswith(f"{pattern}/")
 
 
-def _candidate_test_files(python_files: tuple[str, ...]) -> list[str]:
+def _candidate_test_files(python_files: tuple[str, ...], excluded: tuple[str, ...]) -> list[str]:
     return [
         rel
         for rel in python_files
-        if not rel.startswith("tests/e2e/") and _is_test_basename(rel.rpartition("/")[2])
+        if not rel.startswith(excluded) and _is_test_basename(rel.rpartition("/")[2])
     ]
 
 
@@ -118,8 +119,9 @@ def _collectable_from_ini(candidates: list[str], ini_text: str) -> frozenset[str
 def _discover_collectable(
     python_files: tuple[str, ...],
     config_texts: Mapping[str, str],
+    excluded: tuple[str, ...],
 ) -> frozenset[str]:
-    candidates = _candidate_test_files(python_files)
+    candidates = _candidate_test_files(python_files, excluded)
     pyproject = config_texts.get("pyproject.toml")
     if (
         pyproject is not None
@@ -272,12 +274,13 @@ def build_test_checkout(
     raw_by_file: Mapping[str, RawFileTestFacts],
 ) -> TestCheckout:
     all_set = frozenset(all_files)
+    graph = TestGraphPolicy.from_policy_text(config_texts.get("meizel.policy.toml"))
     python_files = tuple(sorted(p for p in all_set if p.endswith(".py")))
     manifests = {
         k: v for k, v in config_texts.items() if k == "meizel.toml" or k.endswith("/meizel.toml")
     }
     top_packages = _discover_top_packages(python_files, manifests)
-    collectable = _discover_collectable(python_files, config_texts)
+    collectable = _discover_collectable(python_files, config_texts, graph.excluded_prefixes)
     test_dirs = frozenset(d for path in collectable for d in _tests_directories(path))
     conftests = frozenset(
         p for p in python_files if p == "conftest.py" or p.endswith("/conftest.py")
@@ -300,6 +303,7 @@ def build_test_checkout(
         policy_external=policy_external,
         manifests=manifests,
         native_spawners=native_spawners,
+        graph=graph,
     )
 
 
@@ -313,6 +317,7 @@ def resolve_cached_raw_facts(
     keys: Mapping[str, str],
     cached: Mapping[str, str],
     read_source: Callable[[str], str],
+    pytester_native_tokens: tuple[str, ...] = (),
 ) -> tuple[dict[str, RawFileTestFacts], dict[str, str]]:
     raw_map: dict[str, RawFileTestFacts] = {}
     updates: dict[str, str] = {}
@@ -320,7 +325,9 @@ def resolve_cached_raw_facts(
         if (hit := cached.get(ckey)) is not None:
             raw_map[rel] = decode_raw_facts(hit)
         else:
-            raw_map[rel] = scanned = scan_raw_test_facts(rel, read_source(rel))
+            raw_map[rel] = scanned = scan_raw_test_facts(
+                rel, read_source(rel), pytester_native_tokens
+            )
             updates[ckey] = encode_raw_facts(scanned)
     return raw_map, updates
 
