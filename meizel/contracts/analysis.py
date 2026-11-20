@@ -11,7 +11,6 @@ from meizel.contracts.ambient_read import (
     in_scope,
     reader_problems,
     sources_from,
-    stale_readers,
     stale_roots,
 )
 from meizel.contracts.debt import (
@@ -46,6 +45,7 @@ from meizel.language import (
     enabled_frontends,
     frontend_of,
     scan_all,
+    stale_readers,
 )
 from meizel.language.fixtures import FixtureIndex, fixture_facts, is_test_file
 from meizel.language.python import (

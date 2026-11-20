@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, Sources
+from meizel.graph.model import Code, Diagnostic, KindName, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 
-__all__ = ["Frontend"]
+__all__ = ["Frontend", "StateKinds"]
+
+# The process state a repository keeps, as its manifests declare it under `[state]`: directory, then
+# file, then the kinds of state the file holds.
+type StateKinds = Mapping[str, Mapping[str, tuple[KindName, ...]]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +26,12 @@ class Frontend:
     files: Callable[[Universe, Policy], Sequence[str]]
     # The records of the given files of this language.
     scan: Callable[[Universe, list[str], Sources, int | None, Policy], dict[str, FileScan]]
+    # What a scan of this language's files is told to treat as an ambient source: the state the
+    # repository keeps, and the readers the policy lists, as this language spells them. A source
+    # the language cannot spell is empty.
+    sources: Callable[[StateKinds, Policy, Universe], Sources]
+    # The readers the policy lists that this language no longer finds; only a whole run knows.
+    stale_readers: Callable[[Universe, Policy], list[Diagnostic]]
     # The record of one file's text, as if it were the file at `path` (a version not in the tree).
     scan_source: Callable[[Universe, str, bytes, Sources, Policy], FileScan]
     # The restricted forms (`FileScan.restricted`) a file of this language may use once `[external]`

@@ -1,12 +1,13 @@
 exports = ["fixtures.py", "python", "typescript"]
 
 [uses]
-"__init__.py" = ["file_scan.py", "frontend.py", "frontends.py"]
+"__init__.py" = ["file_scan.py", "frontend.py", "frontends.py", "sources.py"]
 "file_scan.py" = ["fixtures.py"]
 "frontend.py" = ["file_scan.py"]
 "frontends.py" = ["file_scan.py", "frontend.py", "python", "typescript"]
 "python" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
 "scan_codec.py" = ["file_scan.py", "fixtures.py"]
+"sources.py" = ["frontend.py", "frontends.py"]
 "tests" = ["__init__.py", "fixtures.py", "python", "scan_codec.py"]
 "typescript" = ["file_scan.py", "fixtures.py", "frontend.py", "scan_codec.py"]
 
@@ -16,3 +17,4 @@ exports = ["fixtures.py", "python", "typescript"]
 "frontend.py" = "strict"
 "frontends.py" = "strict"
 "scan_codec.py" = "strict"
+"sources.py" = "strict"
