@@ -21,7 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["meizel"]
-exclude = ["**/tests/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["meizel"]
