@@ -64,7 +64,6 @@ def parse_symbol_moves(specs: Sequence[str]) -> list[SymbolMove]:
     return moves
 
 
-# meiva:note
 # The declaration a change writes in its pull request body when it moves a symbol:
 #
 #   Symbol-Move: <old file>::<name> -> <new file> — <why>
@@ -88,7 +87,6 @@ def parse_symbol_move_lines(text: str) -> list[SymbolMove]:
     return moves
 
 
-# meiva:note
 # The base's own import lines that name a moved symbol at its old home, pointed at the new one: the
 # same site, the same count, measured where the change put the symbol. Returns the source and
 # `(line, old module, new module)` for each line it rewrote, so the gate can say what it changed.
@@ -152,7 +150,6 @@ def defines(universe: Universe, path: str, source: bytes, name: str) -> bool:
     return _source_span(scan, source, name) is not None
 
 
-# meiva:note
 # The manifests of a tree, read with the state kinds its own policy declares; what a manifest says
 # is not reported here, the checker's run does that.
 def declared_manifests(universe: Universe) -> dict[str, Manifest]:

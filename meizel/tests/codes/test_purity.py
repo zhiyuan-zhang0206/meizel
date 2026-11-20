@@ -443,7 +443,6 @@ def test_bindings_distinguish_defined_vs_imported_and_flag_imported_patch(
 def test_bindings_treat_a_file_outside_the_universe_as_dynamic(
     make_repo: RepoFactory,
 ) -> None:
-    # meiva:note
     # The universe is the snapshot the run admitted: a name it does not hold cannot be read, so
     # the caller's question about what that module binds stays open instead of guessed.
     root = make_repo({"lib/__init__.py": "", "lib/known.py": "def run() -> int:\n    return 1\n"})
@@ -475,7 +474,6 @@ def test_stale_export_flags_unused_subpackage_door_and_prune_removes_it(
     assert '"unused.py"' not in (root / "pkg/sub/meizel.toml").read_text(encoding="utf-8")
 
 
-# meiva:note
 # A one-line shell declaration is prunable, so prove both directions on one checkout: `sync --prune`
 # keeps the entry while the file it names exists, and drops it once that file is gone.
 _SHELL_MANIFEST = (

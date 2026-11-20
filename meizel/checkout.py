@@ -1,10 +1,9 @@
-# meiva:note
 # The checkout this tool reads: git, the text of its files, and the plans applied to it.
 #
 # The effect shell of `meizel.graph.universe`: the universe holds what a checkout contains, this
 # module is the only place that runs git against it, reads a file from it, or writes one back.
 # `mode = "none"` in `meizel/meizel.toml` records that split.
-# meiva:link meizel/docs/checker/purity.md
+# See meizel/docs/checker/purity.md.
 
 from __future__ import annotations
 
@@ -71,7 +70,6 @@ __all__ = [
 ]
 
 
-# meiva:note
 # The roles a checkout's root manifest declares: the parse is the model's (`meizel.roles`),
 # the read is this shell's, so a module that only decides over roles never runs git.
 def read_roles(repo: Checkout) -> Mapping[str, tuple[str, ...]]:
@@ -83,14 +81,12 @@ def read_roles(repo: Checkout) -> Mapping[str, tuple[str, ...]]:
     return parse_roles(text, label=str(path))
 
 
-# meiva:note
 # The roles of a repository root, for an entry point that has no checkout yet: the script or
 # command that runs on this repository is the one place allowed to build one.
 def roles_at(root: Path) -> Mapping[str, tuple[str, ...]]:
     return read_roles(GitRepo(root))
 
 
-# meiva:note
 # Reverse Python import closure for a checkout root, returning None on any read or syntax error.
 def python_reverse_closure_at(
     root: Path, changed_files: Sequence[str], *, jobs: int | None = None
@@ -98,14 +94,12 @@ def python_reverse_closure_at(
     return python_reverse_closure(load_universe(root), changed_files, jobs=jobs)
 
 
-# meiva:note
 # The UTF-8 text of `rel` under `root`.
 def read_text(root: Path, rel: str) -> str:
     return (root / rel).read_bytes().decode("utf-8")
 
 
 def _run_node(producer: Path, payload: str) -> tuple[int, str, str]:
-    # meiva:note
     # Fixed node argv with bounded heap and timeout against a tool-owned producer script.
     try:
         done = subprocess.run(  # noqa: S603
@@ -124,7 +118,6 @@ def _run_node(producer: Path, payload: str) -> tuple[int, str, str]:
     return done.returncode, done.stdout, done.stderr
 
 
-# meiva:note
 # This checkout's filesystem as a value: `pathlib` bound to the fields `meizel.graph.universe`
 # declares, so a module that decides over a checkout reads it without importing this shell. Binding
 # reads nothing, so a tree may name a root that does not exist yet and a test pins one to its fixture.
@@ -183,7 +176,6 @@ def _rmtree(root: Path) -> None:
         root.rmdir()
 
 
-# meiva:note
 # Carry out a plan a command built: create its directories, then write, then delete.
 def apply_plan(plan: EditPlan) -> None:
     for directory in plan.dirs:
@@ -212,7 +204,6 @@ class GitRepo:
     def load_bytes(self, rel: str) -> bytes:
         return (self.root / rel).read_bytes()
 
-    # meiva:note
     # This seat as a value: a module that only decides reads the checkout through it, and building
     # one reads nothing.
     @property
@@ -220,7 +211,6 @@ class GitRepo:
         return source_tree(self.root)
 
     def run_text(self, *args: str) -> str:
-        # meiva:note
         # Fixed git argv against the checkout root without invoking a shell.
         result = subprocess.run(  # noqa: S603
             ["git", "-C", str(self.root), *args],
@@ -233,7 +223,6 @@ class GitRepo:
         return result.stdout
 
     def run_bytes(self, *args: str, stdin: bytes | None = None) -> bytes:
-        # meiva:note
         # Fixed git argv for binary streams against the checkout root without invoking a shell.
         result = subprocess.run(  # noqa: S603
             ["git", "-C", str(self.root), *args],
@@ -248,7 +237,6 @@ class GitRepo:
         return result.stdout
 
     def default_base(self) -> str:
-        # meiva:note
         # Resolves the branch point with origin/main using a fixed git merge-base argv.
         result = subprocess.run(  # noqa: S603
             ["git", "-C", str(self.root), "merge-base", "HEAD", "origin/main"],
@@ -259,7 +247,6 @@ class GitRepo:
         return result.stdout.strip() if result.returncode == 0 else "HEAD"
 
     def show_optional_text(self, ref: str, path: str) -> str | None:
-        # meiva:note
         # Reads a tracked blob from a git ref using a fixed git show argv after rejecting flag refs.
         if ref.startswith("-"):
             raise MeizelError(f"{ref}: not a git ref")
@@ -281,7 +268,6 @@ class GitRepo:
         apply_plan(plan)
 
     def grep_files(self, marker: str, suffixes: tuple[str, ...]) -> list[str]:
-        # meiva:note
         # Lists tracked files containing a fixed marker via git grep without invoking a shell.
         specs = [f"*{s}" for s in suffixes] if suffixes else ["."]
         done = subprocess.run(  # noqa: S603
@@ -299,7 +285,6 @@ class GitRepo:
         )
 
     def grep_words(self, words: Collection[str], suffix: str) -> list[str]:
-        # meiva:note
         # Lists tracked files with the given suffix that contain any of the words as a whole word,
         # via git grep with a fixed argv and without invoking a shell.
         if not words:
@@ -316,7 +301,6 @@ class GitRepo:
         return sorted(done.stdout.splitlines())
 
     def untracked_files(self) -> tuple[str, ...]:
-        # meiva:note
         # Lists non-ignored untracked files via fixed git ls-files argv without invoking a shell.
         result = subprocess.run(  # noqa: S603
             ["git", "-C", str(self.root), "ls-files", "--others", "--exclude-standard", "-z"],
@@ -391,7 +375,6 @@ class GitRepo:
             self._memo.clear()
         self._memo[key] = value
 
-    # meiva:note
     # The file index of this checkout: the tracked regular files and the directories above them.
     # Built here, where the repository is read, so a caller holds the value instead of a path it
     # would rebuild the index from.
@@ -408,7 +391,6 @@ class GitRepo:
 
     @contextmanager
     def checkout(self, ref: str) -> Generator[GitRepo]:
-        # meiva:note
         # The same seat over a detached checkout of `ref`, removed on exit: a caller compares two
         # trees by holding two seats, never by rebuilding one from a path it made.
         if ref.startswith("-"):
@@ -426,7 +408,6 @@ class GitRepo:
 
 
 def toplevel(cwd: Path) -> Path:
-    # meiva:note
     # Fixed git argv and no shell: the directive covers this call, whose arguments are literals.
     result = subprocess.run(  # noqa: S603
         ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
@@ -439,7 +420,6 @@ def toplevel(cwd: Path) -> Path:
     return Path(result.stdout.strip())
 
 
-# meiva:note
 # A path is regular when it is a file and no component between it and the root is a
 # link: git tracks a path, not how it is reached, so a directory swapped for a link
 # keeps its tracked children listed. `git ls-files` names are relative, so one `lstat`
@@ -497,7 +477,6 @@ def _link_free(directory: str, root: str, links: dict[str, bool]) -> bool:
     return answer
 
 
-# meiva:note
 # Fixed Git argv and NUL framing preserve tracked names containing whitespace or newlines.
 def tracked_files(
     repo_root: Path,
@@ -554,7 +533,6 @@ def _common_git_dir(root: Path) -> Path | None:
     cached = _COMMON_DIRS.get((resolved, ino))
     if cached is not None:
         return cached
-    # meiva:note
     # Resolves the checkout toplevel and shared git-common-dir via fixed git rev-parse argv.
     done = subprocess.run(  # noqa: S603
         [
@@ -587,7 +565,6 @@ def _common_git_dir(root: Path) -> Path | None:
 
 
 def _working_tree_digests(root: Path) -> dict[str, str]:
-    # meiva:note
     # Reads git index blob SHAs and dirty working-tree paths via fixed git argv without a shell.
     staged = subprocess.run(  # noqa: S603
         ["git", "-C", str(root), "ls-files", "-s", "-z"],
@@ -597,7 +574,6 @@ def _working_tree_digests(root: Path) -> dict[str, str]:
     )
     if staged.returncode != 0:
         return {}
-    # meiva:note
     # Detects working-tree modifications (including racy-git entries) via fixed git diff-files argv.
     modified = subprocess.run(  # noqa: S603
         ["git", "-C", str(root), "diff-files", "--name-only", "-z"],
@@ -695,7 +671,6 @@ def _walk_non_git_files(root: Path) -> list[str]:
 
 
 def _git_test_digests(root: Path) -> dict[str, str]:
-    # meiva:note
     # Lists non-ignored untracked test/config files via fixed git ls-files argv without a shell.
     digests = _working_tree_digests(root)
     others = subprocess.run(  # noqa: S603
@@ -765,7 +740,6 @@ def lanes_at(root: Path, *, repo: GitRepo | None = None) -> TestLanes:
     return lanes
 
 
-# meiva:note
 # Whether `ref` names a commit this seat can list: the one fact deleted-path recovery needs. A
 # deleted path has no head tree to read, so its runtime impact comes from the base listing; without
 # it the selection widens rather than guesses (`incomplete-impact`). The listing is a fixed git

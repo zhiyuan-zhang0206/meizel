@@ -36,7 +36,6 @@ __all__ = [
 ]
 
 
-# meiva:note
 # Whether the dotted `target` is `prefix` or inside it (`lib.mod` holds `lib.mod.f`, not `lib.mod2`).
 def target_under(target: str, prefix: str) -> bool:
     return target == prefix or target.startswith((f"{prefix}.", f"{prefix}/"))
@@ -111,7 +110,6 @@ class Approval:
     why: str
 
 
-# meiva:note
 # The files the policy approves to patch, each with its reason and the patches it holds now. These
 # are not debt and no manifest records them: this is the list a reviewer reads to see them grow.
 def approved(universe: Universe, jobs: int | None = None) -> list[Approval]:
@@ -138,7 +136,6 @@ def format_approved(found: list[Approval], *, as_json: bool) -> str:
     return "\n".join(lines)
 
 
-# meiva:note
 # `ambient-read` records the point of acquisition: the file that calls `os.geteuid()`, `time.time()`
 # or a `[state]` name. It does not follow the value out of that function, so a caller of
 # `ensure_private_dir()` that hands it no `euid` inherits the world read and records nothing -- and
@@ -168,7 +165,6 @@ class _Propagation:
     sites: list[_Site]
     wrappers: list[_Wrapper]
 
-    # meiva:note
     # The measurement as lines: the count, the widest wrappers, then every site. The first line says
     # what the number is, because it is the one line somebody quotes later.
     def render(self, *, top: int) -> str:
@@ -192,7 +188,6 @@ class _Propagation:
         return "\n".join(lines)
 
 
-# meiva:note
 # The dotted module a file defines (`pkg/mod.py` -> `pkg.mod`, `pkg/__init__.py` -> `pkg`).
 def _dotted(path: str) -> str:
     parts = path.removesuffix(".py").split("/")
@@ -206,7 +201,6 @@ def _tree(universe: Universe, path: str) -> ast.Module | None:
         return None
 
 
-# meiva:note
 # Every node of a module with the qualified name of the function that holds it, "" at module level:
 # a class keeps its methods' names (`Class.method`), a nested function its outer's (`outer.inner`).
 def _nodes(
@@ -263,7 +257,6 @@ def _callee(func: ast.expr, scope: Scope, module: str, defined: set[str]) -> str
     return f"{module}.{base.id}" if not attrs and base.id in defined else None
 
 
-# meiva:note
 # The governed production files this measurement reads: a file declared under `[roots]` reads by
 # design -- that is what a composition root is for -- so what leaves it was handed down on purpose,
 # and a test records no acquisition at all.
@@ -308,7 +301,6 @@ def _read(
     return dict.fromkeys(holders, path), found, calls
 
 
-# meiva:note
 # The functions that reach an acquisition through calls: a function that calls one inherits its
 # read, and so does the caller of that caller, at any depth.
 def _closure(acquiring: set[str], calls: list[tuple[str, str, str, int]]) -> set[str]:
@@ -326,7 +318,6 @@ def _closure(acquiring: set[str], calls: list[tuple[str, str, str, int]]) -> set
     return inside
 
 
-# meiva:note
 # The world reads a call site inherits through a function, and where they enter the governed code.
 def propagation(
     universe: Universe, manifests: Mapping[str, Manifest], scans: Mapping[str, FileScan]

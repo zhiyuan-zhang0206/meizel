@@ -3,7 +3,6 @@ from __future__ import annotations
 __all__ = ["package_local_tests"]
 
 
-# meiva:note
 # The one question both test selectors still ask of this module: which collectable tests belong to
 # the package that owns `path`. The interface cutoff that gave the module its name is gone - an AST
 # fingerprint deciding that an unchanged signature means an unchanged behavior. It was removed

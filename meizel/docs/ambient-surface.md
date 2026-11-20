@@ -87,7 +87,7 @@ When `ambient-unjudged` or the test names a name:
    a channel row here and an `AmbientKind` member.
 
 The judgments that differ from the obvious spelling, the modules inspected and left out, and the
-forms the analysis cannot see are in [[meizel/docs/ambient-surface-judgments.md|the ambient
-surface judgments node]].
+forms the analysis cannot see are in [the ambient
+surface judgments node](ambient-surface-judgments.md).
 
 Parent: [the ambient kinds node](ambient-kinds.md).

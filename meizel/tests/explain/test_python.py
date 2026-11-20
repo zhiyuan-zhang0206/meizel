@@ -45,7 +45,6 @@ def test_input_append_observations_keep_fresh_rebound_and_nested_mutation_separa
     assert [(item.function, item.parameter) for item in scan.input_appends] == [
         ("direct", "values")
     ]
-    # meiva:note
     # Only the trusted scanner value serialized in this assertion is unpickled.
     assert pickle.loads(pickle.dumps(scan)).input_appends == scan.input_appends  # noqa: S301
     assert analysis.diagnostics == analysis.verdict == analysis.facts == []

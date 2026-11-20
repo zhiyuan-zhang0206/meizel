@@ -1,10 +1,8 @@
-// meiva:note
 // Shared rule vocabulary is emitted from compiler nodes and lexical symbols, never source-text matching.
-// meiva:link meizel/docs/checker/typescript.md
+// See meizel/docs/checker/typescript.md.
 export function semantics(ts, context, tree, out, index, config, test, ambientPolicy) {
   const checker = context.checker;
   const impure = new Set(config.impure_calls);
-  // meiva:note
   // The page and the browser the code runs in: its address, the storage it keeps, the cookies and the machine it reports,
   // bare or behind `window.`, `globalThis.` or `self.`. Only the global counts: a package called `navigator` does not.
   const browserReads = Object.fromEntries(['', 'window.', 'globalThis.', 'self.'].flatMap(base => Object.entries({
@@ -69,7 +67,6 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
   function effect(node, name) {
     add(node, 'impure-call', `${owner(node)}#${name}`, `\`${owner(node)}\` performs an effectful operation \`${name}\``, 'move I/O, timers and stateful hooks to an explicit boundary');
   }
-  // meiva:note
   // `process.env.NEXT_PUBLIC_<NAME>` (or the same with a string key, or `process.env?.NEXT_PUBLIC_<NAME>`) in a file the Next.js
   // build bundles is replaced by the value the build saw, provided that variable is set then: the expression is a
   // constant of the build, so it acquires nothing. The root must be the global `process` (an imported one is not replaced),
@@ -91,21 +88,18 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
     }
     return false;
   }
-  // meiva:note
   // The node with the parentheses and assertions around it (`(process.env as X)`): what the code means by the value.
   function climbed(node) {
     let top = node;
     while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isAsExpression(top.parent) || ts.isNonNullExpression(top.parent) || ts.isSatisfiesExpression(top.parent) || ts.isTypeAssertionExpression(top.parent))) top = top.parent;
     return top;
   }
-  // meiva:note
   // Whether a longer access chain continues from `node` (`(process.env).KEY`): the outer access is the one that acquires.
   function insideAccess(node) {
     const top = climbed(node);
     const parent = top.parent;
     return Boolean(parent && (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) && parent.expression === top);
   }
-  // meiva:note
   // Whether the value `node` is written to or removed rather than read: the left side of an assignment (plain or compound),
   // the operand of `delete`, `++` or `--`, however many parentheses or assertions surround it.
   function written(node) {
@@ -116,7 +110,6 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
     if (ts.isDeleteExpression(parent)) return true;
     return (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(parent.operator);
   }
-  // meiva:note
   // A browser global named on its own as a value (`const store = localStorage`, `f(location)`): the symbol is a variable or a
   // function of the library, not a property, and the use is neither a feature test (`typeof location`) nor a type.
   function bareBrowserGlobal(node) {
@@ -138,7 +131,6 @@ export function semantics(ts, context, tree, out, index, config, test, ambientPo
     const kind = target ? reads[target] : called ? calls[name] : undefined;
     if (kind && !(target === 'process.env' && inlinedEnv(node))) out.ambient.push([line(node), kind, target ?? name]);
   }
-  // meiva:note
   // The longest part of an access chain that names a global or an import, for `process.env[name]` and `localStorage[key].x`,
   // where the chain breaks at a computed key and `reference` finds nothing.
   function readable(node) {

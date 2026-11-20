@@ -57,7 +57,6 @@ def test_the_same_read_in_a_file_the_build_does_not_bundle_is_an_environment_rea
     assert acquired(UNBUNDLED_READ, path) == [("environ", "process.env")]
 
 
-# meiva:note
 # Turbopack, the default build, does not replace the optional-chain and imported-`process` spellings, and a write
 # is not a read; the rest are the ways to the environment that were never a literal key.
 COUNTED = [

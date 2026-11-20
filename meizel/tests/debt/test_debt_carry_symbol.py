@@ -44,7 +44,6 @@ HELPER = "monkeypatch.setattr lib.mod.helper"
 OTHER = "monkeypatch.setattr lib.mod.other"
 
 
-# meiva:note
 # The counts each entry records, whether the entry is a bare number or a table naming its owner and
 # exit condition: a test that judges where a debt was carried says nothing about either field.
 def debt_of(root: Path, directory: str) -> dict[str, dict[str, int]]:
@@ -293,7 +292,6 @@ def test_the_new_file_must_exist(
     assert "app/calls.py is not a file" in capsys.readouterr().err
 
 
-# meiva:note
 # What a symbol's debt counts depends on the state the tree declares: `fetch` reads `registry`, a
 # kind only this tree's policy names, so its entry follows it only if the manifests that say which
 # files hold that state were read with the tree's own kinds.

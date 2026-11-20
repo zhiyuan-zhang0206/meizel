@@ -1,4 +1,3 @@
-# meiva:note
 # Shape is not provenance or owner coverage. These cases keep absent/partial/failed readings
 # distinct from complete declared-scope measurements, including the live index budget.
 from __future__ import annotations

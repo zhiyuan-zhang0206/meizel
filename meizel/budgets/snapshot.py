@@ -1,4 +1,3 @@
-# meiva:note
 # Snapshot ownership and coverage survive decoding and rendering. Declared completeness is
 # not proof of live freshness: the external owner supplies provenance and measurement semantics.
 from __future__ import annotations

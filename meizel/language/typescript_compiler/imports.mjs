@@ -1,6 +1,5 @@
-// meiva:note
 // Import syntax comes from the compiler; policy resolution never promotes untracked files to facts.
-// meiva:link meizel/docs/checker/typescript.md
+// See meizel/docs/checker/typescript.md.
 export function imports(ts, context, tree, result) {
   const bindings = new Map();
   const line = node => tree.getLineAndCharacterOfPosition(node.getStart(tree)).line + 1;

@@ -68,7 +68,6 @@ def test_the_api_refuses_an_unknown_role(make_repo: RepoFactory) -> None:
 
 
 def test_the_model_reads_no_file_of_its_own() -> None:
-    # meiva:note
     # The model decides; the shell reads. A `GitRepo`, a `Path` or a manifest constant here would put
     # the read back inside the module that is supposed to receive the answer.
     source = Path(roles.__file__).read_text(encoding="utf-8")
@@ -84,7 +83,6 @@ def test_the_api_fails_fast_on_an_invalid_declaration(
         roles.parse_roles(manifest, label="meizel.toml")
 
 
-# meiva:note
 # The roles a repository declares, parsed from its root manifest's text: the decision is the
 # model's, the read is the test's own.
 def declared(root: Path) -> dict[str, tuple[str, ...]]:

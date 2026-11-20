@@ -1,4 +1,3 @@
-# meiva:note
 # The child of `test_ambient_surface._live_names`: print the names the channel modules define.
 # It imports the standard library only, so that it runs in a clean `python -I` interpreter, without
 # this repository's packages, and a library imported by a test cannot add names to the modules it

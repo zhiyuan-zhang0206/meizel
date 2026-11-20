@@ -13,7 +13,6 @@ from meizel.language.scan import FileScan
 __all__ = ["Explain", "explain"]
 
 
-# meiva:note
 # What `meizel explain` reads from argv, checked once at the dispatch boundary: the handler below
 # holds a `str` node, a `Path` or nothing, and an `int` or nothing, instead of `Any` attributes.
 @dataclass(frozen=True)

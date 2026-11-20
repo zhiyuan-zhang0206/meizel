@@ -1,4 +1,3 @@
-# meiva:note
 # `debt resolve`: a merge conflict inside the recorded-debt tables is resolved, anywhere else it is refused.
 
 from __future__ import annotations
@@ -35,21 +34,18 @@ def conflict(ours: str, theirs: str, base: str | None = None) -> str:
     return f"<<<<<<< ours\n{ours}{middle}=======\n{theirs}>>>>>>> theirs\n"
 
 
-# meiva:note
 # One entry as a conflict side writes it: the count with the metadata every recorded entry carries, so
 # a resolved table is a table `check` accepts.
 def entry(key: str, count: int) -> str:
     return f'"{key}" = {entry_text(count)}\n'
 
 
-# meiva:note
 # The older spelling a merge can still meet: a count with no metadata at all. One side of the
 # owner test writes it, because a side that names nobody leaves the other side's answer standing.
 def bare_entry(key: str, count: int) -> str:
     return f'"{key}" = {count}\n'
 
 
-# meiva:note
 # An entry as a conflict hunk writes it: the count, and the metadata it carries.
 def named(key: str, count: int, owner: str, until: str = "") -> str:
     fields = f"count = {count}, owner = {owner!r}".replace("'", '"')
@@ -78,7 +74,6 @@ def debts(root: Path) -> dict[str, dict[str, int]]:
     }
 
 
-# meiva:note
 # The root manifest with its `private-module` table replaced by `middle`.
 def conflicted(root: Path, middle: str) -> None:
     text = (root / "meizel.toml").read_text()
@@ -87,7 +82,6 @@ def conflicted(root: Path, middle: str) -> None:
     write(root, {"meizel.toml": head + TABLE + middle + ("\n" + tail if tail else "")})
 
 
-# meiva:note
 # The tree still has three occurrences: a violation neither side recorded is a decision for `debt record`,
 # not a number to raise.
 def test_a_count_both_sides_changed_becomes_the_lower_one_and_is_never_raised(
@@ -206,7 +200,6 @@ def test_the_command_lowers_the_resolved_tables_to_what_occurs(
     assert run(root, "check") == 0
 
 
-# meiva:note
 # Who pays a debt down and what it waits for are part of the entry a merge resolves, not a comment on
 # the count: the side that names them wins, and the surviving count is still the lower one.
 def test_a_resolved_conflict_keeps_the_owner_and_the_condition(make_repo: RepoFactory) -> None:
@@ -225,7 +218,6 @@ def test_a_resolved_conflict_keeps_the_owner_and_the_condition(make_repo: RepoFa
     assert run(root, "check") == 0
 
 
-# meiva:note
 # Two sides naming different owners disagree about who pays: a count is derived and can be merged, an
 # owner is not, so the resolver refuses instead of picking one.
 def test_two_owners_in_a_conflict_are_refused_rather_than_picked(make_repo: RepoFactory) -> None:
@@ -238,7 +230,6 @@ def test_two_owners_in_a_conflict_are_refused_rather_than_picked(make_repo: Repo
     assert (root / "meizel.toml").read_text() == before
 
 
-# meiva:note
 # The resolver reads the entry with the manifest's own reader, so a field it does not know is refused
 # there too: dropping a misspelt `owner` would read as "no owner", which is the one thing an entry is
 # meant to make visible.

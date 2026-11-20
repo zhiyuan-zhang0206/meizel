@@ -98,7 +98,6 @@ def test_typescript_debt_symbol_move_uses_ast_spans(make_repo: RepoFactory) -> N
     }
 
 
-# meiva:note
 # The fixed Python probe receives an empty PATH to exercise missing Node without changing
 # process-wide environment or replacing the production subprocess collaborator.
 def test_missing_node_is_an_error_only_when_typescript_is_selected(tmp_path: Path) -> None:

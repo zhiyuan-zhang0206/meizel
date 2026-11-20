@@ -13,7 +13,6 @@ def _repo(make_repo: RepoFactory, files: dict[str, str]) -> Path:
     return make_repo({"meizel.toml": ROOT, "app/__init__.py": "", "tests/__init__.py": "", **files})
 
 
-# meiva:note
 # The `debt propagation` measurement as the command printed it, without the `meizel: ` prefix of
 # every line. It reads the governed production code and writes nothing.
 def measured(root: Path, capsys: pytest.CaptureFixture[str], *arguments: str) -> list[str]:
@@ -135,7 +134,6 @@ def test_the_measurement_writes_no_baseline(
     assert "[debt" not in (manifest.read_text() if manifest.exists() else "")
 
 
-# meiva:note
 # The one place `meizel debt` ignores one of the summary's flags: the report is answered before the
 # flags are judged, so `debt --json propagation` prints what it always printed instead of refusing.
 # The case below it is the other half — the same flag on a mode that is not the summary still
@@ -153,7 +151,6 @@ def test_the_propagation_report_ignores_a_summary_flag(
     assert not out.lstrip().startswith("{")
 
 
-# meiva:note
 # `prune` is a mode, not the summary, so the flag that belongs to the summary is still refused there —
 # with the same exit status and message the other summary flag already had.
 def test_a_mode_that_is_not_the_summary_refuses_a_summary_flag(

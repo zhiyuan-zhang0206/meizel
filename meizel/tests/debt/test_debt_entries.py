@@ -1,4 +1,3 @@
-# meiva:note
 # One recorded debt's count, owner and condition: both spellings read alike, and the entries with no
 # owner are countable and listable instead of hidden among the rest.
 
@@ -151,7 +150,6 @@ def test_carrying_a_rename_keeps_the_owner(make_repo: RepoFactory) -> None:
     }
 
 
-# meiva:note
 # A move that lands on a key its new directory already records merges the two entries: the counts add,
 # and the owner the moved entry names survives, so following a rename never quietly drops who pays.
 def test_carrying_onto_a_recorded_key_keeps_the_moved_owner(make_repo: RepoFactory) -> None:
@@ -173,7 +171,6 @@ def test_carrying_onto_a_recorded_key_keeps_the_moved_owner(make_repo: RepoFacto
     }
 
 
-# meiva:note
 # The summary says how many recorded debts name no owner, and `--unowned` appends the list at the end —
 # as the detail of the table above it, not between that table's header and its rows.
 def test_the_summary_counts_and_lists_the_entries_without_an_owner(
@@ -220,14 +217,12 @@ def test_the_check_line_names_the_entries_without_an_owner(
     capsys.readouterr()
     assert run(root, "check") == 1, "an entry that names no owner is an error now"
     capsys.readouterr()
-    # meiva:note
     # A scoped run judges the file it names, so the entry's own manifest stays out of the verdict and
     # the ok line still reports what the whole tree records.
     assert run(root, "check", "pkg/a.py") == 0
     assert "1 entry (1 occurrence) names no owner" in capsys.readouterr().out
 
 
-# meiva:note
 # `--unowned` is the summary's flag like `--json` is: a subcommand that never reads it says so instead
 # of printing a report that silently ignores the request.
 def test_unowned_with_a_subcommand_is_refused(
@@ -239,7 +234,6 @@ def test_unowned_with_a_subcommand_is_refused(
     assert "--unowned belongs to the summary" in capsys.readouterr().err
 
 
-# meiva:note
 # A move that lands on an entry somebody already owns is a real disagreement about who pays: the entry
 # already there keeps it, and the command says so rather than merging the two owners into one.
 def test_carrying_onto_another_owner_reports_which_one_it_kept(

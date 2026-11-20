@@ -50,7 +50,6 @@ def test_a_directory_over_the_cap_is_flagged(tmp_path: Path, entries: int, flagg
         assert "cohesive subpackages" in error
 
 
-# meiva:note
 # The band reaches the shell with the run's changed paths and comes back beside the violations, so a
 # caller can print one and fail on the other: a file the change does not touch is never named here.
 def test_the_band_names_a_changed_file_beside_the_violations(tmp_path: Path) -> None:

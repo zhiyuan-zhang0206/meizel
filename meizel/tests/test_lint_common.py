@@ -43,7 +43,6 @@ def test_git_owns_directory_source_admission(tmp_path: Path) -> None:
     import subprocess
 
     def git(*args: str) -> None:
-        # meiva:note
         # Fixed Git argv in an isolated fixture, without invoking a shell.
         subprocess.run(  # noqa: S603
             ["git", "-C", str(tmp_path), *args], check=True, capture_output=True
@@ -65,7 +64,6 @@ def test_git_owns_directory_source_admission(tmp_path: Path) -> None:
     assert lint_common.python_files(tree, [tmp_path / "app"]) == [
         tmp_path / path for path in expected
     ]
-    # meiva:note
     # An explicit leaf remains an intentional audit, unlike a directory scan.
     assert lint_common.python_files(tree, [tmp_path / "app/.venv/bad.py"]) == [
         tmp_path / "app/.venv/bad.py"
@@ -79,7 +77,6 @@ def test_directory_scan_does_not_follow_a_tracked_parent_replaced_by_a_link(tmp_
     source = root / "app/owned/source.py"
     source.parent.mkdir(parents=True)
     source.write_text("value = 1\n")
-    # meiva:note
     # Fixed Git argv build only this fixture's index; later links do not change its ownership.
     subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)  # noqa: S603
     subprocess.run(["git", "-C", str(root), "add", "."], check=True, capture_output=True)  # noqa: S603
@@ -88,13 +85,12 @@ def test_directory_scan_does_not_follow_a_tracked_parent_replaced_by_a_link(tmp_
     assert lint_common.python_files(open_repository(root).tree, [root / "app"]) == []
 
 
-# meiva:note
 # Admission reuse is scoped to one lint run, and the scope is what makes it safe:
 # inside the run the checkout is read once (a lint asks per target and one run asked
 # 21 times), and outside it every read goes back to git, so a file created between
 # two runs is never judged by the previous run's file set. Both halves are pinned
 # here because the fast path and the correct path are the same code.
-# meiva:link meizel/docs/lint/lint-common-admission.md
+# See meizel/docs/lint/lint-common-admission.md.
 def _git_fixture(root: Path, *files: str) -> None:
     import subprocess
 
@@ -143,7 +139,6 @@ def test_an_unrelated_touch_keeps_the_admitted_set(tmp_path: Path) -> None:
     assert lint_common.python_files(tree, [root / "app"]) == before
 
 
-# meiva:note
 # The file set a lint may read is the checkout's: a path reached through a link is not in
 # it, because git tracks a path, not how it is reached. `tracked_files(regular=True)`
 # decides that, so the rule is pinned where the lints consume it — a directory's answer is
@@ -202,7 +197,6 @@ def test_a_directory_replaced_by_a_regular_file_is_skipped(tmp_path: Path) -> No
     assert "app/owned/source.py" not in kept
 
 
-# meiva:note
 # The other half of the error contract: an answer that is not "missing" still fails the
 # caller, so no lint silently judges a smaller file set. A locked directory produces it on
 # a normal runner but not under root, so the test passes the reader whose answer it needs
@@ -225,7 +219,6 @@ def test_a_file_deleted_after_the_listing_is_skipped(tmp_path: Path) -> None:
     assert _regular(root) == {"app/keep.py"}
 
 
-# meiva:note
 # A toolchain that was never installed has no
 # `node_modules` and the analyzer dies with a module-not-found stack that reads like a regression
 # in the change under test. The failure names the fix instead; any other analyzer failure keeps
@@ -270,7 +263,6 @@ def test_meizel_source_code_contains_no_meiva_specific_hardcoded_literals() -> N
     assert violations == []
 
 
-# meiva:note
 # The binary/UTF-8 rule on its own: it is the decision `read_utf8_text` makes after reading, so a
 # caller holding bytes can reach it without a file — and the window boundary is the part of it a
 # caller could quietly change.

@@ -1,4 +1,3 @@
-# meiva:note
 # The shape of a judgment of an ambient name, and the sentences the groups of the judged table share.
 # The table itself is `ambient_surface.py` (`ambient_process_table.py` holds the process channels).
 
@@ -25,7 +24,6 @@ __all__ = [
 ]
 
 
-# meiva:note
 # What reading a name is, and why: no `kinds` is "not an ambient read". A call that reads several
 # channels (`email.utils.make_msgid` the clock, the process id, entropy and the host name) lists
 # every one of them, and each is acquired at the call. An `unless` clause spares the call as a
@@ -48,7 +46,6 @@ class Judgment:
             raise ValueError("an `unless` clause spares a read, and this name reads nothing")
 
 
-# meiva:note
 # Names of one module (or class) that share one judgment; a name may be a `*` pattern.
 @dataclass(frozen=True, slots=True)
 class Group:
@@ -60,7 +57,6 @@ class Group:
 K = AmbientKind
 
 
-# meiva:note
 # A group of names with one judgment. `kind` is the one kind the names read, `None` when they read
 # nothing, or a tuple of two or more kinds when one call reads several channels.
 def g(

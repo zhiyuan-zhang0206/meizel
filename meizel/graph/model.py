@@ -1,4 +1,3 @@
-# meiva:note
 # Value types and the closed ambient vocabulary shared by every stage of the checker.
 
 from __future__ import annotations
@@ -110,13 +109,11 @@ class Code(StrEnum):
     DISCONNECTED_ISLAND = "disconnected-island"
 
 
-# meiva:note
 # The name of a kind of ambient read as a manifest and the policy spell it: an `AmbientKind` value,
 # or a state kind the policy declares under `[ambient]`.
 type KindName = str
 
 
-# meiva:note
 # What a process reads from the world it runs in: the standard library's windows onto the process
 # and the machine, as a closed vocabulary. The state a repository keeps itself (its configuration,
 # a database handle, a bus) is not in it: each repository declares those kinds as the keys of the
@@ -141,7 +138,6 @@ class AmbientKind(StrEnum):
     SLEEP = "sleep"
 
 
-# meiva:note
 # `filesystem` and `sleep` are the two kinds whose calls the scan derives no acquisition for: a read
 # of a file or a wait on the process timer is an effect, and the purity layer already charges it
 # `impure-call`, so restating it as a read of the world would double the record of every such call in
@@ -155,7 +151,6 @@ class AmbientKind(StrEnum):
 # The names of `AmbientKind`: the kinds no repository declares, which a state kind may not reuse.
 OS_KINDS: tuple[KindName, ...] = tuple(kind.value for kind in AmbientKind)
 
-# meiva:note
 # The kinds a `[roots]` declaration of one kind also licenses, and why the relation has one direction.
 #
 # `clock` covers `monotonic`: a file already allowed the instant is allowed the duration, because a
@@ -178,7 +173,6 @@ def covered_kinds(kind: KindName) -> frozenset[KindName]:
     return _COVERED_KINDS.get(kind, frozenset()) | {kind}
 
 
-# meiva:note
 # A kind name read back from a producer outside the Python scanner (the TypeScript compiler, a scan
 # cache): it must be one the policy accepts, `Policy.reader_kinds`, or the result is refused. A
 # misspelled kind would otherwise become a kind of its own that a debt entry can record.
@@ -239,7 +233,6 @@ class AnyCollaboratorSite:
     role: str
 
 
-# meiva:note
 # The point where a file reaches the ambient world: `target` is the dotted name it reads.
 @dataclass(frozen=True, slots=True)
 class Acquisition:
@@ -248,7 +241,6 @@ class Acquisition:
     target: str
 
 
-# meiva:note
 # A reader that reads the world only when it is not handed one: the call is an acquisition unless
 # it passes a value for `parameter`, which `position` places among the arguments that can be given
 # by position (None when it is keyword-only).
@@ -258,7 +250,6 @@ class Unless:
     position: int | None
 
 
-# meiva:note
 # The state a repository keeps itself: dotted name -> kind.
 #
 # `names` acquire the state when imported or read as an attribute of their module; `calls` only
@@ -272,7 +263,6 @@ class Sources:
     unless: dict[str, Unless] = field(default_factory=dict[str, Unless])
 
 
-# meiva:note
 # Where a file spends a reading that is not entropy as an identifier or a random draw: `what` is
 # the reading and where it went (`time.monotonic_ns in an f-string`), or the wrapper over a clock
 # (`interval-wrapper _monotonic`).

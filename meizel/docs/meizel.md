@@ -78,5 +78,5 @@ declared under `[sections]` ([the policy file](checker/policy/policy.md)).
 ## Type-only guards
 
 The `type-checking` code, the roles and policy it applies to, and how `diagnose` and the
-standalone adapter report it: [[meizel/docs/type-checking.md|the type-only guards
-node]].
+standalone adapter report it: [the type-only guards
+node](type-checking.md).

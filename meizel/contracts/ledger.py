@@ -94,7 +94,6 @@ def _paid(
     return found
 
 
-# meiva:note
 # A read the manifest itself calls legal, recorded as debt: `[roots] name = {kinds = [kind]}` and a
 # `[debt.ambient-read]` entry `name#kind target` in the same directory. The two are the same
 # declaration read twice, so this needs no source analysis and `check --changed` reports it too —
@@ -125,7 +124,6 @@ def legal_read_recorded(manifests: Mapping[str, Manifest]) -> list[Diagnostic]:
     return found
 
 
-# meiva:note
 # What an `until` answers and the shape it takes, printed once per run on the first entry
 # that lacks one: the reader who fixes the first entry reads the whole rule, and every later
 # entry says in one line what it is missing. Full text on one entry is what keeps twenty of
@@ -154,7 +152,6 @@ _UNTIL_EXPLANATION = (
     "beats a wrong sentence that outlives us both."
 )
 
-# meiva:note
 # What `owner` names and why it is a task rather than the agent working it, printed once per
 # run on the first entry that lacks one: the same one-full-text rule as `until`.
 _OWNER_EXPLANATION = (
@@ -166,7 +163,6 @@ _OWNER_EXPLANATION = (
     "If the entry is leaving in this change, delete it instead of naming an owner for it."
 )
 
-# meiva:note
 # Why an `until` has one reviewed shape, printed once per run on the first entry whose
 # sentence does not begin with `waits for `: debt is temporary and names the condition that
 # retires it, whereas a permanent design boundary belongs in `[roots]` or a positive rule.
@@ -181,7 +177,6 @@ _SHAPE_EXPLANATION = (
     "and is not a reviewed shape."
 )
 
-# meiva:note
 # Why a waiting sentence may not say nothing will arrive, printed once per run on the first entry that
 # does: the head before the colon names the condition that ends the debt, and a head saying nothing
 # will arrive claims a permanent exemption inside `[debt]`.
@@ -195,7 +190,6 @@ _CONTRADICTION_EXPLANATION = (
     "The argument for why the condition has not arrived yet belongs after the colon."
 )
 
-# meiva:note
 # The explanation each fault gets, printed once per run on the first entry that carries it: the order is
 # the order a reader meets them, and a fault that is not here is one the entry's own message covers.
 _EXPLANATIONS: Mapping[str, str] = {
@@ -206,7 +200,6 @@ _EXPLANATIONS: Mapping[str, str] = {
 }
 
 
-# meiva:note
 # The footer the first bare entry of a run carries: that these are errors, and that an entry
 # owned by another task is a message rather than an edit.
 _BARE_FOOTER = (
@@ -217,7 +210,6 @@ _BARE_FOOTER = (
 )
 
 
-# meiva:note
 # What is wrong with an entry's metadata, in a fixed order: `owner` first, then `until`, then the shape
 # of an `until` that is present but unreadable. One entry can be wrong in more than one way, and the
 # message it gets names each; the explanations are handed out per kind, not per entry.
@@ -234,7 +226,6 @@ def _missing(entry: DebtEntry) -> tuple[str, ...]:
     return tuple(faults)
 
 
-# meiva:note
 # One hint that renders as a block: every line after the first carries the four spaces `render` puts in
 # front of a hint, so the explanation reads as one indented passage instead of a paragraph whose tail
 # hangs off the left margin.
@@ -243,7 +234,6 @@ def _block(text: str) -> str:
     return "\n".join([head, *(f"    {line}" if line else "" for line in rest)])
 
 
-# meiva:note
 # One sentence per entry, saying which of the two fields is missing. A reader who meets twenty of
 # them reads twenty facts about twenty entries rather than one fact about the field repeated.
 def _bare_message(code: Code, key: str, missing: tuple[str, ...]) -> str:
@@ -270,7 +260,6 @@ def _bare_message(code: Code, key: str, missing: tuple[str, ...]) -> str:
     return f"{code} {key!r} records debt with no owner and no readable exit condition."
 
 
-# meiva:note
 # Recorded debt that names no owner, states no exit condition, or both: read from the manifest text
 # alone, so `check --changed` reports it too -- a run that analysed no source still reads every
 # `[debt]` table. The full text goes on the first entry of each missing kind in this run and the
@@ -301,7 +290,6 @@ def bare_entries(manifests: Mapping[str, Manifest]) -> list[Diagnostic]:
     return found
 
 
-# meiva:note
 # The explanations this entry is the first to need: `shown` carries the faults already explained in this
 # run, so twenty entries with one fault read as one explanation and twenty sentences rather than twenty
 # copies of a paragraph.
@@ -338,14 +326,12 @@ def reconcile(
     return failing
 
 
-# meiva:note
 # A count with its noun in the number the count takes: a line that says "1 entry names no owner" reads
 # as typed, not assembled.
 def _counted(count: int, one: str, many: str) -> str:
     return f"{count} {one if count == 1 else many}"
 
 
-# meiva:note
 # The account's notes for the ok line: how many occurrences are recorded and across how many
 # strict-to-be directories, then how many entries name no owner and how much they carry. Either
 # clause disappears when it is zero, so a clean tree's line stays short; the unowned entries are what
@@ -399,7 +385,6 @@ def account_line(
     return carried + ownerless + unstated_line + unread_line + _declared_clause(scans)
 
 
-# meiva:note
 # The sites a run declared injected callables, counted apart from the reads they do not excuse: the
 # number is what tells a reader that a quiet `impure-call` count is not a narrower rule.
 def _declared_clause(scans: Mapping[str, FileScan] | None) -> str:
@@ -433,7 +418,6 @@ class _Scan:
     hunks: list[_Hunk]
 
 
-# meiva:note
 # A line outside every hunk, given the current `[debt.<code>]` table: a header moves it; inside a
 # debt table an entry is kept as an entry and the rest is dropped, since the tables are written again;
 # anywhere else the line is plain text. Returns the table the next line is in.
@@ -459,7 +443,6 @@ def _outside(line: str, table: str | None, plain: list[str], outside: _Entries) 
 _MARKERS = {"<<<<<<<": "ours", "|||||||": "base", "=======": "theirs", ">>>>>>>": ""}
 
 
-# meiva:note
 # The hunk part a marker line starts ("" after the closing marker), or None for any other line. A
 # marker counts only inside a hunk, except the opening one.
 def _after_marker(line: str, mode: str) -> str | None:
@@ -467,7 +450,6 @@ def _after_marker(line: str, mode: str) -> str | None:
     return _MARKERS[mark] if mark in _MARKERS and (mode or mark == "<<<<<<<") else None
 
 
-# meiva:note
 # The text outside the debt tables and the conflict hunks, the debt entries outside the hunks, and
 # the hunks with the table each starts in. A `|||||||` base section (diff3 style) is dropped: only the
 # two sides are compared. After a hunk the current table is the last one its first side names.
@@ -495,12 +477,10 @@ def _scan(lines: list[str]) -> _Scan:
     return scan
 
 
-# meiva:note
 # One side's entry as its line writes it, decoded by the same reader the manifest uses, and the reason
 # it is not one when it is not: a bare count or an inline table, and any complaint about it — an
 # unknown field, a count that is not positive — refuses the merge. A misspelt `owner` must not read as
 # "no owner" here either, so the person resolving the conflict is told which field was wrong.
-# meiva:note
 # `tomllib.loads` answers `dict[str, Any]`; this states the shape the debt reader wants — string keys,
 # values still `object` until `read_entry` checks them — so the `Any` never reaches the entry reader.
 def _decoded(text: str) -> Mapping[str, object]:
@@ -518,7 +498,6 @@ def _value(raw: str) -> tuple[DebtEntry | None, str]:
     return entry, "; ".join(message.removeprefix(": ") for message in problems)
 
 
-# meiva:note
 # What both sides agree one entry is: the lower count, and the metadata either side names — a real
 # disagreement about who owns the debt is a decision, so it is refused rather than picked.
 def _merged_side(mine: DebtEntry, other: DebtEntry) -> DebtEntry | None:
@@ -530,7 +509,6 @@ def _merged_side(mine: DebtEntry, other: DebtEntry) -> DebtEntry | None:
     )
 
 
-# meiva:note
 # The `[debt.<code>]` entries one side of a hunk holds, or why a line is not one. The side starts in
 # `table`; a header inside the side moves it.
 def _entries(side: tuple[str, ...], table: str | None) -> tuple[_Entries, str | None]:
@@ -558,7 +536,6 @@ def _entries(side: tuple[str, ...], table: str | None) -> tuple[_Entries, str | 
     return found, None
 
 
-# meiva:note
 # Both sides of one hunk as the entries they name, or the first line this command will not decide.
 def _hunk_entries(hunk: _Hunk) -> tuple[_Entries, str | None]:
     ours, problem = _entries(hunk.ours, hunk.table)
@@ -580,7 +557,6 @@ def _hunk_entries(hunk: _Hunk) -> tuple[_Entries, str | None]:
     return found, None
 
 
-# meiva:note
 # Every hunk merged into the entries the file's `[debt]` tables hold, with the lines to refuse.
 def _merge_hunks(scan: _Scan, where: str) -> tuple[_Entries, list[str]]:
     merged = dict(scan.outside)
@@ -594,7 +570,6 @@ def _merge_hunks(scan: _Scan, where: str) -> tuple[_Entries, list[str]]:
     return merged, problems
 
 
-# meiva:note
 # The merged entries as the raw `[debt]` table `parse_debt` reads back.
 def _raw_entries(merged: _Entries) -> dict[str, object]:
     raw: dict[str, object] = {}
@@ -605,7 +580,6 @@ def _raw_entries(merged: _Entries) -> dict[str, object]:
     return raw
 
 
-# meiva:note
 # A manifest with merge conflicts inside its `[debt.<code>]` tables, resolved: the text without the
 # markers, and what could not be. Recorded debt is derived, so both sides' entries are kept (a count
 # both sides changed becomes the lower one) and `debt prune` lowers them to what still occurs; a

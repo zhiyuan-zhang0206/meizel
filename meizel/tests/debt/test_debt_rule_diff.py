@@ -68,7 +68,6 @@ def test_a_pure_rule_change_may_record_what_the_new_rules_find(
     assert "no content growth" in out
 
 
-# meiva:note
 # A manifest that declares a file the change adds: the declaration is written over the base's content
 # too, where that file does not exist, so it names a child the base cannot hold. It is dropped there
 # instead of read as a broken base (pull request 7625: 7600 and 7620 each added a file to a declared
@@ -85,7 +84,6 @@ def test_a_file_added_to_a_declared_directory_is_measured_not_refused(
     assert "app/meizel.toml [exports] * ~" in out
 
 
-# meiva:note
 # The declaration that names nothing stays the change's own violation. Dropping it from the base's
 # baseline is not a way past the gate: `check` fails on the tree that declares it.
 def test_a_manifest_naming_a_file_no_tree_has_stays_a_violation(
@@ -142,7 +140,6 @@ def test_a_rule_change_cannot_increase_an_existing_debt_count(
     assert "warning" in out.err
 
 
-# meiva:note
 # `debt diff` without the extra rule pathspecs: it has to detect the rule change by itself.
 def plain_diff(root: Path, on_growth: str = "fail") -> int:
     return run(root, "debt", "diff", "--against", "HEAD", "--on-growth", on_growth)
@@ -167,7 +164,6 @@ def test_editing_only_the_debt_tables_keeps_the_single_column(
     assert "meizel: totals only:" in out
 
 
-# meiva:note
 # A policy the change edits without touching an entry (a comment) is still part of the device: the
 # report names the file, so the two measures are never printed without an input that explains them.
 def test_a_policy_edit_with_no_entry_change_still_names_the_policy(
@@ -184,7 +180,6 @@ def test_a_policy_edit_with_no_entry_change_still_names_the_policy(
     assert "  meizel.policy.toml" in out
 
 
-# meiva:note
 # The tests under `meizel/` are not the device either: the checker records nothing there, and editing
 # one keeps the totals-only report instead of spending a second column on it.
 def test_editing_only_a_test_file_under_meizel_keeps_the_single_column(
@@ -288,7 +283,6 @@ endpoints = ["ServiceEndpoints.from_settings()"]
 """
 
 
-# meiva:note
 # This base is committed with violations and no `[debt]` table — the tests that use it record afterwards.
 # Its record is therefore not what its own device finds in its own content, which `rules` already reads as
 # the device's +1 and `repaid` reads as -1: `app/env.py` reads the environment and nothing records it.
@@ -333,7 +327,6 @@ DECLARED_BASE = {
 }
 
 
-# meiva:note
 # The other direction: the device starts measuring the read again, and the code did not move.
 def test_taking_a_root_away_is_a_rule_change_and_not_new_debt(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
@@ -613,7 +606,6 @@ def patch_repo(make_repo: RepoFactory, policy: str) -> Path:
     return root
 
 
-# meiva:note
 # An approval is part of the device: approving a file stops the measurement, and no line of its code
 # changed, so the drop is the rules column.
 def test_approving_a_file_is_a_rule_change_and_not_repayment(
@@ -661,7 +653,6 @@ def test_taking_an_approval_away_does_not_excuse_a_patch_added_elsewhere(
     assert "guards.py#" not in out
 
 
-# meiva:note
 # The old patch is the rules' business; the one this change adds is the content's.
 def test_a_patch_added_where_an_approval_was_taken_away_is_content_growth(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
@@ -679,7 +670,6 @@ def test_a_patch_added_where_an_approval_was_taken_away_is_content_growth(
     assert "guards.py#monkeypatch.setattr lib.helper (first-party-patch) 2 recorded, 1 found" in out
 
 
-# meiva:note
 # The failure names the ref and the table shows the movement; the block after it says what a grown
 # baseline costs and where to look. Asserted on fragments, so the wording stays free to change.
 def test_the_growth_failure_says_why_and_where_to_look(
@@ -698,7 +688,6 @@ def test_the_growth_failure_says_why_and_where_to_look(
     assert "meizel/docs/checker/debt/debt.md" in err
 
 
-# meiva:note
 # A change that removes a whole top-level directory and its role is measured at its own paths: the
 # base's content loses what the change deleted before the change's roles judge it, so the comparison
 # runs instead of refusing a base whose directory the new roles no longer name.
@@ -736,7 +725,6 @@ def test_a_deleted_top_level_directory_is_not_measured_under_the_new_roles(
     assert diff(root) == 0, capsys.readouterr().err
 
 
-# meiva:note
 # The same base, measured by a change that declares the host tables the base wrote without
 # `[sections]`: the base's checkout is normalized before it is read, and nothing is refused.
 def test_a_base_policy_from_before_section_declarations_is_measured(

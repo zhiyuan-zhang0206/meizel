@@ -1,6 +1,5 @@
-// meiva:note
 // One compiler context owns lexical binding; each importing file's project options own resolution.
-// meiva:link meizel/docs/checker/typescript.md
+// See meizel/docs/checker/typescript.md.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -74,7 +73,6 @@ export function project(ts, input) {
     }
     const module = ts.resolveModuleName(clean, importer, options, host, cache).resolvedModule;
     if (module) return module;
-    // meiva:note
     // Non-code assets are still dependency facts, and cannot be compiler source files.
     if (clean.startsWith('.')) {
       const candidate = path.resolve(path.dirname(importer), clean);

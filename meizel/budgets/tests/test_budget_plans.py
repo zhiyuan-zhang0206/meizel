@@ -1,10 +1,9 @@
-# meiva:note
 # `meizel/budgets/budget_plans.py` unit tests: the two ceilings at their boundary and the order the
 # report comes out in, which directory entries are candidates of the file budget, what counts as a
 # Python file, which of a target and a structure directory is judged, and the judged directories with
 # their entry counts. Asserted by value; the same ceilings against a real Git repository are covered
 # by `test_limits.py` and `scripts/lint/tests/test_budget_gate.py`.
-# meiva:link meizel/docs/meizel.md
+# See meizel/docs/meizel.md.
 
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ def _text(lines: int) -> str:
     return "x = 1\n" * lines
 
 
-# meiva:note
 # The violations of one run; the band below the ceiling is tested on its own.
 def _report(texts: dict[Path, str], judged: dict[str, int] | None = None) -> list[str]:
     violations, _ = budget_plans.ceiling_report(texts, _ROOT, judged or {})
@@ -40,7 +38,6 @@ def test_a_file_is_counted_in_the_lines_it_has_not_the_newline_it_ends_with() ->
     assert _report({_PACKAGE / "a.py": _text(801)}) != []
 
 
-# meiva:note
 # The line names the file, the count and the repair; the reason the ceiling exists, what the author
 # now owns and the document that states it follow, so the number arrives with its argument.
 def test_a_file_violation_names_the_path_the_count_and_the_guidance() -> None:
@@ -58,7 +55,6 @@ def test_a_directory_is_flagged_only_over_the_entry_cap(entries: int, flagged: b
     assert bool(report) is flagged
 
 
-# meiva:note
 # The same handover for the entry cap: the repair the guidance states, then what the directory owes —
 # the names each addition buries and the regrouping whoever stays over the cap owns.
 def test_a_directory_violation_names_the_path_the_count_and_the_guidance() -> None:
@@ -93,7 +89,6 @@ def test_a_report_with_nothing_over_a_ceiling_is_empty() -> None:
     assert _report({}) == []
 
 
-# meiva:note
 # The band below the ceiling, and the condition that keeps it quiet: a file is named only when this
 # run's change touches it. A repository where hundreds of files already sit at 795 would otherwise
 # warn on every run about code nobody is editing, and over the ceiling the violation already speaks.

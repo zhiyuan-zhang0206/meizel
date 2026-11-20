@@ -19,7 +19,6 @@ COMPLETE = (
 )
 
 
-# meiva:note
 # A manifest whose `[debt.private-name]` table holds these entries, one per line: the fixture every
 # test here reads, so a test says only what each entry carries.
 def manifest(**entries: str) -> str:
@@ -27,7 +26,6 @@ def manifest(**entries: str) -> str:
     return f"{DECLARED}\n[debt.private-name]\n{rows}\n"
 
 
-# meiva:note
 # The code under test, as a plain string: the verdict's `code` is compared by value, so a reader greps
 # the same word the output prints.
 BARE: str = "bare-debt"

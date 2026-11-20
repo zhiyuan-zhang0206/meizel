@@ -1,4 +1,3 @@
-# meiva:note
 # Which of a composition root's kinds licenses one purity item: the join between a `[roots]`
 # declaration and the call the purity layer charged.
 #
@@ -19,7 +18,6 @@ from meizel.graph.model import Acquisition, AmbientKind, KindName, PurityItem
 
 __all__ = ["FILESYSTEM_READS", "SLEEP_CALLS", "licensed"]
 
-# meiva:note
 # The calls a `filesystem` root licenses: the ones whose name decides that it reads. A read of a
 # file is an effect in the purity layer, whose keys these are, so this table is the one place the
 # `filesystem` kind reaches; a new key belongs here only with a call that layer charges, and the
@@ -79,7 +77,6 @@ FILESYSTEM_READS: frozenset[str] = frozenset(
     }
 )
 
-# meiva:note
 # The call a `sleep` root licenses: the synchronous process wait at the timer door (`time.sleep`).
 # `clock` does not cover `sleep`, so a clock root that waits without declaring `sleep` still owes
 # the `impure-call` record; coroutine and synchronisation waits (`asyncio.sleep`, `Event.wait`) are
@@ -87,7 +84,6 @@ FILESYSTEM_READS: frozenset[str] = frozenset(
 SLEEP_CALLS: frozenset[str] = frozenset({"time.sleep"})
 
 
-# meiva:note
 # The purity rule keeps the short spelling a call canonicalises to (`datetime.now` for the table's
 # `datetime.datetime.now`), so the table's own spelling is a second candidate -- the same name, not
 # a second rule -- and a call reached only when given no value reads nothing once it is handed the

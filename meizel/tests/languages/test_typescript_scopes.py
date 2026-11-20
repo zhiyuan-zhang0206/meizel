@@ -1,4 +1,3 @@
-# meiva:note
 # The `[roots]` warning for directories the selected TypeScript scopes do not judge.
 #
 # These contracts need the real Node producer: a repository that contains `.ts` files makes `check`
@@ -13,7 +12,6 @@ import pytest
 
 from meizel.tests.synthetic import RepoFactory, run, write
 
-# meiva:note
 # The measured hole: a `[roots]` table in a directory outside
 # `[typescript].scopes` is parsed into the manifest and then consulted by nothing, because the
 # exemption is read when that file's own reads are judged and the file is never scanned. Adding the
@@ -106,7 +104,6 @@ def test_a_file_target_in_the_warned_directory_reports_it(
     assert "exempt nothing" not in capsys.readouterr().err
 
 
-# meiva:note
 # Only a *file* target stands in for the manifest that judges it. A directory target already says
 # which directories were asked about, so a parent's inert table stays out of a run about a
 # subdirectory -- the table names files directly in its own directory, not in that one.
@@ -122,7 +119,6 @@ def test_a_subdirectory_target_does_not_report_its_parents_table(
     assert "exempt nothing" in capsys.readouterr().err
 
 
-# meiva:note
 # The remedy must not send an author down a route that cannot work. A `[roots]` key has to name a
 # Python or TypeScript file, so the reachable hole with no way out is a directory whose only such
 # file is a `.d.ts` declaration: the checker reads source, never a declaration, so a scope entry

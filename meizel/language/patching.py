@@ -1,4 +1,3 @@
-# meiva:note
 # Patches and test-seam spellings: the forms in which a test replaces something it did not build.
 #
 # A patch finds its target by name, so the scanner records each form as a `Patch` and the checker
@@ -34,12 +33,10 @@ _PATCH_CALLS = {
     "unittest.mock.patch.dict": "dict",
 }
 _MONKEYPATCH_METHODS = frozenset({"setattr", "delattr", "setitem", "delitem", "setenv", "delenv"})
-# meiva:note
 # The dotted name of the process environment, spelled in parts so this scanner does not itself
 # read as a use of it.
 _ENVIRONMENT = ".".join(("os", "environ"))
 _PATCH_OPTIONS = frozenset({"spec", "create", "spec_set", "autospec", "new_callable"})
-# meiva:note
 # The monkeypatch methods whose `raising=False` lets a patch of a missing name pass.
 _RAISING_METHODS = frozenset({"setattr"})
 
@@ -57,7 +54,6 @@ def _is_dunder(name: str) -> bool:
     return name.startswith("__") and name.endswith("__")
 
 
-# meiva:note
 # The patch forms of one file, found as the scanner visits it.
 class PatchForms(PythonCommands):
     def __init__(self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool) -> None:
@@ -66,7 +62,6 @@ class PatchForms(PythonCommands):
         self.purity_state = purity.make_state(universe, path=path)
         self.patches: list[Patch] = []
 
-    # meiva:note
     # The call forms that replace something: `mock.patch`, `monkeypatch`, the builtin
     # `setattr`/`delattr`, a write into `sys.modules`, and a call into a shell.
     def patch_forms(self, node: ast.Call, callee: str | None) -> None:
@@ -82,7 +77,6 @@ class PatchForms(PythonCommands):
         elif self.is_shell_call(callee):
             self.shell_call(node)
 
-    # meiva:note
     # A class in a test that overrides a method of a concrete first-party class. The subclass
     # replaces behavior by name, which is a patch under another spelling. A fake that implements
     # a `Protocol` or an abstract base, and a base that lives in tests, is the form the red line
@@ -101,7 +95,6 @@ class PatchForms(PythonCommands):
             if info is not None:
                 self.record_overrides(info, methods)
 
-    # meiva:note
     # The concrete first-party class outside tests that a base expression names, or None.
     def production_class(self, base: ast.expr) -> ClassFacts | None:
         dotted = self.dotted(base.value if isinstance(base, ast.Subscript) else base)
@@ -179,7 +172,6 @@ class PatchForms(PythonCommands):
         name = const_str(node.args[1]) if len(node.args) > 1 else None
         self.written(node.args[0], (name,) if name else (), node.lineno, node.func.id)
 
-    # meiva:note
     # A name set or removed on a first-party module must be one the module binds.
     #
     # Otherwise the write creates an attribute nothing in the module reads, and the patch
@@ -314,7 +306,6 @@ class PatchForms(PythonCommands):
                 Patch(node.lineno, form, self.monkeypatch_target(node), Code.PATCH_RAISING_FALSE)
             )
 
-    # meiva:note
     # The patched name of a `monkeypatch.setattr` / `delattr` call, as its record spells it.
     def monkeypatch_target(self, node: ast.Call) -> str:
         first = node.args[0]
@@ -341,7 +332,6 @@ class PatchForms(PythonCommands):
                 )
             )
 
-    # meiva:note
     # What kind of code a resolved patch target is.
     def patch_code(self, dotted: str) -> Code:
         if dotted == _ENVIRONMENT or dotted.startswith(f"{_ENVIRONMENT}."):
@@ -352,7 +342,6 @@ class PatchForms(PythonCommands):
             return Code.STDLIB_PATCH
         return Code.THIRD_PARTY_PATCH
 
-    # meiva:note
     # A patch of a module or object, classified by what the file's imports say it is.
     def record_patch(self, target: ast.expr, names: tuple[str, ...], line: int, form: str) -> None:
         dotted = self.dotted(target)
@@ -364,7 +353,6 @@ class PatchForms(PythonCommands):
                 Patch(line, form, f"{base}.{name}" if name else base, code, imported=imported)
             )
 
-    # meiva:note
     # A string target names first-party code invisibly (restricted); any other is a patch.
     def string_target(
         self, target: ast.expr | None, line: int, form: str, names: tuple[str, ...] = ()

@@ -3,7 +3,6 @@
 `record` is the only way a baseline grows. `check` and `bootstrap` never write one.
 """
 
-# meiva:note
 # This module also reads one: `read_baselines` is the read half of `write_baseline`, kept beside it so
 # the one module that knows how a baseline sits in a manifest owns both directions.
 
@@ -49,7 +48,6 @@ __all__ = [
 Baselines = dict[str, DebtTable]
 
 
-# meiva:note
 # `tomllib.loads` answers `dict[str, Any]`; this states the shape this reader wants — string keys,
 # values still `object` until `parse_debt` checks them — so no `Any` reaches the debt reader.
 def _decoded(text: str) -> Mapping[str, object]:
@@ -68,7 +66,6 @@ def _parse(text: str, where: str) -> DebtTable:
     return table
 
 
-# meiva:note
 # The recorded debt of every directory of the working tree that has any.
 def read_baselines(universe: Universe, texts: Mapping[str, str] | None = None) -> Baselines:
     found: Baselines = {}
@@ -96,7 +93,6 @@ def _copy(table: DebtTable) -> DebtTable:
     return {code: dict(rows) for code, rows in table.items()}
 
 
-# meiva:note
 # A recorded entry raised to at least `count`, keeping who owns it and what it waits for: a change in
 # the count is not a change of owner.
 def _raised(entry: DebtEntry | None, count: int) -> DebtEntry:
@@ -105,7 +101,6 @@ def _raised(entry: DebtEntry | None, count: int) -> DebtEntry:
     return DebtEntry(max(entry.count, count), entry.owner, entry.until)
 
 
-# meiva:note
 # The entry lowered to what still occurs, metadata kept: paying a debt down does not hand it to
 # someone else.
 def _lowered(entry: DebtEntry, found: int) -> DebtEntry:
@@ -136,7 +131,6 @@ def _manifest_text(repo: Checkout, owner: str) -> str:
     return repo.load_text(manifest_path(owner), default="")
 
 
-# meiva:note
 # What a command says after writing manifests that were not there: the author has to stage them,
 # because `check` reads tracked files only. `record` and `carry` both create them, so both say it
 # here rather than each in its own words.
@@ -203,7 +197,6 @@ def _merge_cycle_facts(
             edges[key] = _named(_raised(edges.get(key), count), naming)
 
 
-# meiva:note
 # Who an entry a run writes belongs to, what it waits for, and the day the run wrote it: the three
 # strings a caller states about the entries it creates. One value, because they travel together and
 # because `record` already names its subjects.
@@ -214,7 +207,6 @@ class Naming:
     today: str = ""
 
 
-# meiva:note
 # The entry this run writes: the count it raised, carrying the owner and exit condition the caller
 # gave for it. A field the entry already holds wins, so recording cannot rewrite who pays a debt down
 # or why it waits, and a run that states no exit condition writes the marked placeholder rather than
@@ -227,7 +219,6 @@ def _named(entry: DebtEntry, naming: Naming) -> DebtEntry:
     )
 
 
-# meiva:note
 # The placeholder `record` writes when nobody stated what the debt waits for: who asked for the entry
 # and the day it was written, under the prefix the summary counts as unreviewed. `record` is a
 # mechanical step and knows nothing about the debt; a sentence it made up would read like a reason
@@ -238,7 +229,6 @@ def _unreviewed(naming: Naming) -> str:
     return f"{UNREVIEWED} recorded by {who}{stamp}"
 
 
-# meiva:note
 # Record the violations under `targets`. Returns the manifests written, the ones among them that did
 # not exist before, and every violation under `targets` that no baseline can hold. A count never goes
 # down here (that is `prune`), and a violation outside `targets` is not recorded.
@@ -291,7 +281,6 @@ def _analysis_for_prune(
     return current
 
 
-# meiva:note
 # Lower every baseline to what still occurs; returns a line per manifest rewritten.
 def prune(
     repo: Checkout, jobs: int | None = None, *, analysis: Analysis | None = None
@@ -320,7 +309,6 @@ def prune(
     return lines
 
 
-# meiva:note
 # `debt resolve <manifest>...`: resolve the merge conflicts that sit inside the `[debt]` tables of the
 # named manifests (see `resolve_debt_conflicts`), then lower every baseline to what still occurs.
 # Recorded debt is derived from the tree, so a conflict between two recorded numbers is not a choice

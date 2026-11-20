@@ -33,12 +33,11 @@ class FrontendObservation:
     source_lock: str | None
 
 
-# meiva:note
 # The four facts that decide whether a tree may be asked a TypeScript question, read through the
 # caller's tree: whether node_modules exists, whether pnpm installed it, and the digests of the
 # lockfile it installed against and of the lockfile the tree carries. The tree decides where the
 # reads come from, so this module stays a decision.
-# meiva:link meizel/docs/frontend-deps.md
+# See meizel/docs/frontend-deps.md.
 def observe(tree: SourceTree, frontend: Path) -> FrontendObservation:
     return FrontendObservation(
         node_modules=tree.is_dir(frontend / NODE_MODULES),
@@ -48,7 +47,6 @@ def observe(tree: SourceTree, frontend: Path) -> FrontendObservation:
     )
 
 
-# meiva:note
 # The digest of one file, or None when it is not there: an absent lockfile and an unreadable one are
 # the same answer to "was this tree installed for the lockfile the checkout carries".
 def _digest(tree: SourceTree, path: Path) -> str | None:
@@ -58,10 +56,9 @@ def _digest(tree: SourceTree, path: Path) -> str | None:
         return None
 
 
-# meiva:note
 # One verdict per install shape, in the order the probes can tell them apart: no tree at all, a tree
 # with no pnpm metadata (installed by npm), a tree pnpm built for another lockfile.
-# meiva:link meizel/docs/frontend-deps.md
+# See meizel/docs/frontend-deps.md.
 def classify(observation: FrontendObservation) -> FrontendDeps:
     if not observation.node_modules:
         return FrontendDeps.MISSING
@@ -72,10 +69,9 @@ def classify(observation: FrontendObservation) -> FrontendDeps:
     return FrontendDeps.READY
 
 
-# meiva:note
 # A refusal names the state it found and the one command that ends it; a ready tree has no refusal,
 # and asking for one is a programming error rather than a message.
-# meiva:link meizel/docs/frontend-deps.md
+# See meizel/docs/frontend-deps.md.
 def refusal(state: FrontendDeps, frontend: Path) -> str:
     tree = frontend / NODE_MODULES
     reinstall = f"(cd {frontend} && pnpm install --frozen-lockfile)"

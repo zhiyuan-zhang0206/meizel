@@ -29,19 +29,16 @@ __all__ = [
 ]
 
 
-# meiva:note
 # Check whether the tree holds a regular file at `path`.
 def _is_file(tree: SourceTree, path: Path) -> bool:
     return tree.is_file(path)
 
 
-# meiva:note
 # Check whether the tree holds a directory at `path`.
 def _is_dir(tree: SourceTree, path: Path) -> bool:
     return tree.is_dir(path)
 
 
-# meiva:note
 # Check whether a lint target path resolves to an existing file or directory.
 def _exists(tree: SourceTree, path: Path) -> bool:
     return _is_file(tree, path) or _is_dir(tree, path)
@@ -111,7 +108,6 @@ def _resolved_target(tree: SourceTree, argument: str) -> Path:
     return tree.resolve(path)
 
 
-# meiva:note
 # One lint run admits the checkout's files once. A lint asks per target, and one run
 # of `time_bomb` asked 21 times: each ask re-read git and re-checked every tracked
 # path, which measured 75 s of a 92 s profiled run for three changed files. The reuse
@@ -163,7 +159,6 @@ class _Admission:
 admission = _Admission()
 
 
-# meiva:note
 # Git owns source admission in a checkout: tracked regular files plus new nonignored
 # regular files. Standalone environments are ignored dependencies, not governed source.
 # A non-Git fixture keeps the explicit filesystem behavior of the lint API.
@@ -183,7 +178,6 @@ def _source_files(tree: SourceTree) -> list[str] | None:
     return admitted
 
 
-# meiva:note
 # Select a directory's admitted files by name prefix. The admitted entries are
 # repo-relative POSIX names, so `name.startswith(prefix + "/")` is the same set as
 # resolving every name to a Path and asking `is_relative_to` — it measured 234k Path
@@ -214,7 +208,6 @@ def resolve_targets(tree: SourceTree, argv: list[str]) -> tuple[list[str], list[
     return sorted(set(files)), []
 
 
-# meiva:note
 # Python source below the chosen roots, using the same admission as explicit directory
 # targets. Read Git once for the whole scan; explicit leaf files retain their audit meaning.
 def python_files(tree: SourceTree, roots: Iterable[Path]) -> list[Path]:
@@ -228,7 +221,6 @@ def python_files(tree: SourceTree, roots: Iterable[Path]) -> list[Path]:
     return [tree.root / file for file in sorted(files)]
 
 
-# meiva:note
 # The reader around `decode_source`: the one place that pays for the bytes. A lint whose rule
 # already holds the content calls the decision, not this.
 def read_utf8_text(tree: SourceTree, path: Path) -> str | None:
@@ -239,7 +231,6 @@ def read_utf8_text(tree: SourceTree, path: Path) -> str | None:
     return decode_source(data)
 
 
-# meiva:note
 # Node reports a missing analyzer dependency as a module-not-found stack raised from the package dir,
 # which never says that the *checkout* lacks the dependencies.
 # Name the fix instead of the stack.
@@ -253,17 +244,15 @@ def _missing_frontend_dependencies(stderr: str) -> str | None:
     )
 
 
-# meiva:note
 # This I/O boundary starts one tool-owned analyzer with JSON stdin and bounded heap/time.
 # Successful fact production is not a semantic purity proof of the scanned code.
-# meiva:link meizel/docs/frontend-deps.md
+# See meizel/docs/frontend-deps.md.
 def run_node_analyzer(
     tree: SourceTree, producer: Path, payload: str, *, frontend: Path | None = None
 ) -> str:
-    # meiva:note
     # A frontend tree this checkout did not install from its own lockfile answers for a graph the
     # lockfile does not describe, so the refusal happens before node starts and names the fix.
-    # meiva:link meizel/docs/frontend-deps.md
+    # See meizel/docs/frontend-deps.md.
     if frontend is not None:
         state = classify(observe(tree, frontend))
         if state is not FrontendDeps.READY:

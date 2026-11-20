@@ -1,6 +1,5 @@
-// meiva:note
 // The compiler is a tool-owned locked dependency. A failed batch never emits a partial clean result.
-// meiva:link meizel/docs/checker/typescript.md
+// See meizel/docs/checker/typescript.md.
 import fs from 'node:fs';
 import {ts} from './compiler.mjs';
 import {project} from './project.mjs';

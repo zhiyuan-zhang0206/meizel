@@ -40,7 +40,6 @@ def entry_end(lines: list[str], start: int) -> int:
     return len(lines) - 1
 
 
-# meiva:note
 # The quoted names of an array literal, read one match at a time: `findall` answers `Any` for a
 # pattern with groups, and each group is checked here before it becomes a name.
 def items(block: str) -> list[str]:
@@ -156,7 +155,6 @@ def add_exports(text: str, names: set[str]) -> str:
 _RESTORED_WHY = "restored from a historical registry that recorded no reason"
 
 
-# meiva:note
 # One declaration as the manifest spells it: a roots entry carries its kinds and why, a purity `none`
 # its mode and why (a placeholder when the base recorded none), everything else the bare value.
 def _declaration(
@@ -171,7 +169,6 @@ def _declaration(
     return values
 
 
-# meiva:note
 # Snapshot preparation replaces one finite declaration table while preserving every other table.
 # Purity levels and ambient kinds share this text-edit operation, not their semantic vocabulary;
 # callers supply the already validated base/head facts appropriate to that scope.

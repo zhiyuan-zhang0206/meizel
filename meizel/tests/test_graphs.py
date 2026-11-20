@@ -18,7 +18,6 @@ PYPROJECT = '[tool.pytest.ini_options]\ntestpaths = ["tests", "pkg/**/tests", "a
 ROLES = '[roles]\napplication = ["pkg", "app", "base"]\ntests = ["tests"]\n'
 
 
-# meiva:note
 # The native lane of these fixtures, declared the way a repository declares it: the fixtures, markers
 # and modules that need native services.
 TEST_GRAPH_POLICY = (
@@ -77,12 +76,11 @@ def test_two_edges_that_each_break_the_cycle_alone_are_not_both_dropped() -> Non
     assert unneeded_back_edges(graph, [("a", "b"), ("b", "a")]) == [("a", "b")]
 
 
-# meiva:note
 # The split is a direction: `meizel.graph.universe` holds the data a decision needs,
 # `meizel.checkout` is the shell that answers it. These tests pin that direction, so moving the
 # reader back into the model — the shape where one file both declared and read a universe — fails
 # here as well as in `meizel check`.
-# meiva:link meizel/docs/checker/purity.md
+# See meizel/docs/checker/purity.md.
 _MODEL = Path(model.__file__).resolve()
 _SHELL = _MODEL.parent.parent / "checkout.py"
 _EFFECT_MODULES = {"os", "shutil", "subprocess", "tempfile"}
@@ -340,7 +338,6 @@ def test_cli_tests_subcommand_reports_lanes_and_selects_every_consumer(
             )
         },
     )
-    # meiva:note
     # A body-only change keeps the consumer: the interface cutoff was deleted, so selection no
     # longer infers "signature unchanged" means "the consumer cannot observe it".
     assert run(root, "tests", "--changed", "pkg/calc.py", "--base-ref", "HEAD", "--json") == 0
@@ -382,7 +379,6 @@ def test_cli_tests_subcommand_reports_lanes_and_selects_every_consumer(
     assert native_only["tests"] == ["app/tests/test_app_native.py"]
 
 
-# meiva:note
 # Swapping an import behind an `__exports__` list used to be pruned by the interface cutoff wherever
 # the policy did not declare that name a public surface. That inference was deleted, so the
 # downstream reader is selected whatever the policy says.

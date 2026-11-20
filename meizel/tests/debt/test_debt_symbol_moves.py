@@ -1,4 +1,3 @@
-# meiva:note
 # A declared symbol move, end to end through `debt diff`: the base's replay reads the moved name at
 # its new home, says which import it retargeted, and buys nothing else — a real new dependency the
 # change adds is still content growth.
@@ -41,7 +40,6 @@ def _record(root: Path, text: str) -> Path:
     return path
 
 
-# meiva:note
 # The move the tests declare: the function leaves lib.py, box.py defines it, and use.py follows it.
 def _move(root: Path) -> None:
     write(
@@ -55,7 +53,6 @@ def _move(root: Path) -> None:
     )
 
 
-# meiva:note
 # A declaration buys one thing: the base's replay finds the same site at the symbol's new home. It
 # does not buy silence: a real new dependency the change adds is still content growth.
 
@@ -98,7 +95,6 @@ def test_a_declared_move_does_not_swallow_a_real_new_dependency(
     assert "use.py#environ os.environ" in out.out + out.err
 
 
-# meiva:note
 # The positive side: the same move with nothing else added leaves no content growth, and the gate
 # says which import it retargeted — the line that lands in the job summary.
 def test_a_declared_move_is_measured_at_the_new_home_and_says_so(
@@ -139,7 +135,6 @@ def test_a_declared_move_is_measured_at_the_new_home_and_says_so(
     assert "base import rewritten: app/use.py:1 app.lib.thing -> app.box.thing" in out
 
 
-# meiva:note
 # The declaration is an assertion, not a licence: a move the change did not make is reported and
 # changes nothing, so a typo cannot quietly buy silence.
 def test_a_declaration_the_change_does_not_make_is_reported_and_ignored(

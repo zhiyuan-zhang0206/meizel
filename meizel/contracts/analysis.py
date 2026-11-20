@@ -102,7 +102,6 @@ class Analysis:
     stale_loads: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     stale_externals: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     stale_exports: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
-    # meiva:note
     # Warnings the run cannot turn into a violation: (manifest, the line to print).
     inert: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     stale_dynamic_attrs: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
@@ -164,7 +163,6 @@ def _fixture_facts(
     return fixture_facts(FixtureIndex(universe, defined, plugins), requests)
 
 
-# meiva:note
 # The `[loads]`, `[external]` and `[dynamic-attrs]` files, as repository paths.
 def _declared_sites(manifests: dict[str, Manifest]) -> tuple[set[str], set[str], set[str]]:
     def paths(table: Callable[[Manifest], Iterable[str]]) -> set[str]:
@@ -217,7 +215,6 @@ def _source_diagnostics(
 _TEST_MODULE = re.compile(r"^test_|_test\.py$|\.(?:test|spec)\.")
 
 
-# meiva:note
 # `[approved-patches.files]`: the files that are allowed to patch, each with the reason. A patch is
 # debt: the code under test should take its collaborator instead. A few test-support files patch on
 # purpose, because their job is to keep the suite off the host or to put a child process in a state no
@@ -237,7 +234,6 @@ def _approval_refusal(path: str) -> str | None:
     return None
 
 
-# meiva:note
 # An entry that cannot be approved (production code, a test module), whether the run is partial or whole.
 def _approval_problems(policy: Policy) -> list[Diagnostic]:
     refused = {path: _approval_refusal(path) for path in _approved(policy)}
@@ -254,7 +250,6 @@ def _approval_problems(policy: Policy) -> list[Diagnostic]:
     ]
 
 
-# meiva:note
 # An approval that approves nothing fails like any other stale allowance: the file is gone, or it
 # patches nothing any more. Only a whole-repository run knows.
 def _stale_approvals(
@@ -280,7 +275,6 @@ def _stale_approvals(
     return found
 
 
-# meiva:note
 # The modules the run's facts show as test code that nothing outside the tests imports, each named
 # the way a patch target names it: a TypeScript file by its path, a Python module by its dotted name
 # (`meizel/tests/codes/test_x.py` is `meizel.tests.codes.test_x`). An importer the run did not scan cannot
@@ -296,7 +290,6 @@ def exempt_test_modules(facts: Iterable[Fact]) -> frozenset[str]:
     )
 
 
-# meiva:note
 # Whether a target names one of these modules or a name bound inside one: a target adds the patched
 # name to the module it reaches (`page-test-mock.tsx.activeId`, `lib.mod.helper`).
 def _names_test_code(target: str, modules: Collection[str]) -> bool:
@@ -310,7 +303,6 @@ def _names_test_code(target: str, modules: Collection[str]) -> bool:
     return False
 
 
-# meiva:note
 # The module part of a patch target that names `path`: a TypeScript file keeps its path, a Python module
 # is written dotted (`meizel/tests/codes/test_x.py` is `meizel.tests.codes.test_x`).
 def _target_name(path: str) -> str:
@@ -319,7 +311,6 @@ def _target_name(path: str) -> str:
     return path.removesuffix(".py").replace("/", ".").removesuffix(".__init__")
 
 
-# meiva:note
 # How a patch reads: its form and the code's own word for what it targets.
 def _patch_message(patch: Patch) -> str:
     if patch.code is Code.PATCH_RAISING_FALSE:
@@ -340,7 +331,6 @@ def _patch_hints(patch: Patch) -> tuple[str, ...]:
     return tuple(hints)
 
 
-# meiva:note
 # Patching: the dependency was not injected. A file the policy approves is not judged, and neither is
 # a patch of test code: a test that drives its own mock reaches no collaborator of the code under
 # test.
@@ -369,7 +359,6 @@ def _patch_diagnostics(
     return found
 
 
-# meiva:note
 # The declared sites whose file no longer has a restricted form of the kind the declaration exempts
 # (`forms`, or any restricted form for a `[loads]` site), as (directory, name).
 def _stale_sites(
@@ -479,7 +468,6 @@ def _missing_plugins(universe: Universe, scans: Mapping[str, FileScan]) -> list[
     return sorted(found)
 
 
-# meiva:note
 # Scans only changed source files first, pulling in ancestor conftest.py files and transitive
 # pytest_plugins modules only when a changed file requests fixtures or declares plugins.
 def _scan_changed(
@@ -543,7 +531,6 @@ _ENTROPY_HINTS = (
 )
 
 
-# meiva:note
 # A reading spent as identity or randomness, or a private wrapper over an interval clock. It is
 # recordable debt like an ambient read, except in a strict file.
 def _entropy_diagnostics(
@@ -630,7 +617,6 @@ def _type_checking_diagnostics(
     ]
 
 
-# meiva:note
 # The diagnostics a single file produces on its own, without whole-repository facts.
 def diagnose(
     scan: FileScan,
@@ -655,7 +641,6 @@ def diagnose(
     return _distinct(found)
 
 
-# meiva:note
 # Analyse the repository, or with `changed` only the facts those files contribute.
 #
 # A partial run still reads every manifest, so the declared graphs are checked in full. It
@@ -663,7 +648,6 @@ def diagnose(
 # declaration, but not stale graph declarations: those need the whole repository's facts.
 # Generated role lists and copies are checked globally in both modes, using this universe
 # and the parsed root roles; they do not widen the fact scan.
-# meiva:note
 # A `[roots]` table no rule can consult: an exemption is read when that file's own reads are judged,
 # so a table in a directory this run never analyses exempts nothing while looking like a repaid read
 # (a probe: adding it and deleting it left `check` byte-identical). It is a warning, never a

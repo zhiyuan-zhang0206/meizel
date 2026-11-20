@@ -24,7 +24,6 @@ def repo(make_repo: RepoFactory, files: dict[str, str]) -> Path:
     )
 
 
-# meiva:note
 # The (kind, target) pairs the scanner finds in one file, whatever the rule judges.
 def acquired(
     make_repo: RepoFactory, source: str, path: str = "app/mod.py"
@@ -79,7 +78,6 @@ def acquired(
             "import email.utils\n\nx = email.utils.formatdate(1.5, localtime=True)\n",
             [("clock", "email.utils.formatdate")],
         ),
-        # meiva:note
         # Over-recorded on purpose: the table cannot say "given a time and not `localtime`".
         (
             "import email.utils\n\nx = email.utils.formatdate(1.5)\n",
@@ -106,7 +104,6 @@ def test_the_channels_the_table_judges_are_acquisitions(
     assert acquired(make_repo, source) == expected
 
 
-# meiva:note
 # A call that reads several channels is one acquisition for each of them, at the same line and under
 # the same target, so that the debt of a file lists every channel its call reads and a root that
 # declares one of them does not hide the others.
@@ -159,7 +156,6 @@ def test_a_call_that_reads_several_channels_acquires_each_of_them(
     assert acquired(make_repo, source) == expected
 
 
-# meiva:note
 # A clause spares the call as a whole: `mkdtemp(dir=...)` still draws a random name and records
 # nothing, and `make_msgid(domain=...)` has no clause because it would spare the clock, the process
 # id and the random number with the host name. These are pinned so that the documentation of the
@@ -280,7 +276,6 @@ def test_the_same_calls_given_the_value_read_nothing(make_repo: RepoFactory, sou
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # `parse_args(argv)` in `def main(argv=None)` is `parse_args()` hidden behind a parameter: argparse
 # reads `sys.argv[1:]` when it is handed `None`. The call is an `argv` acquisition when the first
 # argument is a parameter of the same function that defaults to `None` and that the body does not
@@ -368,7 +363,6 @@ def test_a_parameter_that_is_required_or_decided_before_the_call_reads_nothing(
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # `input` is the builtin only when the file does not bind the name: a parameter, an assignment or
 # a comprehension variable called `input` is the file's own value and reads no stream.
 @pytest.mark.parametrize(
@@ -396,7 +390,6 @@ def test_a_path_from_the_command_line_reads_both_the_command_line_and_the_home(
     ]
 
 
-# meiva:note
 # A member of a channel module that the ambient surface does not judge is a plain error: it cannot be
 # recorded as debt, because the gap is in the vocabulary and not in the file, and the owner of the
 # gap is the table.
@@ -434,7 +427,6 @@ def test_a_test_file_a_type_position_a_private_name_or_another_module_is_not_unj
     assert not diagnostics(root, "ambient-unjudged")
 
 
-# meiva:note
 # A known blind spot, pinned so that the documentation of it stays true: the analysis has no types,
 # so it cannot tell a relative receiver from an absolute one, and `resolve()` and `realpath` of a
 # path that came from the command line anchor it at the working directory with no record.
@@ -452,7 +444,6 @@ def test_resolving_a_relative_path_reads_the_working_directory_unrecorded(
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # One call that reads four channels (the clock, the process id, entropy, the host name) is four
 # reads at the same line, so what a root does not declare is still told, kind by kind.
 _MSGID = "import email.utils\n\nx = email.utils.make_msgid()\n"

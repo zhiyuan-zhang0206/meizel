@@ -1,4 +1,3 @@
-# meiva:note
 # Where a file reaches the ambient world.
 #
 # An acquisition is the point at which code takes something from the process or the machine it
@@ -46,7 +45,6 @@ from meizel.lint_common import is_test_path
 
 __all__ = ["AmbientAccess", "AmbientRecorder"]
 
-# meiva:note
 # The function that calls the function it is handed. A function typed `Any` can be called without
 # `reportAny` only through `object_of(get_field, name)`, so the ambient rule reads that as the call
 # `get_field(name)`.
@@ -62,7 +60,6 @@ def _own_nodes(function: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[ast
             pending.extend(ast.iter_child_nodes(node))
 
 
-# meiva:note
 # What the recorder keeps of one function while the file is scanned: whether its own statements
 # sleep, the module-level names it calls, whether it is a one-line wrapper over an interval clock,
 # and the interval-clock readings it makes. Whether a reading counts is decided
@@ -85,7 +82,6 @@ def _called_name(callee: ast.expr) -> str:
     return callee.attr if isinstance(callee, ast.Attribute) else ""
 
 
-# meiva:note
 # A call whose name says it waits (`sleep`, `asleep`, `retry_sleep`) is a sleep; so is a call of a
 # function of this module that sleeps. The names a function calls are kept to follow the second.
 # The same walk notes whether the function anchors a path at all (`expanduser`, `absolute`), which
@@ -107,7 +103,6 @@ def _own_facts(
     return sleeps, calls, expands
 
 
-# meiva:note
 # Whether the call hands the reader the value that spares its read. An explicit `None` is still a
 # read, a parameter of the enclosing function that defaults to `None` (`def main(argv=None):
 # parser.parse_args(argv)`, `def make(parent=None): TemporaryDirectory(dir=parent)`) may be `None`
@@ -135,7 +130,6 @@ def _is_missing(node: ast.expr, optional: frozenset[str]) -> bool:
     return _is_none(node) or (isinstance(node, ast.Name) and node.id in optional)
 
 
-# meiva:note
 # The dotted module a file defines (`pkg/mod.py` -> `pkg.mod`, `pkg/__init__.py` -> `pkg`), needed
 # here to spell a call of a function this same file defines.
 def _module_of(path: str) -> str:
@@ -143,7 +137,6 @@ def _module_of(path: str) -> str:
     return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
 
 
-# meiva:note
 # The kind of read a call is: None when it names no reader, and None when the call hands the reader
 # the value that spares the read, so that `called` stays a list of the acquisitions it adds.
 def _reader_of(
@@ -157,14 +150,12 @@ def _reader_of(
     return kind, callee
 
 
-# meiva:note
 # The methods that name a read by their own name, whose receiver has no resolved type: the call
 # `Path("~").expanduser()` reads the user's home, `parser.parse_args()` the argument vector.
 # `os.path.expanduser` and the like are judged by name where they are read.
 _CALLER_EXEMPT = frozenset(name for name, method in METHOD_READS.items() if method.caller_exempt)
 
 
-# meiva:note
 # The names one function holds from its caller: its parameters, and the locals one derivation away
 # from them (`p = Path(path)` from parameter `path`, a loop variable over parameter `parts`). A
 # name a statement binds from anything else stops counting, and so does a name bound twice — once
@@ -176,7 +167,6 @@ def _caller_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> frozenset
     for extra in (args.vararg, args.kwarg):
         if extra is not None:
             owned.add(extra.arg)
-    # meiva:note
     # The receiver of a method is not followed: attributes are not tracked, so what a constructor
     # stored on `self` records where it was read, not at the call that expands it.
     owned -= _RECEIVERS
@@ -191,7 +181,6 @@ def _caller_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> frozenset
     return frozenset((owned | derived) - lost)
 
 
-# meiva:note
 # The parameters of one function that default to `None` and that its body never rebinds. Such a
 # name is the process's command line in disguise when it is handed on to a parser:
 # `def main(argv=None): parser.parse_args(argv)` makes argparse read `sys.argv[1:]` itself. A name
@@ -223,12 +212,10 @@ def _optional_parameters(function: ast.FunctionDef | ast.AsyncFunctionDef) -> fr
     return frozenset(optional - rebound)
 
 
-# meiva:note
 # The names every method receives as its receiver; the analysis follows no attributes.
 _RECEIVERS = frozenset({"self", "cls"})
 
 
-# meiva:note
 # What one statement binds and the expression it binds it from (`None`: it rebinds from
 # something the analysis does not follow, so the name stops reading as the caller's).
 def _bindings(node: ast.AST) -> Iterator[tuple[str, ast.expr | None]]:
@@ -260,7 +247,6 @@ def _mentions(expr: ast.expr, names: set[str] | frozenset[str]) -> bool:
     return any(isinstance(node, ast.Name) and node.id in names for node in ast.walk(expr))
 
 
-# meiva:note
 # Only a non-None literal proves an independent seed. A dynamic value can be None;
 # unbounded positional or keyword arguments cannot prove that the seed was supplied.
 def _ambient_seed(call: ast.Call) -> bool:
@@ -276,7 +262,6 @@ def _ambient_seed(call: ast.Call) -> bool:
         return True
 
 
-# meiva:note
 # Collects the acquisitions of one file as the scanner visits it.
 #
 # An interval clock is a window onto the world only in a function that waits, because then how long
@@ -321,21 +306,18 @@ class AmbientRecorder:
         if self._reads:
             self._reads[-1].append(Acquisition(line, AmbientKind.MONOTONIC, target))
 
-    # meiva:note
     # Whether `expr` is built from values of the function's own caller (its parameters and what is
     # derived from them). Expanding a `~` in one of those is the read the caller already named by
     # writing it, so it is allowed and records nothing.
     def _from_caller(self, expr: ast.expr | None) -> bool:
         return expr is not None and bool(self._open) and _mentions(expr, self._open[-1].caller)
 
-    # meiva:note
     # A name imported with `from ... import`: state acquired where it is brought in.
     def imported(self, origin: str, line: int) -> None:
         kind = self.sources.names.get(origin)
         if kind is not None and origin not in self.sources.uses:
             self._add(line, kind, origin)
 
-    # meiva:note
     # A name or attribute chain read in code. `bound` is the origin of its first name.
     def used(self, dotted: str, bound: str, line: int) -> None:
         if bound in self.sources.uses:
@@ -364,7 +346,6 @@ class AmbientRecorder:
     def _optional(self) -> frozenset[str]:
         return self._open[-1].optional if self._open else frozenset()
 
-    # meiva:note
     # A judged call that reads the world only when it is not handed the value that spares the read
     # (`tempfile.mkdtemp()` without a `dir`, `time.strftime(fmt)` without a time): the call is the
     # acquisition, one for each kind the entry lists, and a reference to the name alone is not.
@@ -381,7 +362,6 @@ class AmbientRecorder:
             for kind in judgment.kinds:
                 self._add(call.lineno, kind, f"{callee}()")
 
-    # meiva:note
     # A method call on a receiver of no resolved type, judged by its name (`parser.parse_args()`,
     # `moment.astimezone()`, `Path("~").expanduser()`): the call that is given nothing reads the world.
     # A path built from the function's own parameters is the caller's value, not a read.
@@ -409,7 +389,6 @@ class AmbientRecorder:
         if reader is not None:
             self._add(call.lineno, *reader)
 
-    # meiva:note
     # The members of channel modules that the ambient surface does not judge, one problem per use.
     def unjudged_problems(self) -> list[Problem]:
         return [
@@ -423,7 +402,6 @@ class AmbientRecorder:
             for line, dotted in sorted(self._unjudged)
         ]
 
-    # meiva:note
     # The acquisitions of the file once every function is known. The functions of the module that
     # wait are closed under calls: `_pause()` that sleeps makes its callers wait.
     def finish(self) -> list[Acquisition]:
@@ -442,7 +420,6 @@ class AmbientRecorder:
         return self.items
 
 
-# meiva:note
 # The module-level functions that wait: those that sleep, and those that call one that waits.
 def _closure_of_waiters(local: Mapping[str, _Frame]) -> set[str]:
     waiting = {name for name, frame in local.items() if frame.sleeps}
@@ -462,7 +439,6 @@ def _name_of(target: ast.expr) -> str:
     return target.id if isinstance(target, ast.Name) else ""
 
 
-# meiva:note
 # A scanner that records where its file reaches the ambient world, and where it spends a reading
 # that is not entropy as an identifier; test files record neither.
 class AmbientAccess(PatchForms):
@@ -497,7 +473,6 @@ class AmbientAccess(PatchForms):
             reader_callee = self.dotted(reader) or self._local_callee(reader)
             self.ambient.called(reader_callee, handed)
 
-    # meiva:note
     # The module-level function of this same file that a bare call names, when its entry says a
     # passed parameter spares the read. The import resolver knows only imported names, so without
     # this the clause could not hold where a wrapper sits beside its caller. It is asked only for
@@ -518,7 +493,6 @@ class AmbientAccess(PatchForms):
             scope = scope.parent
         return target
 
-    # meiva:note
     # The clock a function is a one-line wrapper over, judged with the names of its own scope. Only a
     # module-level function or a method can be called by name from the rest of the file.
     def clock_wrapper(
@@ -585,7 +559,6 @@ class AmbientAccess(PatchForms):
                 names.add(node.attr)
         return frozenset(names)
 
-    # meiva:note
     # The module-level names that stand for an interval clock without being a function:
     # `_now = time.monotonic`, `_now = lambda: time.monotonic()`, `_now = partial(time.monotonic)`.
     def _clock_values(self) -> list[tuple[str, int]]:

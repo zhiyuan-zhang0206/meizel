@@ -4,13 +4,12 @@ import pytest
 
 from meizel.language.fixtures import is_test_file
 
-# meiva:note
 # The patch exemption reads this convention, so the pattern is the review surface: a new name is
 # exempt the moment it matches, with no list to update. The accepted classes are therefore stated
 # here beside the near misses they refuse; widening one - a bare `-mock`, a `-fixtures-mock`, a
 # `-fake` - fails this table until someone edits it on purpose, which is what a widened exemption
 # has to look like in review.
-# meiva:link ui/web/src/docs/frontend-components/test-only-imports.md
+# See ui/web/src/docs/frontend-components/test-only-imports.md.
 ACCEPTED = [
     "pkg/tests/test_budget.py",
     "pkg/tests/budget_test.py",

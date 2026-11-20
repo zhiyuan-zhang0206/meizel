@@ -1,4 +1,3 @@
-# meiva:note
 # Backstop: nothing outside `meizel/` re-lists the packages of a role.
 #
 # A Python tuple, list or set, or a TOML array, whose strings name every top-level directory
@@ -55,7 +54,6 @@ _END = re.compile(rf"^\s*#\s*{MARKER}\s+END\s*$")
 _TEXT_SUFFIXES = (".py", ".toml", ".yaml", ".yml", ".sh")
 
 
-# meiva:note
 # `begin` and `end` are the 1-based lines of the BEGIN and END markers.
 @dataclass(frozen=True, slots=True)
 class Region:
@@ -83,7 +81,6 @@ class Region:
         raise MeizelError(f"{self.path}:{self.begin}: unknown generated format {self.format!r}")
 
 
-# meiva:note
 # The tracked files that mention the marker. Git is the source of tracked files, and the
 # argument list is fixed.
 def _candidates(universe: Universe) -> list[str]:
@@ -125,14 +122,12 @@ def _candidate_texts(universe: Universe) -> dict[str, str]:
     return {path: universe.repo.load_text(path) for path in _candidates(universe)}
 
 
-# meiva:note
 # Every marked region of every tracked file outside `meizel/`.
 def regions(universe: Universe, texts: Mapping[str, str] | None = None) -> list[Region]:
     source = _candidate_texts(universe) if texts is None else texts
     return parse_regions(source)
 
 
-# meiva:note
 # One message per region whose content differs from what the roles generate.
 def _stale(
     texts: Mapping[str, str], items: list[Region], declared: Mapping[str, tuple[str, ...]]
@@ -173,7 +168,6 @@ def _plan_writes(
     return EditPlan(writes=writes), changed
 
 
-# meiva:note
 # Regenerate every region; returns one line per file rewritten.
 def write(repo: Checkout, declared: Roles) -> list[str]:
     universe = repo.universe()
@@ -327,7 +321,6 @@ def _roles_cache_key(universe: Universe, declared: Mapping[str, tuple[str, ...]]
     return f"roles:v1:{hasher.hexdigest()}"
 
 
-# meiva:note
 # `json.loads` answers `Any`; this binding states the one widening, and the decoded value is checked
 # with `_is_object_list` before anything is read out of it.
 _DECODE: Callable[[str], object] = json.loads
@@ -395,7 +388,6 @@ def _scan_copy_candidates(
     return found
 
 
-# meiva:note
 # Global generated freshness and package-list copies, using validated declarations.
 def check(
     universe: Universe,
@@ -431,7 +423,6 @@ def check(
     return result
 
 
-# meiva:note
 # What `meizel roles` reads from argv, checked once at the dispatch boundary. The role names are a
 # second shape: the `list` subcommand declares them and the other modes leave the attribute unset,
 # which a reader that refuses a missing field must not be asked for unconditionally.

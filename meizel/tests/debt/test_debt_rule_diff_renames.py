@@ -1,4 +1,3 @@
-# meiva:note
 # `debt diff` across a rename: the content moves, the measurement does not. Each interval here is a
 # rule change, so the two measures are printed, and each test moves files the change already has to
 # touch. A moved file is measured at the path the change gives it, from the bytes the reference had,
@@ -14,7 +13,6 @@ import pytest
 from meizel.tests.synthetic import RepoFactory, commit, git, run, write
 
 
-# meiva:note
 # `debt diff` with `meizel/` standing in for the checker's rule code: a host names what moves its
 # checker with `--waive-if-changed`, and an edit there makes the interval a rule change.
 def plain_diff(root: Path, on_growth: str = "fail") -> int:
@@ -31,7 +29,6 @@ def plain_diff(root: Path, on_growth: str = "fail") -> int:
     )
 
 
-# meiva:note
 # A record of one ambient read the file's own manifest declares, and rule code the change edits.
 DECLARED = {
     "meizel.toml": '[roles]\napplication = ["app"]\ntooling = ["meizel"]\n',
@@ -42,7 +39,6 @@ DECLARED = {
 }
 
 
-# meiva:note
 # The interval is a rule change; the rename only changes where the same debt lives.
 def test_a_moved_file_keeps_its_debt_out_of_the_content_column(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
@@ -145,7 +141,6 @@ def test_a_declaration_that_follows_a_rename_is_still_a_rule_change(
     assert "meizel: rules +0 / content +0 / repaid +0 against HEAD" in out
 
 
-# meiva:note
 # Git's own rename pair for a working tree that has one: the fixture below is only a boundary test
 # while git still reads the move as a rename, and a test that silently stopped covering it would look
 # green.
@@ -185,7 +180,6 @@ def test_a_read_added_while_the_file_moves_is_content_growth(
     assert "meizel: rules +0 / content +1 / repaid -1 against HEAD" in out
 
 
-# meiva:note
 # Most files live under an ancestor manifest, not one of their own: a rename into such a directory is
 # still measured at the path the change gives it, against the manifest that owns it there.
 NESTED = {

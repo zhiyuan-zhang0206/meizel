@@ -251,7 +251,6 @@ def _classify_one_test(
     return _check_module_closure(seeds, checkout, facts_by_file)
 
 
-# meiva:note
 # Partitions all collectable tests in `checkout` into `static` and `native` lanes; any unknown,
 # dynamic, or native-resource dependency routes the test to `native` with a diagnostic reason.
 def derive_test_lanes(

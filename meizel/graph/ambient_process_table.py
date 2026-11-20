@@ -1,4 +1,3 @@
-# meiva:note
 # The judgments of the process channels: the `os` and `os.path` modules, `sys`, `time` and
 # `datetime`. The host, identity, entropy and anchor channels are in `ambient_surface.py`.
 
@@ -20,7 +19,6 @@ from meizel.graph.ambient_judgments import (
 
 __all__ = ["PROCESS_GROUPS"]
 
-# meiva:note
 # The `os` module: arguments to the process are not here (they are `sys.argv`); its environment, its
 # identity, the host and the working directory are; the rest is file, descriptor and process
 # operations or constants.
@@ -147,7 +145,6 @@ _OS_PATH = (
     g("os.path", "sep altsep extsep pathsep curdir pardir devnull defpath", None, SYNTAX),
 )
 
-# meiva:note
 # The `sys` module: what the process was started with, what it says about itself, and its streams.
 _SYS = (
     g(
@@ -217,7 +214,6 @@ _SYS = (
     ),
 )
 
-# meiva:note
 # Time: the wall clock and the host's time zone are ambient; the interval clocks are ambient only
 # in a function that waits; sleeping is an effect.
 _TIME = (

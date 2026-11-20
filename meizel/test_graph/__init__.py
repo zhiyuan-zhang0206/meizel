@@ -1,4 +1,3 @@
-# meiva:note
 # Pure Python test, fixture, lane-derivation and runtime-impact models.
 
 from meizel.test_graph.checkout_plan import (

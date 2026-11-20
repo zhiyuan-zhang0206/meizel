@@ -34,7 +34,6 @@ class Plan:
     left: list[str] = field(default_factory=list[str])
 
 
-# meiva:note
 # `tomllib.loads` answers `dict[str, Any]`; these three state the shapes the re-read manifest must
 # show before it is written — a mapping, a table of string keys, a list of strings — so the check
 # below compares declarations instead of indexing an unchecked value.
@@ -50,7 +49,6 @@ def _is_str_list(value: object) -> TypeGuard[list[str]]:
     return isinstance(value, list)
 
 
-# meiva:note
 # Whether the written `[uses]` entry lists every edge the plan declares: a value that is not a list of
 # names covers nothing, which is what makes the write refuse rather than drop a declaration.
 def _covers(entry: object, expected: Iterable[str]) -> bool:

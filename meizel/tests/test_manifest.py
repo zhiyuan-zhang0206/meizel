@@ -11,7 +11,6 @@ BASE = {
     "pkg/b.py": "",
 }
 GOOD = '[uses]\n"a.py" = ["b.py"]\n'
-# meiva:note
 # The state kinds this fixture repository declares: the checker has none of its own.
 KINDS = render_policy({}, {}, {}) + '\n[ambient]\nsettings = ["settings"]\ndb = ["connect()"]\n'
 

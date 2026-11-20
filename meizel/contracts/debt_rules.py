@@ -1,4 +1,3 @@
-# meiva:note
 # `debt diff` for a change that edits the rules: the repayment the content made, apart from the change
 # the device made.
 #
@@ -83,7 +82,6 @@ _UNREADABLE = frozenset(
 )
 _DEBT_ROWS = 5
 
-# meiva:note
 # What the checker judges with, apart from the manifests' declarations: the policy. The rule code is
 # the installed checker, which no path of the checked tree holds; a host names what moves it (the
 # lockfile that pins the checker) with `--waive-if-changed`, and those pathspecs are the rule code of
@@ -91,7 +89,6 @@ _DEBT_ROWS = 5
 RULE_PATHS = (POLICY,)
 
 
-# meiva:note
 # The two replays one comparison runs, kept together because they are one decision made twice: the
 # change's device over the ref's content (`found`), and the ref's device over the change's content
 # (`under_reference`, the corner `repaid` reads). A caller that passed one without the other would be
@@ -102,7 +99,6 @@ class Replays:
     under_reference: Baselines
 
 
-# meiva:note
 # The three measures for one change, per code, and the keys that make the content measure fail.
 class RuleDiff:
     def __init__(
@@ -187,7 +183,6 @@ def _totals(baselines: Baselines) -> Counter[str]:
     return counts
 
 
-# meiva:note
 # What the ref's recorded debt lost to the change's content alone: every code's base count minus what
 # the ref's own declarations find in the change's content. A negative number is debt the old device
 # finds in the new code and the ref does not record: the change's content does something the old rules
@@ -205,7 +200,6 @@ def _count_totals(recorded: Recorded) -> Counter[str]:
     return counts
 
 
-# meiva:note
 # Every (directory, code, key) the tree records beyond what the regenerated base records. The base is
 # measured at the change's own paths (a moved file is moved before it is measured), so a rename is
 # neither a rule change nor growth, and no key needs translating.
@@ -234,7 +228,6 @@ def _refuse_unreadable(diagnostics: Sequence[Diagnostic], ref: str) -> None:
         )
 
 
-# meiva:note
 # The files that differ between `ref` and the working tree under the given git pathspecs; no
 # pathspecs lists every changed file.
 def _changed_under(repo: Checkout, ref: str, pathspecs: list[str]) -> list[str]:
@@ -244,7 +237,6 @@ def _changed_under(repo: Checkout, ref: str, pathspecs: list[str]) -> list[str]:
     return [p for p in listing.decode().split("\0") if p]
 
 
-# meiva:note
 # The declarations of one manifest: everything it states except its `[debt]` tables, which record a
 # measurement rather than form the device that makes it.
 def _declarations(text: str) -> dict[str, object]:
@@ -267,7 +259,6 @@ def _is_table(value: object) -> TypeGuard[dict[str, object]]:
 _ALL = "*"
 
 
-# meiva:note
 # One declared table's entries; a scalar or a list is a single entry named `*`, because the table is
 # the smallest thing a review names for them.
 def _entries(value: object) -> dict[str, object]:
@@ -276,7 +267,6 @@ def _entries(value: object) -> dict[str, object]:
     return {_ALL: value}
 
 
-# meiva:note
 # One line per declaration added, removed or changed between `ref` and the working tree, written
 # `<manifest> [<table>] <key> <sign>`, so a reviewer reads what the two measures came from.
 def declarations_changed(
@@ -304,7 +294,6 @@ def declarations_changed(
     return lines
 
 
-# meiva:note
 # What a change edits in the measuring device, item by item: every rule file and every pathspec the
 # caller adds, the policy's own diff for its entries, and one line per manifest declaration; a reviewer
 # reads the two measures' inputs instead of taking a total on trust.
@@ -330,7 +319,6 @@ def measurement_lines(
     ]
 
 
-# meiva:note
 # Whether the interval changes what is measured, not only what the recorded number says.
 def rule_change(
     repo: Checkout,
@@ -347,11 +335,9 @@ def rule_change(
     return bool(_changed_under(repo, ref, list(RULE_PATHS)))
 
 
-# meiva:note
 # The baseline this checker would write for the checkout `base`: the commands a rule change runs on
 # it, staged after each write because the checker reads tracked files only.
 def regenerated(base: Checkout, ref: str, jobs: int | None) -> Baselines:
-    # meiva:note
     # The declarations are written over the base's content, so an entry the change *adds* names a file
     # the base does not have, and the base reads it as a child that is not there (pull request 7625,
     # batch of 7600 and 7620). Pruning first drops exactly those entries: this baseline is the one this
@@ -378,7 +364,6 @@ def regenerated(base: Checkout, ref: str, jobs: int | None) -> Baselines:
     return baselines
 
 
-# meiva:note
 # The device's own code, and only that: the rule code and the policy are the change's, everything else
 # under `meizel/` is content and is measured as the reference left it. A wider copy would hide a
 # violation the change adds there behind the change's own files.
@@ -396,7 +381,6 @@ def _sync_rule_files(repo: Checkout, ref: str, base: Checkout) -> None:
     base.apply_plan(EditPlan(byte_writes=byte_writes, deletes=tuple(deletes)))
 
 
-# meiva:note
 # The reference's content at the paths the change uses: a file git reports as renamed is moved before
 # it is measured, so the device sees the change's paths and a rename is neither a rule change nor
 # repayment. The bytes are the reference's own, never the change's.
@@ -417,7 +401,6 @@ def _apply_renames(base: Checkout, moved: Mapping[str, str]) -> None:
     base.stage_all()
 
 
-# meiva:note
 # The reference's content at the change's paths also lacks what the change deleted: a deleted file is
 # not unchanged code, so the change's device does not measure it, and a top-level directory the change
 # removes together with its role is not read under roles that no longer name it. Manifests are the
@@ -437,7 +420,6 @@ def _apply_deletions(repo: Checkout, ref: str, base: Checkout, moved: Mapping[st
     base.stage_all()
 
 
-# meiva:note
 # The head's manifests, minus their debt tables, over the base's content: what is measured is the
 # head's device, and what it is measured in is the base's code. A manifest the head dropped is dropped
 # from the base too, so deleting a declaration reads as a rule change as well.
@@ -457,7 +439,6 @@ def _apply_declarations(repo: Checkout, base: Checkout) -> None:
     base.apply_plan(EditPlan(writes=writes, deletes=deletes, dirs=tuple(p.parent for p in writes)))
 
 
-# meiva:note
 # The change's content at a checkout of the ref: every path the diff touches takes the working tree's
 # bytes, and a path the working tree no longer has is deleted there. This is the same replay as
 # `_apply_declarations` with the pair swapped — the device stays where the ref left it and only what it
@@ -466,7 +447,6 @@ def _apply_content(repo: Checkout, ref: str, checkout: Checkout, moved: Mapping[
     byte_writes: dict[Path, bytes] = {}
     deletes: list[Path] = []
     dirs: list[Path] = []
-    # meiva:note
     # The device stays at the ref and only what it measures moves. A manifest, the policy and every rule
     # file are the device, never the content: a manifest the change adds is not written here and one it
     # deletes is not removed, and a policy entry the change adds moves no debt in this column. A file the
@@ -484,7 +464,6 @@ def _apply_content(repo: Checkout, ref: str, checkout: Checkout, moved: Mapping[
             byte_writes[path] = repo.load_bytes(rel)
         elif checkout.has_file(target):
             deletes.append(checkout.root / target)
-    # meiva:note
     # The ref's roles are device too: a top-level directory they name stays while the change deletes
     # all of it, because the ref's device cannot read its own roles over a tree without that directory.
     # Keeping the ref's files there measures their debt as unpaid, the stricter side of `repaid`.
@@ -508,7 +487,6 @@ def _apply_content(repo: Checkout, ref: str, checkout: Checkout, moved: Mapping[
     checkout.stage_all()
 
 
-# meiva:note
 # The declared symbol moves, applied to the base's own content: each import that names a moved symbol
 # at its old home is pointed at the new one, so the change's device measures the same site at the same
 # count instead of missing it. Only a declared move applies, only when the change really made it — the
@@ -573,7 +551,6 @@ def _apply_symbol_moves(
     return rewritten, ignored
 
 
-# meiva:note
 # Compare the tree `repo` reads with `ref`, given the per-code debt the base records.
 def rule_diff(
     repo: Checkout,
@@ -585,7 +562,6 @@ def rule_diff(
 ) -> RuleDiff:
     with repo.checkout(ref) as checkout:
         prepare_policy_snapshot(checkout)
-        # meiva:note
         # Normalizing the snapshot rewrites its policy, so the index is read after it: a universe
         # is a snapshot of the tree that was there when it was built.
         _refuse_unreadable(manifest_diagnostics(checkout.universe()), ref)

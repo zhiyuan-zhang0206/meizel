@@ -127,14 +127,12 @@ class _RecordingCheckout:
 def _init_git_repo(base: Path, files: Mapping[str, str]) -> Path:
     root = base / "repo"
     root.mkdir()
-    # meiva:note
     # Fixed git init argv on a temporary directory without invoking a shell.
     subprocess.run(["git", "init", "--initial-branch=main", "-q", str(root)], check=True)  # noqa: S603
     for rel, content in files.items():
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
-    # meiva:note
     # Fixed git add argv on the temporary checkout without invoking a shell.
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)  # noqa: S603
     return root
@@ -214,7 +212,6 @@ def test_scan_all_hits_sqlite_cache_and_invalidates_on_same_length_edit(tmp_path
     assert second_repo.loaded_bytes == []
     assert second == first
 
-    # meiva:note
     # Same-length unstaged edit exercises git diff-files working-tree digest invalidation.
     (root / "pkg/b.py").write_text("OTHER = 2\n", encoding="utf-8")
     (root / "pkg/a.py").write_text("from pkg.b import OTHER\n", encoding="utf-8")
@@ -224,7 +221,6 @@ def test_scan_all_hits_sqlite_cache_and_invalidates_on_same_length_edit(tmp_path
     assert third["pkg/a.py"].facts[0].names == ("OTHER",)
 
 
-# meiva:note
 # A cached scan whose file acquires a declared kind is decoded with the kinds the policy declares,
 # so it is a hit; decoded with the standard library's alone, the entry would be refused as unknown
 # and the file scanned again on every run.
@@ -277,7 +273,6 @@ def test_cross_file_patch_target_deps_invalidate_when_target_module_changes(
     assert warm_repo.loaded_bytes == []
     assert warm["pkg/tests/test_target.py"].problems == []
 
-    # meiva:note
     # Modify only pkg/target.py; pkg/tests/test_target.py is untouched on disk and in the index.
     (root / "pkg/target.py").write_text("def renamed() -> int:\n    return 2\n", encoding="utf-8")
     after_repo = _RecordingCheckout(GitRepo(root))
@@ -334,13 +329,11 @@ def test_sources_and_corrupt_sqlite_entries_degrade_gracefully(tmp_path: Path) -
     assert set(recovered) == {"pkg/__init__.py", "pkg/a.py"}
 
 
-# meiva:note
 # More files than the parallel threshold (200), so that a pool would be used if `jobs` allowed one.
 def _wide_files() -> dict[str, str]:
     return {"pkg/__init__.py": "", **{f"pkg/m{i}.py": "VALUE = 1\n" for i in range(250)}}
 
 
-# meiva:note
 # Below the entry a library caller that names no worker count gets one process: every file is read
 # here. A worker pool reads its files in children, so this process would record none of them. The
 # first test shows the probe can tell the two apart; the others pin `jobs=None` as serial.

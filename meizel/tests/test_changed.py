@@ -54,7 +54,6 @@ def test_the_stale_checks_belong_to_the_full_check(make_repo: RepoFactory) -> No
     assert run(root, "check", "--changed", "pkg/a.py", "pkg/c.py") == 0
 
 
-# meiva:note
 # `--changed` takes every argument through the entry's resolver: a relative one against the
 # repository the entry resolved, an absolute one as written. The case distinguishes the two only
 # while the working directory is somewhere else -- pytest runs in the checker's own checkout, and
@@ -73,7 +72,6 @@ def test_changed_paths_resolve_through_the_entry_in_both_forms(
     assert "pkg/a.py:1" in capsys.readouterr().out
 
 
-# meiva:note
 # A target the resolver cannot express relative to the root is refused by name: the entry raises, the
 # command never sees the path, and the process exits 2 rather than judging a file it misread.
 def test_a_target_outside_the_repository_is_refused(
@@ -225,7 +223,6 @@ def test_role_checks_use_current_validated_declarations(make_repo: RepoFactory) 
             "scan.sh": "# meizel:roles BEGIN dirs application\na/\nb/\nc/\n# meizel:roles END\n",
         }
     )
-    # meiva:note
     # Populate the standalone role reader's cache before changing its source.
     assert run(root, "roles", "check") == 0
     assert run(root, "check", "--changed", "scan.sh") == 0

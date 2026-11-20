@@ -120,7 +120,6 @@ def test_the_public_surface_names_come_from_the_policy() -> None:
     assert allowances.parse("")[0].names("public-surface", "names") == ()
 
 
-# meiva:note
 # A host rule's tables are read once `[sections]` declares their shape: names lists and reasons tables
 # by section, and `"*"` for a reasons table per governed name.
 DECLARED_HOST = (
@@ -165,7 +164,6 @@ def test_a_section_the_declaration_does_not_name_is_refused() -> None:
     assert any("has no section 'other'" in problem for problem in allowances.parse(text)[1])
 
 
-# meiva:note
 # The declarations a change takes away, and the `Policy-Removal` line that answers them.
 ALLOWANCES = allowances.Policy(
     external={"app/runner.py": "executes the schedule script the user wrote"},

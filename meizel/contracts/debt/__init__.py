@@ -1,4 +1,3 @@
-# meiva:note
 # Recorded locality debt: the baseline format, its keys and the `[debt]` text of a manifest.
 #
 # A baseline lives in the `meizel.toml` of the directory that judges the violation, so debt is as
@@ -72,7 +71,6 @@ CYCLE_EDGE = Code.CYCLE_EDGE
 EDGE_CODES = frozenset(
     {Code.UNDECLARED_EDGE, Code.NOT_EXPORTED, Code.PRIVATE_MODULE, Code.PRIVATE_NAME, CYCLE_EDGE}
 )
-# meiva:note
 # The codes of a patch: the key of an entry is `file#form target`.
 PATCH_CODES = (
     Code.FIRST_PARTY_PATCH,
@@ -100,10 +98,8 @@ PURITY_CODES = (
     Code.WIDE_PARAMS,
     Code.DEEP_ATTR_CHAIN,
 )
-# meiva:note
 # The code of an ambient read: the key of an entry is `file#kind target`.
 AMBIENT_CODES = (Code.AMBIENT_READ,)
-# meiva:note
 # The code of a spent reading: the key of an entry is `file#reading in where`.
 ENTROPY_CODES = (Code.FAKE_ENTROPY,)
 _FILE_CODES = frozenset(
@@ -137,20 +133,17 @@ def _within(owner: str, path: str) -> str:
     return path[len(owner) + 1 :] if owner else path
 
 
-# meiva:note
 # `file#what`, relative to the owning directory.
 def file_key(owner: str, path: str, what: str) -> str:
     return f"{_within(owner, path)}#{what}"
 
 
-# meiva:note
 # The repository path of the file a debt is about.
 def source_of(owner: str, code: Code, key: str) -> str:
     head = key.split(_SEPARATOR, 1)[0] if code in EDGE_CODES else key.split("#", 1)[0]
     return f"{owner}/{head}" if owner else head
 
 
-# meiva:note
 # The `(from, to)` children of the owner that an edge key projects onto.
 def local_edge(key: str) -> tuple[str, str]:
     src, _, dst = key.partition("#")[0].partition(_SEPARATOR)
@@ -176,7 +169,6 @@ def _key_problem(code: Code, key: str) -> str | None:
     return None if file and what else f"a {code} debt is written `file#form`"
 
 
-# meiva:note
 # Validate a parsed `[debt]` table; every defect goes to `report`, valid entries are kept.
 def parse_debt(table: object, report: Callable[[str], None]) -> DebtTable:
     if not is_table(table):
@@ -217,7 +209,6 @@ def total(table: DebtTable) -> int:
     return sum(entry.count for rows in table.values() for entry in rows.values())
 
 
-# meiva:note
 # The `[debt.<code>]` tables for `table`, sorted, one debt per line; empty when none.
 def _render_debt(table: DebtTable) -> str:
     blocks = [
@@ -243,7 +234,6 @@ def _render_entry(entry: DebtEntry) -> str:
     return "{ " + fields + " }"
 
 
-# meiva:note
 # Where a manifest keeps its debt tables: from the first `[debt.*]` header to the next section, or
 # the end of the file. `(-1, -1)` when the manifest records none.
 def _debt_span(lines: list[str]) -> tuple[int, int]:
@@ -261,7 +251,6 @@ def _debt_span(lines: list[str]) -> tuple[int, int]:
     return start, end
 
 
-# meiva:note
 # The entries `table` records under `name`, sorted, or None when it records none: a code the manifest
 # has and the table does not is a table the rewrite drops.
 def _entries_named(table: DebtTable, name: str) -> list[tuple[str, DebtEntry]] | None:
@@ -271,7 +260,6 @@ def _entries_named(table: DebtTable, name: str) -> list[tuple[str, DebtEntry]] |
     return None
 
 
-# meiva:note
 # `lines` without the blank lines at either end: a blank line separates two blocks of the section, so
 # it belongs to neither.
 def _trim(lines: list[str]) -> list[str]:
@@ -284,7 +272,6 @@ def _row(key: str, entry: DebtEntry) -> str:
     return f"{json.dumps(key, ensure_ascii=False)} = {_render_entry(entry)}"
 
 
-# meiva:note
 # A manifest's debt section as it was written: the tables in the order it had them, the comment above
 # each one, each entry's own comment, and the comments that follow the last table.
 @dataclass(frozen=True, slots=True)
@@ -318,7 +305,6 @@ def _read_section(section: list[str]) -> _Written:
     return _Written(names, above, rows, _trim(pending))
 
 
-# meiva:note
 # One table's lines: its comment, its header, each entry under the comment it had, and the comments of
 # the entries the rewrite drops after the ones that remain. `prune` deletes an entry, not the reason
 # somebody wrote it down, so a dropped entry leaves its comment behind.
@@ -334,7 +320,6 @@ def _table_block(
     return [*kept, "", *dropped] if dropped else kept
 
 
-# meiva:note
 # The debt section rewritten to `table`. A comment above a table or above one entry stays above it; a
 # table the rewrite drops leaves its comments where the table was; and the comments after the last
 # table are the section's tail, so a note above the next section stays above it --
@@ -364,7 +349,6 @@ def _rewrite_section(section: list[str], table: DebtTable) -> list[str]:
     return "\n\n".join(blocks).splitlines() if blocks else []
 
 
-# meiva:note
 # `text` with its `[debt.*]` tables replaced by `table`; everything else is kept as written, and the
 # tables stay where the manifest had them. This used to rewrite them at the end of the file, which
 # moved a `[roots]` table above its own debt and dropped the notes that sat in between.
@@ -416,7 +400,6 @@ PATCH_HINT = {
         "patching it"
     ),
 }
-# meiva:note
 # The two codes below carry their principle, recipe and rule as three lines; the target is zero,
 # not a long-term debt.
 PATCH_REASONING = {

@@ -19,7 +19,6 @@ DIRTY = {
 }
 
 
-# meiva:note
 # `debt record` with the two fields a recorded entry needs, so the tree it writes is one `check`
 # accepts; `until=None` is the run that states no exit condition and writes the placeholder, which is
 # its own test.
@@ -319,7 +318,6 @@ def test_bootstrap_carries_recorded_debt_into_its_mirror(
     assert mirrored["debt"] == tomllib.loads((root / "pkg/meizel.toml").read_text())["debt"]
 
 
-# meiva:note
 # A run that states no exit condition writes the marked placeholder instead of a reason it does not
 # have: the entry is no longer bare, and the summary keeps counting it until a person writes the real
 # condition down.

@@ -1,4 +1,3 @@
-# meiva:note
 # `meizel.policy.toml` in the checker: validation, rendering, `policy diff` and the surface report.
 # The format and its reader live in `meizel.allowances`, shared with the lints whose allowances the
 # file also holds. Here: a manifest may use a dynamic-load, external-code or dynamic-attribute-name
@@ -34,7 +33,6 @@ __all__ = [
 ]
 
 
-# meiva:note
 # What `meizel policy` reads from argv, checked once at the dispatch boundary: the mode and the ref it
 # compares against are `str` below instead of `Any` attributes. Named `PolicyQuery` because `Policy`
 # in this module is the allowance table itself.
@@ -62,7 +60,6 @@ def _site(manifest: Manifest, name: str) -> str:
     return f"{manifest.directory}/{name}" if manifest.directory else name
 
 
-# meiva:note
 # What the policy owes the tree it governs: no manifest runs code, owns a dynamic attribute name or
 # loads a directory that the policy does not list, and the policy's own approved list stays inside
 # the ceiling the policy sets for it.
@@ -87,7 +84,6 @@ def check(manifests: dict[str, Manifest], policy: Policy) -> list[Diagnostic]:
     return found
 
 
-# meiva:note
 # A ceiling the policy states for one of its own lists: the count must be readable, and a list past it
 # refuses rather than recording one more exemption. A ceiling the run cannot read as a count is a
 # finding too - an allowance that cannot be measured must not pass for an absent one.
@@ -122,7 +118,6 @@ def _budget(
     ]
 
 
-# meiva:note
 # The approved list is a budget, not a door: every file in it hides every patch it holds from the
 # baseline, so the list is paid down or grown by an edit a reviewer reads.
 def _approved_budget(policy: Policy) -> list[Diagnostic]:
@@ -137,7 +132,6 @@ def _approved_budget(policy: Policy) -> list[Diagnostic]:
     )
 
 
-# meiva:note
 # The same ceiling for the sites declared an injected callable: every site in the list hides an
 # `impure-call` the rule would otherwise report, so the list is paid down or grown by a reviewed edit.
 def _injected_budget(policy: Policy) -> list[Diagnostic]:
@@ -152,7 +146,6 @@ def _injected_budget(policy: Policy) -> list[Diagnostic]:
     )
 
 
-# meiva:note
 # A declared injected call is a site, not a name: `path.py#function#receiver.method`. The receiver is
 # the parameter the callable arrived in, which is what makes the claim checkable -- the scanner can
 # point at that call, and a receiver built in the function is not a parameter and cannot be declared.
@@ -294,7 +287,6 @@ def changes(old: Policy, new: Policy) -> list[str]:
     return lines
 
 
-# meiva:note
 # The change types a surface report uses, and the two directions it names. A change that narrows
 # the surface is one the checker stops reporting; one that widens it is a site it reports again.
 # `moved` is one declaration that followed its file in git's own rename, which is neither.
@@ -306,7 +298,6 @@ NARROWER = "narrower"
 WIDER = "wider"
 UNKNOWN = "unknown"
 
-# meiva:note
 # The tables whose entries excuse a site: `meizel.policy.toml`'s four checker tables, a manifest's
 # `[roots]` and `[state]`, and an `unless` clause. Every other table holds a rule's vocabulary - the
 # names it treats as a read of the world - where an entry that appears shows the checker more.
@@ -315,7 +306,6 @@ _ALLOWANCES = frozenset(
 )
 _UNLESS = " unless"
 
-# meiva:note
 # The two directions that are named, in the order the report prints them, with the one line that
 # says what the direction means for the change below it.
 _DIRECTIONS = (
@@ -329,7 +319,6 @@ _DIRECTIONS = (
 )
 
 
-# meiva:note
 # A declaration that decides what the checker reports: an entry of `meizel.policy.toml`, or a file
 # that a manifest's `[roots]` or `[state]` lets read the world. `source` is the file that holds it,
 # `table` the table inside that file, and `value` the part that would have to change for the entry
@@ -340,18 +329,15 @@ class Item:
     table: str
     name: str
     value: str = ""
-    # meiva:note
     # The shape a host rule's table is declared in (`[sections]`); None for the checker's own tables,
     # whose shape this module knows.
     shape: str | None = None
 
-    # meiva:note
     # The entry as one line, the way `policy diff` writes it.
     def shown(self) -> str:
         return f"{self.name} = {self.value}" if self.value else self.name
 
 
-# meiva:note
 # One difference between two surfaces. `before` holds the name a move came from, or the value a
 # modification replaced; `direction` is which way the change points for what the checker still
 # reports, and stays `unknown` where the table's own format does not decide it.
@@ -366,7 +352,6 @@ class Change:
     direction: str = UNKNOWN
 
 
-# meiva:note
 # The shape a table of the policy is written in, or None for a table this file does not know: a
 # `name = reason` entry excuses something, a list names a vocabulary, and `ambient-readers` is the
 # one vocabulary that writes itself with a reason. `ambient` has no fixed sections: every kind the
@@ -380,7 +365,6 @@ def _shape(table: str) -> str | None:
     return RULES.get(rule, {}).get(section)
 
 
-# meiva:note
 # Which way one change points. An exemption that appears narrows what is reported and one that
 # goes widens it; a vocabulary does the opposite. A value edit, and a table whose shape this file
 # does not know, are `unknown`: a direction is only ever read off the table's own format, never
@@ -393,19 +377,16 @@ def _direction(table: str, kind: str, declared: str | None = None) -> str:
     return NARROWER if narrows else WIDER
 
 
-# meiva:note
 # The ambient kinds a root or a state entry declares, as the manifest writes them back.
 def _kinds(kinds: Sequence[str]) -> str:
     return "[" + ", ".join(kinds) + "]"
 
 
-# meiva:note
 # How one declaration is identified across two trees: its source file, its table and its name, so
 # the same entry in two revisions meets itself.
 Key = tuple[str, str, str]
 
 
-# meiva:note
 # The declarations of one policy: one item per entry, so a list section loses exactly the names it
 # dropped and a `[loads]` entry gains exactly the directory it added.
 def _policy_items(policy: Policy) -> list[Item]:
@@ -441,7 +422,6 @@ def _host_shape(policy: Policy, rule: str, section: str) -> str | None:
     return policy.section_shape(rule, section) if rule in policy.sections else None
 
 
-# meiva:note
 # One side of a comparison as change records, minus everything a rename already paired: the entries
 # this tree declares and the other does not, each carrying the direction its own table's format gives.
 def _one_side(items: Mapping[Key, Item], taken: set[Key], kind: str) -> list[Change]:
@@ -459,7 +439,6 @@ def _one_side(items: Mapping[Key, Item], taken: set[Key], kind: str) -> list[Cha
     ]
 
 
-# meiva:note
 # An entry both sides declare with different text: still there, only what it says changed, which is
 # why its direction is unknown rather than read off a table's format.
 def _edited(mine: Mapping[Key, Item], theirs: Mapping[Key, Item]) -> list[Change]:
@@ -477,7 +456,6 @@ def _edited(mine: Mapping[Key, Item], theirs: Mapping[Key, Item]) -> list[Change
     ]
 
 
-# meiva:note
 # The declarations of one manifest: `[roots]` and `[state]` are the two tables that let a file read
 # without the checker saying so. The `why` is prose and changes nothing about what is seen, so the
 # value is the kinds alone.
@@ -492,7 +470,6 @@ def _manifest_items(manifest: Manifest) -> list[Item]:
     return found
 
 
-# meiva:note
 # The path an entry names, where its name is one: a `[roots]`/`[state]` file below its own
 # directory, an `[external]` or `[dynamic-attrs]` site, or the source of a `[loads]` entry. A dotted name or a `path::site`
 # is not a path, so a rename cannot pair it and it is reported as added and removed.
@@ -507,7 +484,6 @@ def _path(item: Item) -> str | None:
     return None
 
 
-# meiva:note
 # The declarations that followed a file git saw renamed, and the keys they consumed on both sides.
 # A pair needs the same table and the same value at the end of git's own rename: an entry that also
 # changed while it moved is reported as a removal and an addition, not as a move.
@@ -547,7 +523,6 @@ def _moved(
     return found, taken
 
 
-# meiva:note
 # What one tree lets the checker see, and what of it could not be read. `unread` holds one
 # `(path, why)` per declaration this tree could not be read at all: those are dropped from both
 # sides of a comparison and reported as unknown, because a source that cannot be parsed is not a
@@ -557,7 +532,6 @@ class Surface:
     items: tuple[Item, ...] = ()
     unread: tuple[tuple[str, str], ...] = ()
 
-    # meiva:note
     # One tree's surface, read by the policy's and the manifests' own readers: every declaration it
     # makes, and the sources this tree could not read at all.
     @classmethod
@@ -584,7 +558,6 @@ class Surface:
         )
         return cls(tuple(found), tuple(unread))
 
-    # meiva:note
     # Every declaration the two surfaces differ by, paired through git's renames.
     def changes(self, other: Surface, renames: Mapping[str, str] | None = None) -> list[Change]:
         skip = {source for source, _ in (*self.unread, *other.unread)}
@@ -644,7 +617,6 @@ class Surface:
         return "\n".join(body).rstrip() + "\n"
 
 
-# meiva:note
 # The one line at the top of the report: how many changes point each way. A run that could not read
 # a source says so rather than "no change", because a source that did not parse declares nothing
 # only in this tool's eyes.
@@ -661,7 +633,6 @@ def _headline(changes: Sequence[Change], unread: Sequence[tuple[str, str]]) -> s
     return ", ".join(parts) if parts else "no change"
 
 
-# meiva:note
 # The counts, one row per file and table: the aggregate a reviewer reads before anything else.
 def _counts(changes: Sequence[Change]) -> list[str]:
     rows: dict[tuple[str, str], Counter[str]] = {}
@@ -681,7 +652,6 @@ def _counts(changes: Sequence[Change]) -> list[str]:
     return [*lines, ""]
 
 
-# meiva:note
 # One change as one line: what happened, where the declaration lives, and what it now says.
 def _line(change: Change) -> str:
     where = f"- **{change.kind}** `{change.source} [{change.table}]` `{change.name}`"

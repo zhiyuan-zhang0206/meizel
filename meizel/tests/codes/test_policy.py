@@ -365,7 +365,6 @@ STATE = '\n[state]\n"reader.py" = ["registry"]\n'
 REGISTRY = '\n[ambient]\nregistry = ["app.Table.open()"]\n'
 
 
-# meiva:note
 # A `[state]` line may name only a kind the policy of its own revision declares. The revision on one
 # side declares `registry` and the other does not, so each side must be read with its own kinds:
 # reading either with the other's (or with none) would report its manifest as unread instead of
@@ -463,7 +462,6 @@ def test_policy_surface_claims_nothing_about_a_manifest_it_cannot_read(
     assert "**added**" not in out and "no change" not in out
 
 
-# meiva:note
 # The third way to narrow, and the quietest: an `unless` clause stops counting the calls whose
 # argument matches. It has no gate of its own, so this report is the only place it shows up.
 def test_policy_surface_reports_an_added_unless_clause_as_narrower(
@@ -512,7 +510,6 @@ def test_third_party_imports_fail_closed_unless_in_pure_third_party(
     assert diags[0].path == "pkg/blocked.py"
 
 
-# meiva:note
 # A base written before `[sections]` existed is still compared: its host tables take the shape of their
 # values, so declaring them in the change is no change of the entries.
 def test_a_base_without_section_declarations_is_compared_by_the_shape_of_its_values(

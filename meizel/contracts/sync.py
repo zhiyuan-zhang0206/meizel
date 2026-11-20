@@ -44,7 +44,6 @@ _EXTERNAL_ENTRY = re.compile(r"""^\s*("[^"]*"|'[^']*'|[\w.-]+)\s*=\s*["']""")
 _KEYED_ENTRY = re.compile(r"""^\s*("[^"]*"|'[^']*'|[\w.-]+)\s*=""")
 
 
-# meiva:note
 # The `key = ...` line of a section whose entries each take one line.
 def _keyed_line(section: str, line: str) -> re.Match[str] | None:
     if section in {"state", "roots", "purity"}:
@@ -78,7 +77,6 @@ def remove_entries(text: str, removals: dict[str, dict[str, set[str]]]) -> str:
     return _drop_empty_sections(out)
 
 
-# meiva:note
 # The policy text with `[header]` holding exactly `entries` (`path = reason`): the table is dropped
 # wherever it stands and written again at the end, or left out when there is no entry.
 def with_table(text: str, header: str, entries: Mapping[str, str]) -> str:
@@ -178,12 +176,10 @@ def _apply(repo: Checkout, removals: Removals) -> None:
     repo.apply_plan(_plan_removals(repo.root, texts, removals))
 
 
-# meiva:note
 # Remove stale declarations until none remain; returns removal lines and final analysis.
 def prune(repo: Checkout, jobs: int | None = None) -> tuple[list[str], Analysis]:
     changes: list[str] = []
     while True:
-        # meiva:note
         # Each round reads the tree the previous round left, not the snapshot it started from.
         analysis = analyze(repo.universe(), jobs=jobs)
         removals, found = _collect(analysis)
@@ -205,7 +201,6 @@ def _refuse_untracked(repo: Checkout) -> None:
     )
 
 
-# meiva:note
 # What `meizel sync` reads from argv, checked once at the dispatch boundary: the handler below holds
 # `bool`/`Sequence`/`int` instead of `argparse.Namespace` attributes, which are `Any`.
 @dataclass(frozen=True)
@@ -231,7 +226,6 @@ def sync_manifests(
     return lines, left
 
 
-# meiva:note
 # The policy of a disposable comparison checkout, read once before anything is written there: a
 # malformed or unknown table fails the comparison as unreadable instead of being judged.
 def prepare_policy_snapshot(repo: Checkout) -> Policy:
@@ -246,7 +240,6 @@ def prepare_policy_snapshot(repo: Checkout) -> Policy:
         rule: shapes for rule, shapes in policy.sections.items() if rule not in declared.sections
     }
     if missing:
-        # meiva:note
         # A base from before `[sections]` is normalized in its disposable checkout: the shapes its
         # values were written in are declared there, so every later reader of that tree reads it as
         # the live format.
@@ -263,7 +256,6 @@ def prepare_policy_snapshot(repo: Checkout) -> Policy:
     return policy
 
 
-# meiva:note
 # The lists generated from the roles (`roles write`) belong to the device that wrote them: each replay
 # regenerates them under the roles it judges by, as the checker would write them. A tree that declares
 # no roles has no regions to write; one whose roles cannot be read is refused by the readability check

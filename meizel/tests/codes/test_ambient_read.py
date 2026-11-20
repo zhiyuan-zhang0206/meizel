@@ -44,7 +44,6 @@ def repo(
     )
 
 
-# meiva:note
 # The (kind, target) pairs the scanner finds in one file, whatever the rule judges.
 def acquired(
     make_repo: RepoFactory, source: str, path: str = "app/mod.py"
@@ -183,7 +182,6 @@ def test_the_same_calls_given_a_value_read_nothing(make_repo: RepoFactory, sourc
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # `expanduser()` spends a home read only when the path is the function's own: a `~` inside a value
 # the caller named (a parameter, a local derived from one, a loop variable over one) is the
 # caller's string, and expanding it asks the world for nothing the caller did not already name.
@@ -210,7 +208,6 @@ def test_expanding_a_path_the_caller_named_reads_nothing(
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # The read is still the function's own when nothing of the caller reaches the path: a literal, a
 # module global, `sys.argv`, or a parameter the function then rebinds from a value it builds.
 @pytest.mark.parametrize(
@@ -455,7 +452,6 @@ TIMES_A_WAIT = "import time\n\ndef wait():\n    time.sleep(1)\n    return time.m
 STAMPS_A_WAIT = "import time\n\ndef wait():\n    time.sleep(1)\n    return time.time()\n"
 
 
-# meiva:note
 # The two clock kinds cover in one direction: a root declared for the duration licenses the wait and
 # nothing else, so the instant beside it is still a read to pay for and the declaration goes stale,
 # while a root declared for the instant licenses the wait too, because a duration says less than the
@@ -499,7 +495,6 @@ ROOT_AND_DEBT = (
 )
 
 
-# meiva:note
 # `[roots]` and `[debt.ambient-read]` are the same declaration read twice: one read cannot be licensed
 # to a file and paid for by it. The conflict is between two keys of one manifest, so it needs no
 # source analysis.
@@ -508,7 +503,6 @@ def test_a_root_that_also_pays_for_its_read_is_a_conflict(make_repo: RepoFactory
     assert ("legal-read-recorded", "app/meizel.toml") in failures(root)
 
 
-# meiva:note
 # `debt-paid` needs a whole run to know a read is gone; this conflict does not, so `check --changed`
 # reports it as well — the depth a pre-commit hook runs at.
 def test_the_conflict_is_reported_in_a_changed_run_too(
@@ -520,7 +514,6 @@ def test_the_conflict_is_reported_in_a_changed_run_too(
     assert "legal-read-recorded" in capsys.readouterr().err
 
 
-# meiva:note
 # Only the kind the root declares is legal: a root that pays for a *different* read is exactly what
 # the account is for, and the conflict check must not swallow it.
 def test_a_root_paying_for_another_kind_is_no_conflict(make_repo: RepoFactory) -> None:
@@ -534,7 +527,6 @@ def test_a_root_paying_for_another_kind_is_no_conflict(make_repo: RepoFactory) -
     assert "ambient-read" not in {pair[0] for pair in failures(root)}
 
 
-# meiva:note
 # The counter-proof partner: the same root with no entry pays nothing and says nothing.
 def test_a_root_without_an_entry_is_no_conflict(make_repo: RepoFactory) -> None:
     manifest = ROOT_AND_DEBT.split("\n\n[debt.ambient-read]", maxsplit=1)[0] + "\n"
@@ -542,7 +534,6 @@ def test_a_root_without_an_entry_is_no_conflict(make_repo: RepoFactory) -> None:
     assert "legal-read-recorded" not in {pair[0] for pair in failures(root)}
 
 
-# meiva:note
 # The account cannot carry this conflict: `legal-read-recorded` is not a debt code, so `record` refuses
 # it, says so, exits 1, and leaves the manifest byte for byte as it was.
 def test_the_conflict_cannot_be_recorded_as_debt(
@@ -557,7 +548,6 @@ def test_the_conflict_cannot_be_recorded_as_debt(
     assert (root / "app/meizel.toml").read_bytes() == before
 
 
-# meiva:note
 # A root that licenses two kinds pays for neither of the reads it licenses: only the kind an entry
 # names is a conflict, so the prefix must carry the kind and not stop at `name#`.
 def test_only_the_kind_an_entry_names_is_a_conflict(make_repo: RepoFactory) -> None:
@@ -678,7 +668,6 @@ def test_a_literal_seed_or_a_generator_type_reference_does_not_acquire_randomnes
     assert acquired(make_repo, source) == []
 
 
-# meiva:note
 # A reader whose read a passed parameter spares, and a wrapper over it in the file that defines it.
 
 IDENTITY = "def ensure(path: str, euid: int | None = None) -> str:\n    return path\n"
@@ -692,7 +681,6 @@ WRAPPER = (
 )
 
 
-# meiva:note
 # The policy tail that lists `name` as a reader whose read a passed `clause` spares.
 def sparing(name: str, clause: str = "euid") -> str:
     entry = (

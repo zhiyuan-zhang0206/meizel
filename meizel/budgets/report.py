@@ -1,4 +1,3 @@
-# meiva:note
 # A report row is a measured budget, not a diagnostic. Owners supply their actual limits;
 # the shared ten-percent attention rule never creates a new gate or truncates the full table.
 from __future__ import annotations
@@ -55,7 +54,6 @@ def render_table(rows: Iterable[BudgetRow]) -> str:
     return "\n".join(lines) + "\n"
 
 
-# meiva:note
 # Source caps are supplied by their owner. These values use the existing splitlines arithmetic
 # and repository-relative labels for both the hard gate and the advisory table.
 def source_rows(

@@ -89,7 +89,6 @@ def renames_since(repo: Checkout, base: str) -> dict[str, str]:
     return found
 
 
-# meiva:note
 # The directory that owns an edge's debt: the lowest common directory of its two files.
 def edge_owner(src: str, dst: str) -> str:
     projection = project(Fact(src, dst, 0, FactKind.IMPORT))
@@ -173,7 +172,6 @@ def _plan(
     return tables, lines
 
 
-# meiva:note
 # Two entries on the key a move lands on: the counts add, and the metadata already at the target wins
 # where it exists, the moved entry filling in where it does not. Paying attention to which owner is
 # kept is the point of the field, so a real disagreement is reported rather than resolved silently.
@@ -263,7 +261,6 @@ def _move_symbols(
     return lines
 
 
-# meiva:note
 # Move entries to where their renamed files, renamed patch targets or moved symbols now are: a line per
 # entry moved, and the manifests the move had to create — a debt that lands in a directory with none
 # cannot be recorded anywhere else, so each of those files is named in the report. `rename_targets`
@@ -297,7 +294,6 @@ def carry(
     return lines, created
 
 
-# meiva:note
 # The two measures' inputs, named: each rule file, manifest declaration and policy entry it edits.
 def _measured(
     repo: Checkout,
@@ -311,21 +307,18 @@ def _measured(
     ]
 
 
-# meiva:note
 # The `Symbol-Move` lines the change declared, read from the record the caller passed. A missing file
 # is no declaration at all; a declaration is not proof of anything by itself — `rule_diff` re-checks
 # each one against the diff before it retargets an import.
 def _declared_symbols(repo: Checkout, path: str | None) -> list[SymbolMove]:
     if not path:
         return []
-    # meiva:note
     # Read through the seat that reads every other file: an absolute path is taken as given (the
     # record a CI step writes under the runner's temporary directory), a relative one from the
     # repository root. Reading it here would be a new effect site in a strict module.
     return parse_symbol_move_lines(repo.load_text(path))
 
 
-# meiva:note
 # What `run_debt` reads a mode's shape with. `cli` owns the namespace boundary (`read_args`), and
 # importing it back here would make the two modules import each other, so the reader arrives as a
 # parameter and every shape below is read off the parsed namespace exactly once.
@@ -333,7 +326,6 @@ class ReadArgs(Protocol):
     def __call__[T](self, shape: type[T]) -> T: ...
 
 
-# meiva:note
 # The flags `meizel debt` carries whatever the mode — the subcommand name, the root's worker count,
 # and the summary's two flags — which is why they are one base instead of eight copies that drift.
 @dataclass(frozen=True)
@@ -349,7 +341,6 @@ class DebtPrune(DebtBase):
     pass
 
 
-# meiva:note
 # The `paths` operand the three mode parsers that take one declare; the summary and the flag-only
 # modes never set it, so it is read only for the modes that do.
 @dataclass(frozen=True)
@@ -357,7 +348,6 @@ class DebtPaths(DebtBase):
     paths: Sequence[str]
 
 
-# meiva:note
 # What a grown baseline costs, printed with the failure: the baseline is the repository's record of
 # accepted exceptions, so growth is not a number going up — it is a rule turning into a suggestion.
 # The two commands name where the movement sits, and the two documents own the rule.
@@ -382,7 +372,6 @@ class DebtDiff(DebtBase):
     waive_if_changed: Sequence[str]
 
 
-# meiva:note
 # The comparison against `--against`, and what it means when the baseline grew: a rule change is
 # reported, never judged, and only the content's own growth is the change's fault.
 def _run_diff(repo: Checkout, opts: DebtDiff) -> int:
@@ -482,7 +471,6 @@ class DebtCarry(DebtBase):
     base: str | None
 
 
-# meiva:note
 # What `debt carry` says: the entries it moved, each manifest the move had to create, and — when
 # nothing moved — that no rename had recorded debt at all.
 def _run_carry(repo: Checkout, opts: DebtCarry) -> int:
@@ -498,7 +486,6 @@ def _run_carry(repo: Checkout, opts: DebtCarry) -> int:
     return 0
 
 
-# meiva:note
 # The summary's two flags belong to `meizel debt` alone: a mode that received them was asked for two
 # different commands at once, so it refuses rather than running one of them. `propagation` is not one
 # of those modes: `meizel debt --json propagation` printed the report and never looked at the flag
@@ -509,7 +496,6 @@ def _reject_summary_flags(opts: DebtBase) -> None:
             raise MeizelError(f"--{flag} belongs to the summary: `meizel debt --{flag}`")
 
 
-# meiva:note
 # Which debt command runs: every mode names the shape it is read into, and a mode with no shape is a
 # new subcommand that arrived without one — refused rather than handed an empty carrier. The
 # propagation report is answered before the summary flags are judged: that is the order the command

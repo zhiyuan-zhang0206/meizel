@@ -1,4 +1,3 @@
-# meiva:note
 # The top-level packages of the repository and the role of each, declared once.
 #
 # The root `meizel.toml` holds a `[roles]` table that maps a role to the top-level
@@ -38,11 +37,9 @@ ROLE_NAMES = (
     "frontend",
 )
 
-# meiva:note
 # The table a root manifest declares its roles in.
 ROLES_MANIFEST_KEY = "roles"
 
-# meiva:note
 # The parsed `[roles]` table: role -> its top-level directories, in declaration order.
 type Roles = Mapping[str, tuple[str, ...]]
 
@@ -85,7 +82,6 @@ def check_table(table: object) -> tuple[dict[str, tuple[str, ...]], list[tuple[s
     return found, problems
 
 
-# meiva:note
 # The roles a manifest's text declares: its `[roles]` table, checked against the closed set.
 # `label` names the manifest in every message, because the caller read the text somewhere
 # this module cannot see.
@@ -104,7 +100,6 @@ def parse_roles(text: str, *, label: str) -> dict[str, tuple[str, ...]]:
     return found
 
 
-# meiva:note
 # Select known roles from validated declarations without rereading their source.
 def select_packages(declared: Roles, *role_names: str) -> tuple[str, ...]:
     unknown = [name for name in role_names if name not in ROLE_NAMES]
@@ -118,7 +113,6 @@ def all_packages(declared: Roles) -> tuple[str, ...]:
     return select_packages(declared, *ROLE_NAMES)
 
 
-# meiva:note
 # The governed production code, including independently packaged projects. A lint whose scope is
 # "the framework" asks this instead of keeping its own copy, so a new or renamed package cannot
 # drift out of one lint's scope unnoticed.
@@ -126,7 +120,6 @@ def framework_dirs(declared: Roles) -> tuple[str, ...]:
     return select_packages(declared, "application", "standalone")
 
 
-# meiva:note
 # Test hosts owned by pytest's required `testpaths`, without a second registry.
 # Supported roots are `tests` and `<host>/**/tests`; reject other patterns instead
 # of silently giving pytest, the CI selector, and generated type checking different scopes.

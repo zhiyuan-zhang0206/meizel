@@ -1,4 +1,3 @@
-# meiva:note
 # Native import names for independently packaged projects come from their explicit
 # wheel metadata. Aliases retain physical source paths so normal graph rules apply.
 
@@ -37,7 +36,6 @@ def _table(value: object, key: str) -> object:
     return value.get(key) if _is_table(value) else None
 
 
-# meiva:note
 # The manifest parser owns malformed root declarations; layout discovery defers to it.
 def _standalone_roots(text: str) -> tuple[str, ...]:
     try:
@@ -111,7 +109,6 @@ def project_metadata_paths(files: frozenset[str], root_manifest: str) -> tuple[s
     )
 
 
-# meiva:note
 # The one metadata owner for native module names and the separately checked project.
 @dataclass(frozen=True, slots=True)
 class StandaloneProject:

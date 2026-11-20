@@ -1,4 +1,3 @@
-# meiva:note
 # Reachability analysis and roots island garbage collection from declared [roots].
 #
 # Starting from all declared production roots ([roots] in meizel.toml), this module traverses
@@ -6,7 +5,7 @@
 # 1. Disconnected code islands (0 incoming paths from production roots or test suites).
 # 2. Fake-test-preserved islands (reachable ONLY from tests/fixtures, 0 paths from any [roots]).
 # 3. Island clusters (connected components of dead or test-only preserved modules).
-# meiva:link meizel/docs/meizel.md
+# See meizel/docs/meizel.md.
 
 from __future__ import annotations
 
@@ -32,7 +31,6 @@ __all__ = [
 DEFAULT_PROD_ROLES: tuple[str, ...] = ("application", "standalone", "templates")
 
 
-# meiva:note
 # Boundaries and options for reachability analysis.
 @dataclass(frozen=True, slots=True)
 class ReachabilityScope:
@@ -58,7 +56,6 @@ class HasRoots(Protocol):
     def roots(self) -> Mapping[str, object]: ...
 
 
-# meiva:note
 # Whether a repo-relative POSIX path is a test module, directory, or test double.
 def is_test_path(path: str) -> bool:
     return _TEST_PATTERN.search(path) is not None
@@ -189,7 +186,6 @@ def _resolve_test_files(universe: Universe, manifests: Mapping[str, object] | No
     }
 
 
-# meiva:note
 # A connected component of unreachable production modules.
 @dataclass(frozen=True, slots=True)
 class IslandCluster:
@@ -348,7 +344,6 @@ def _build_diagnostics(
     return diagnostics
 
 
-# meiva:note
 # The result of reachability analysis across production modules.
 @dataclass(frozen=True, slots=True)
 class ReachabilityReport:
@@ -432,7 +427,6 @@ def _unreached_analysis(
     return disconnected_islands, fake_test_islands, clusters, diagnostics
 
 
-# meiva:note
 # Traverse the first-party static import graph from production [roots] to detect dead islands.
 def reachability_analysis(
     universe: Universe,

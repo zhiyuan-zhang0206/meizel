@@ -325,7 +325,6 @@ class PurityState:
                         )
                     )
 
-    # meiva:note
     # The nodes that name a type and not a value: an annotation (parameter, return, variable), the second
     # argument of `isinstance` and `issubclass`, the first of `cast`, and what a `TypeAlias` or a
     # `type X = ...` statement is set to. A name there describes something and reads nothing; a call
@@ -335,14 +334,12 @@ class PurityState:
             for position in _type_positions(node):
                 self.annotation_ids.update(id(sub) for sub in _type_nodes(position))
 
-    # meiva:note
     # The names a target binds that stand for paths: `for entry in root.iterdir()`, a comprehension
     # over `root.rglob("*.py")`, and a loop over a name annotated as a collection of paths.
     def record_loop(self, target: ast.expr, iterable: ast.expr, dotted: _Dotted) -> None:
         if isinstance(target, ast.Name) and _iterates_paths(iterable, dotted, self.path_vars):
             self.path_vars.add(target.id)
 
-    # meiva:note
     # A name or attribute that denotes an impure call without calling it (`_is_file = Path.is_file`,
     # `map(Path.is_file, xs)`, `partial(os.stat, p)`, a default argument `read=os.stat`, `_open = open`,
     # `stat = root.stat`): the reference is the call under another name, and every use of it would
@@ -393,7 +390,6 @@ def _policy_int(policy: allowances.Policy, section: str, default: int) -> int:
     return int(vals[0]) if vals and vals[0].isdigit() else default
 
 
-# meiva:note
 # The purity settings a policy text states, keyed by that text: a comparison that installs the
 # other snapshot's policy asks a different question and gets its own answer, so no cache of the
 # old rules survives a swap.
@@ -417,7 +413,6 @@ def _rules_for(
     )
 
 
-# meiva:note
 # The policy the run admitted: read through the universe that holds the tree, never from a path
 # this module computes itself.
 def make_state(universe: Universe, path: str = "") -> PurityState:
@@ -698,7 +693,6 @@ def record_call(
             return
     if not isinstance(node.func, ast.Attribute):
         return
-    # meiva:note
     # A call the policy declares an injected callable: its receiver is a parameter, not a path, and the
     # attribute name is the only thing this rule could match on. The declaration is what separates the
     # two, so the site is not a read -- `injected-calls` names why, and the site that stops being one
@@ -722,7 +716,6 @@ def record_call(
         )
 
 
-# meiva:note
 # The annotation names that make a receiver a path: a parameter annotated `Path` (or one of its
 # siblings) holds a path even when nothing in the function builds one, so a call on it is a read and
 # no `[injected-calls]` entry may excuse it. That refusal is what keeps the exit from becoming a
@@ -774,7 +767,6 @@ def _type_positions(node: ast.AST) -> list[ast.expr]:
     return _call_types(node) if isinstance(node, ast.Call) else []
 
 
-# meiva:note
 # The nodes of a type expression, without entering a call: `Annotated[str, os.getenv("A")]` names a
 # type and also reads the environment, and `cast(os.getcwd(), x)` is not a type at all.
 def _type_nodes(expr: ast.expr) -> list[ast.AST]:

@@ -138,7 +138,6 @@ def test_the_calls_that_start_a_process_are_judged(make_repo: RepoFactory, call:
     assert restricted_of(root) == ["python -c is outside the restricted Python subset"]
 
 
-# meiva:note
 # A wrapper is a policy fact, not a built-in: the synthetic checkout names the one this test uses,
 # the way a real checkout names its own. A run that judged another repository by this one's list
 # would judge a call its own policy says nothing about.
@@ -285,7 +284,6 @@ def test_a_command_edge_is_judged_like_an_import(make_repo: RepoFactory) -> None
     }
 
 
-# meiva:note
 # A parameter typed with the module's own interpreter type is the caller's promise about which
 # interpreter starts the child. The command stays visible, so a threaded `python=` keeps the edge
 # that a bare `sys.executable` used to be the only evidence for.
@@ -301,7 +299,6 @@ def test_a_parameter_typed_as_the_interpreter_keeps_the_module_edge(make_repo: R
     assert loads_of(root) == {("app/x.py", "lib/tool.py")}
 
 
-# meiva:note
 # Every other annotation is silence, not evidence: the rule reads the one declared name and never
 # guesses at a value that merely looks like an interpreter.
 @pytest.mark.parametrize("annotation", ["str", "object", "Any", "str | None", "Optional[str]"])

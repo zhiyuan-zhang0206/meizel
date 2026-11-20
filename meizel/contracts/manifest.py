@@ -84,7 +84,6 @@ def _is_str_list(value: object) -> TypeGuard[list[str]]:
     return _is_object_list(value) and all(isinstance(item, str) for item in value)
 
 
-# meiva:note
 # A file that may read the ambient world: the kinds it may acquire and, optionally, why.
 @dataclass(frozen=True, slots=True)
 class Root:
@@ -145,7 +144,6 @@ class Manifest:
                     return number
         return 1
 
-    # meiva:note
     # The kinds this manifest's `[roots]` declaration for `file` licenses, each with the kinds that
     # kind covers. One read of the relation, shared by the rule that reports an acquisition and the
     # purity rule that would otherwise record the same call as debt.
@@ -211,7 +209,6 @@ class Manifest:
         """The declared edges whose facts are recorded as closing a cycle."""
         return sorted(self.back)
 
-    # meiva:note
     # Why a violation in a directory that carries debt fails: it is strict-to-be.
     def owner_hint(self) -> str:
         where = self.directory or "."
@@ -222,7 +219,6 @@ class Manifest:
         )
 
 
-# meiva:note
 # The purity items a directory's `[roots]` declarations do not license: one call seen by two rules,
 # `ambient-read` leaving the acquisition alone and `impure-call` charging for it again. The join is
 # `meizel/graph/licensing.py` (`licensed`), which knows the three ways a declaration reaches a call
@@ -282,7 +278,6 @@ class _Reader:
             seen.add(name)
         return tuple(dict.fromkeys(value))
 
-    # meiva:note
     # A tracked file or directory below this one, named by a normalised relative path.
     def is_tracked(self, relative: str) -> bool:
         full = f"{self.directory}/{relative}" if self.directory else relative
@@ -378,7 +373,6 @@ class _Reader:
                     "declare it under [roles]",
                 )
 
-    # meiva:note
     # `[external]` (files that run code from outside the repository) and `[dynamic-attrs]` (files
     # that own an attribute name only the run knows): a source file of this directory and a reason.
     def read_reasons(self, section: str, table: object) -> dict[str, str]:
@@ -415,7 +409,6 @@ class _Reader:
                 result[key] = reason.strip()
         return result
 
-    # meiva:note
     # A Python or TypeScript file directly in this directory; deeper ones belong to their own manifest.
     def source_child(self, section: str, key: str, line: int) -> bool:
         if not key.endswith(SOURCE_EXTENSIONS) or "/" in key:
@@ -431,7 +424,6 @@ class _Reader:
         self.dangling.append((section, key, None))
         return False
 
-    # meiva:note
     # A non-empty list of kind names, each one of `allowed`.
     def kinds(
         self, value: object, where: str, line: int, allowed: tuple[KindName, ...]
@@ -452,7 +444,6 @@ class _Reader:
             return ()
         return names
 
-    # meiva:note
     # `[state]`: files that hold process state the repository itself keeps, by kind: the kinds its
     # policy declares under `[ambient]`.
     def read_state(self, table: object) -> dict[str, tuple[KindName, ...]]:
@@ -470,7 +461,6 @@ class _Reader:
                     result[key] = kinds
         return result
 
-    # meiva:note
     # `[roots]`: files that may read the ambient world, each with the kinds it may read.
     def read_roots(self, table: object) -> dict[str, Root]:
         if not _is_table(table):
@@ -487,7 +477,6 @@ class _Reader:
                     result[key] = root
         return result
 
-    # meiva:note
     # One `[roots]` value: a table with `kinds` and a `why`. A bare list of kinds says what a file
     # may read and nothing about why it is the place to read it, so it is not accepted.
     def read_root(self, key: str, value: object, line: int) -> Root | None:
@@ -512,7 +501,6 @@ class _Reader:
         kinds = self.kinds(fields.get("kinds"), where, line, (*self.state_kinds, *OS_KINDS))
         return Root(kinds, why.strip()) if kinds else None
 
-    # meiva:note
     # One purity level: `"strict"`, `"strict-to-be"`, or `{ mode = "none", why = "..." }`. A file or a
     # directory that is not judged says why, so that taking it out of the rule is a statement a review
     # can read; the bare string `"none"` has no place for the reason and is refused.
@@ -694,7 +682,6 @@ def _parse_one_manifest(
     return _CachedManifest(reader.manifest, tuple(reader.diagnostics))
 
 
-# meiva:note
 # Every manifest of a tree. What a manifest may say depends on the policy of that same tree: its
 # `[state]` may name only `state_kinds` (`Policy.state_kinds`, the keys of `[ambient]`) and its
 # `[roots]` those and the standard library's. The caller passes the kinds, read from the policy it

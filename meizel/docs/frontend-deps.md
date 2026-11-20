@@ -18,7 +18,7 @@ asking pnpm. A pnpm install copies the lockfile it installed into `node_modules/
 heuristic. The package is installed hoisted (`nodeLinker: hoisted`), so compiler files keep the paths
 the analyzer names them by.
 
-```meiva-contract
+```toml
 id = "frontend-deps-verdict"
 kind = "invariant"
 statement = "A TypeScript answer comes only from the installation's own frontend tree, installed from the lockfile that installation carries: before it starts node the analyzer classifies the toolchain's node_modules as ready, missing, npm-era (present without node_modules/.modules.yaml) or lock-changed (node_modules/.pnpm/lock.yaml absent or different from pnpm-lock.yaml), and a state other than ready raises a refusal naming the state and the command that fixes it instead of running the analyzer; a refusal reaches the process as exit code 3, never 1, so a caller can tell an unready environment from a failed check."

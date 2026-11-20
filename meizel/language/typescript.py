@@ -28,7 +28,6 @@ def typescript_files(universe: Universe, policy: Policy) -> tuple[str, ...]:
     )
 
 
-# meiva:note
 # The directories whose TypeScript behavior this repository judges (`[typescript].scopes`): the
 # caller needs the list, not the whole config.
 def typescript_scopes(policy: Policy) -> tuple[str, ...]:

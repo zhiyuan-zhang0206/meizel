@@ -137,7 +137,6 @@ def _patch_injected(deco: ast.Call, callee: str) -> bool:
     )
 
 
-# meiva:note
 # Parameters that pytest resolves as fixtures.
 def _requested_names(node: ast.FunctionDef | ast.AsyncFunctionDef, dotted: _Dotted) -> list[str]:
     params = _defaultless(node.args)

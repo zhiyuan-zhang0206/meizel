@@ -160,7 +160,6 @@ def test_the_exit_status_still_follows_on_growth(make_repo: RepoFactory) -> None
     assert run(root, "debt", "diff", "--against", "HEAD", "--on-growth", "fail", "--by-target") == 1
 
 
-# meiva:note
 # The same branch and main as `test_debt_report` builds, read per target: main pays a patch entry the
 # branch never touched, and the per-target table used to list that payment under the change.
 def test_a_branch_behind_main_reports_no_target_growth(

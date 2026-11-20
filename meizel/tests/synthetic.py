@@ -25,14 +25,12 @@ STANDALONE_PROJECT = (
 )
 
 
-# meiva:note
 # The counts a baseline table records, one per key: an entry also carries the owner paying it down and
 # the condition it waits for, and a test that judges only the number says so here.
 def counts(table: Mapping[str, DebtEntry]) -> dict[str, int]:
     return {key: entry.count for key, entry in table.items()}
 
 
-# meiva:note
 # The metadata a fixture entry carries, written as values no real one can be mistaken for: a test
 # entry exists only for the test that reads it, so its owner says `synthetic` rather than borrowing a
 # task id that would outlive the fixture and answer for entries that never existed.
@@ -42,7 +40,6 @@ FIXTURE_UNTIL = (
 )
 
 
-# meiva:note
 # One `[debt.<code>]` table, entries in the order given: what a fixture writes instead of repeating
 # the two fields a recorded entry needs on every line.
 def baseline(code: str, rows: Mapping[str, int]) -> str:
@@ -54,7 +51,6 @@ def entry_text(count: int) -> str:
     return f'{{ count = {count}, owner = "{FIXTURE_OWNER}", until = "{FIXTURE_UNTIL}" }}'
 
 
-# meiva:note
 # `debt record` as a test drives it: with the fixture metadata, so the tree it writes is one `check`
 # accepts. A test about the placeholder `record` writes on its own calls the command directly.
 def record(root: Path, *targets: str) -> int:
@@ -121,7 +117,6 @@ def build_repo(base: Path, files: Mapping[str, str]) -> Path:
     return root
 
 
-# meiva:note
 # The repository seat the checker reads a synthetic checkout through.
 def seat(root: Path) -> Universe:
     return open_repository(root).universe()

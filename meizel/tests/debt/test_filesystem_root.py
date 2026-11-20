@@ -1,4 +1,3 @@
-# meiva:note
 # `filesystem`: the kind a `[roots]` declaration licenses a read of a file with, the effects it does
 # not reach, and the declaration that stops being true when the read goes.
 
@@ -27,7 +26,6 @@ def repo(make_repo: RepoFactory, files: dict[str, str], manifest: str = "") -> P
     )
 
 
-# meiva:note
 # The kind a manifest may declare: `[roots]` accepts the standard library's kinds and the policy's
 # state kinds, and a name outside them is `manifest-syntax`. The read it licenses is a purity item,
 # not an acquisition, so nothing else would notice the kind going missing here.
@@ -35,7 +33,6 @@ def test_the_kind_is_one_a_manifest_may_declare() -> None:
     assert AmbientKind.FILESYSTEM in OS_KINDS
 
 
-# meiva:note
 # The read a root pays for: no acquisition is recorded for it (a read of a file is an effect), so the
 # declaration reaches the purity rule by name and the call stops being this file's impurity.
 def test_a_filesystem_root_licenses_a_read(make_repo: RepoFactory) -> None:
@@ -43,7 +40,6 @@ def test_a_filesystem_root_licenses_a_read(make_repo: RepoFactory) -> None:
     assert analysis_of(root).verdict == []
 
 
-# meiva:note
 # The other face of the same rule: without the declaration the call is what it was, so the licensing
 # is a property of `[roots]` and not of the table.
 def test_the_same_read_without_the_root_stays_an_impure_call(make_repo: RepoFactory) -> None:
@@ -53,7 +49,6 @@ def test_the_same_read_without_the_root_stays_an_impure_call(make_repo: RepoFact
     ]
 
 
-# meiva:note
 # The boundary the kind keeps: a write is an effect of the same door, not a read of the filesystem,
 # so a root that reads a file and writes another still owes the record for the write -- the boundary
 # `time.sleep` keeps inside a `clock` root.
@@ -64,7 +59,6 @@ def test_a_filesystem_root_does_not_license_a_write(make_repo: RepoFactory) -> N
     ]
 
 
-# meiva:note
 # A call whose name does not decide whether it reads: `open` writes what its mode says, so the
 # declaration cannot reach it and the file keeps the record.
 def test_a_filesystem_root_does_not_license_an_open(make_repo: RepoFactory) -> None:
@@ -75,7 +69,6 @@ def test_a_filesystem_root_does_not_license_an_open(make_repo: RepoFactory) -> N
     ]
 
 
-# meiva:note
 # A listing given no path reads the working directory, which is the `cwd` kind and an acquisition on
 # its own line: the `filesystem` root must not swallow it, or the declaration would license a read it
 # does not name (`meizel/graph/licensing.py` excludes the family for this reason). All three codes
@@ -93,7 +86,6 @@ def test_a_filesystem_root_does_not_license_the_working_directory_a_listing_read
     }
 
 
-# meiva:note
 # The kind a root does not declare is not licensed by one it does: the exemption is the kind's, and a
 # `cwd` declaration buys nothing for a file read.
 def test_another_kind_does_not_license_a_filesystem_read(make_repo: RepoFactory) -> None:
@@ -105,7 +97,6 @@ def test_another_kind_does_not_license_a_filesystem_read(make_repo: RepoFactory)
     assert [d.code.value for d in diagnostics(root, "impure-call")] == ["impure-call"]
 
 
-# meiva:note
 # The same read recorded twice, filesystem face: the root licenses the read and `[debt.impure-call]`
 # charges the same call again, so the purity rule leaves it unrecorded and reports the conflict
 # against the entry `debt prune` drops. A counting correction, not a repayment: the code still reads.
@@ -122,7 +113,6 @@ def test_a_filesystem_read_a_root_licenses_and_debt_pays_for_is_a_conflict(
     assert ("legal-read-recorded", "app/meizel.toml") in failures(root)
 
 
-# meiva:note
 # A declaration the code no longer needs: no acquisition records a read of a file, so `stale-root`
 # has to read the purity items, or a root of this kind is stale the moment it is written.
 def test_a_filesystem_root_that_reads_no_file_is_stale(make_repo: RepoFactory) -> None:
@@ -130,7 +120,6 @@ def test_a_filesystem_root_that_reads_no_file_is_stale(make_repo: RepoFactory) -
     assert [d.code.value for d in diagnostics(root, "stale-root")] == ["stale-root"]
 
 
-# meiva:note
 # The reads the kind licenses, written out here by hand rather than derived from the table: adding or
 # dropping a key fails until this list moves with it, which is the review the table needs -- a key
 # that stops being charged is a permission over code nobody reads any more.
@@ -182,7 +171,6 @@ def test_the_table_licenses_exactly_the_reads_written_out_here() -> None:
     assert FILESYSTEM_READS == _READS
 
 
-# meiva:note
 # What the kind must never reach: the writes, renames and unlinks of the same door, a call on a
 # descriptor, an `open` whose mode decides, and a listing that reads the working directory when it is
 # given no path. Each is an effect or another kind, and licensing one would widen the declaration
@@ -228,7 +216,6 @@ def test_no_effect_is_among_the_reads() -> None:
     assert not FILESYSTEM_READS & _EFFECTS
 
 
-# meiva:note
 # Every call of a module the table licenses is one the purity rule charges by that spelling; a name it
 # does not charge would license nothing and read like a permission that works.
 def test_every_licensed_module_call_is_one_the_purity_rule_charges() -> None:
@@ -236,7 +223,6 @@ def test_every_licensed_module_call_is_one_the_purity_rule_charges() -> None:
     assert licensed_calls <= DEFAULT_IMPURE_CALLS
 
 
-# meiva:note
 # The policy's reader table accepts the kind like every other one: a repository function that reads
 # files and hands them on is listed under `[ambient-readers.filesystem]`, and a call to it is a read
 # of that kind at the call site. The kind is therefore reachable as an acquisition too, which is what

@@ -28,7 +28,6 @@ def repo(make_repo: RepoFactory, source: str, sites: dict[str, str], *, ceiling:
     )
 
 
-# meiva:note
 # The false positive this rule exists for: the purity rule matches a path method by its attribute name,
 # so a callable handed in as a parameter reads as `Path.read_text`. A declared site says which call it
 # is -- and the run says so separately, so the real reads are not added to it.
@@ -42,7 +41,6 @@ def test_a_declared_injected_call_is_not_an_impure_call(make_repo: RepoFactory) 
     assert "1 site declared an injected callable, not a read" in analysis_of(root).ok_line()
 
 
-# meiva:note
 # The positive control in miniature: the declaration covers the site it names and no other. A real read
 # in the same file is still reported, still recorded, and still counted.
 def test_a_real_read_beside_a_declared_site_is_still_reported(make_repo: RepoFactory) -> None:
@@ -59,7 +57,6 @@ def test_a_real_read_beside_a_declared_site_is_still_reported(make_repo: RepoFac
     assert ("impure-call", "app/mod.py") in failures(root)
 
 
-# meiva:note
 # The counter-proof, one shape at a time: a site whose receiver is provably a path cannot be declared.
 # The receiver is not a parameter, nothing honours the entry, and the approval is stale -- so the
 # declaration is never a shield over a read.
@@ -70,7 +67,6 @@ def test_a_declared_real_read_is_refused(make_repo: RepoFactory) -> None:
     assert ("impure-call", "app/mod.py") in failures(root)
 
 
-# meiva:note
 # The same refusal for the shape a narrowing would have missed: `p = Path(...)` then `p.read_text()`.
 # `p` is a local, not a parameter, so no declaration reaches it.
 def test_a_declared_read_through_a_local_path_is_refused(make_repo: RepoFactory) -> None:
@@ -84,7 +80,6 @@ def test_a_declared_read_through_a_local_path_is_refused(make_repo: RepoFactory)
     assert [d.code.value for d in diagnostics(root, "impure-call")] == ["impure-call"]
 
 
-# meiva:note
 # The strongest form of the counter-proof: a parameter that is annotated a path holds one, so the call
 # on it is a read even though the receiver is a parameter. Nothing honours the entry, and the read is
 # reported.
@@ -98,7 +93,6 @@ def test_a_declared_read_on_a_path_parameter_is_refused(make_repo: RepoFactory) 
     assert [d.code.value for d in diagnostics(root, "impure-call")] == ["impure-call"]
 
 
-# meiva:note
 # The list is a budget, not a door: a run that finds more declared sites than the ceiling refuses
 # rather than hiding one more reported read.
 def test_more_sites_than_the_ceiling_is_a_budget_failure(make_repo: RepoFactory) -> None:
@@ -110,7 +104,6 @@ def test_more_sites_than_the_ceiling_is_a_budget_failure(make_repo: RepoFactory)
     assert ("approved-budget", "meizel.policy.toml") in failures(root)
 
 
-# meiva:note
 # A key that names no site shape no scanner could honour is a policy defect, not a silent no-op.
 def test_a_site_key_of_the_wrong_shape_is_a_policy_defect(make_repo: RepoFactory) -> None:
     root = repo(make_repo, INJECTED, {"app/mod.py#read_text": "no function, no receiver"})

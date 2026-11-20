@@ -1,4 +1,3 @@
-# meiva:note
 # The standard library's windows onto the ambient world, judged name by name.
 #
 # A process learns something it was not told through a small number of operating-system channels:
@@ -53,7 +52,6 @@ __all__ = [
 ]
 
 
-# meiva:note
 # The judged name that a dotted name resolved to, and its judgment.
 @dataclass(frozen=True, slots=True)
 class Reading:
@@ -61,7 +59,6 @@ class Reading:
     judgment: Judgment
 
 
-# meiva:note
 # A method whose receiver the analysis cannot resolve, judged by its name and what it is given.
 @dataclass(frozen=True, slots=True)
 class MethodReading:
@@ -71,7 +68,6 @@ class MethodReading:
     caller_exempt: bool = False
 
 
-# meiva:note
 # The channel modules whose every public name is judged: a name of one of them that no entry judges
 # is `ambient-unjudged`. A module that is not here may still carry an entry (`psutil.Process`).
 CHANNEL_MODULES = frozenset(
@@ -108,7 +104,6 @@ CHANNEL_MODULES = frozenset(
     }
 )
 
-# meiva:note
 # The host: `platform` and `socket.gethostname` are identity; everything else of `socket` is network.
 # No module is judged by a bare `*`: every name is listed, or belongs to a family named by a prefix
 # (`AF_*`, `SO_*`), so a function added to a module can never inherit a judgment unseen.
@@ -259,7 +254,6 @@ _HOST = (
     ),
 )
 
-# meiva:note
 # Identity and entropy: the user the process runs as, and every draw of randomness.
 _IDENTITY = (
     g(
@@ -321,7 +315,6 @@ _IDENTITY = (
     ),
 )
 
-# meiva:note
 # The anchors of a path, the temporary directory, the locale and the program search path.
 _ANCHORS = (
     g(
@@ -465,7 +458,6 @@ _ANCHORS = (
     ),
 )
 
-# meiva:note
 # What the process is fed besides its arguments and its environment: a line of standard input, the
 # files its command line names, the user's site directories, and the clock a mail header stamps.
 _FED = (
@@ -554,7 +546,6 @@ _FED = (
     ),
 )
 
-# meiva:note
 # The credentials and certificates a process finds on its own: `~/.netrc`, and the platform's
 # default certificate locations that `SSL_CERT_FILE` and `SSL_CERT_DIR` override. The methods of an
 # `SSLContext` that load them (`load_default_certs`, `set_default_verify_paths`) are on an object
@@ -636,7 +627,6 @@ _FOUND = (
     ),
 )
 
-# meiva:note
 # Lookups of the environment that a library call hides: where a shared library is searched for
 # (`LD_LIBRARY_PATH`, `PATH`), and which browser opens a page (`BROWSER`, `DISPLAY`,
 # `WAYLAND_DISPLAY`, `TERM`, `PATH`). The call itself starts a process, an effect the purity layer
@@ -679,7 +669,6 @@ _LOOKUPS = (
     ),
 )
 
-# meiva:note
 # The non-standard-library readers that are judged because the repository uses them as the standard
 # library's: they carry no closure.
 _THIRD_PARTY = (
@@ -700,7 +689,6 @@ def groups() -> tuple[Group, ...]:
     )
 
 
-# meiva:note
 # The names of `groups()` as `dotted name -> judgment`, and the `*` patterns by module.
 @cache
 def _index() -> tuple[dict[str, Judgment], dict[str, tuple[tuple[str, Judgment], ...]]]:
@@ -715,7 +703,6 @@ def _index() -> tuple[dict[str, Judgment], dict[str, tuple[tuple[str, Judgment],
     return exact, {module: tuple(found) for module, found in patterns.items()}
 
 
-# meiva:note
 # The judgment of the longest judged prefix of a dotted name: `os.environ.get` is judged as
 # `os.environ`, `datetime.datetime.now` as itself. A prefix is judged by an entry of its own, or by
 # a pattern of the module (or class) that holds it.
@@ -736,7 +723,6 @@ def judged(dotted: str) -> Reading | None:
     return None
 
 
-# meiva:note
 # Whether a dotted name is a member of a channel module that no entry judges. The module itself
 # (`os.path`, reached by `import os.path`) is a name of the module system, not a member, and a
 # private name (`sys._getframe`) is not part of the interface the table covers unless an entry
@@ -759,7 +745,6 @@ _TOP_LEVEL = frozenset(module.split(".")[0] for module in CHANNEL_MODULES) | {
 }
 
 
-# meiva:note
 # The interval clocks: reading one for a deadline, a duration or a TTL is the plain use of `time`
 # that the conventions allow in code no test needs to steer; the read is a decision worth a root
 # only where the same function also waits, because then how long to wait next is decided in a loop.
@@ -767,15 +752,12 @@ _TOP_LEVEL = frozenset(module.split(".")[0] for module in CHANNEL_MODULES) | {
 # first has not been allowed the second. The wall clock is always a window onto the world.
 INTERVAL_CLOCKS = frozenset(name for name, judgment in _index()[0].items() if judgment.interval)
 
-# meiva:note
 # The target recorded for `loop.time()` of the running event loop, the interval clock of asyncio.
 LOOP_CLOCK = "asyncio.loop.time"
 
-# meiva:note
 # Constructors whose seed must be inspected at the call, rather than at a class reference.
 SEEDABLE_GENERATORS = frozenset({"random.Random"})
 
-# meiva:note
 # Methods whose receiver the analysis cannot resolve (it has no types), judged by their name and by
 # what a call gives them. The name must be one that only the readers listed here carry in
 # practice: an argument parser's `parse_args`, a datetime's `astimezone`, a path's `absolute` and

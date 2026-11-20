@@ -1,4 +1,3 @@
-# meiva:note
 # The report's mathematical contract is independent of the gate: different owners' units,
 # boundary inclusion, malformed measurements and an uncapped complete table.
 from __future__ import annotations

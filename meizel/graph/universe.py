@@ -1,9 +1,8 @@
-# meiva:note
 # The node universe: tracked files, their directories, and module resolution.
 #
 # Data only. `meizel.checkout` builds one from a checkout, runs git for it, and reads the files the
 # universe names; nothing here touches the filesystem.
-# meiva:link meizel/docs/checker/purity.md
+# See meizel/docs/checker/purity.md.
 
 from __future__ import annotations
 
@@ -32,7 +31,6 @@ MANIFEST = "meizel.toml"
 SOURCE_EXTENSIONS = (".py", ".ts", ".tsx", ".mts", ".cts")
 
 
-# meiva:note
 # What a command decided to write, delete or create; `meizel.checkout.apply_plan` does it.
 @dataclass(frozen=True, slots=True)
 class EditPlan:
@@ -65,7 +63,6 @@ def parent_of(path: str) -> str:
     return path.rpartition("/")[0]
 
 
-# meiva:note
 # The filesystem a lint reads, as one value: the checkout's root, the predicates and readers that
 # answer it, and the two readings only a checkout can take (Git's admitted names and the roles this
 # repository declares). Every reading is a field holding a function, so this value decides nothing
@@ -75,7 +72,7 @@ def parent_of(path: str) -> str:
 # does over them; every other field takes the path it is asked about, so a tree also answers for a
 # directory outside its root. `tracked` is `meizel.checkout.tracked_files` bound to `root`: its
 # keyword arguments (`include_untracked`, `regular`) stay the shell's.
-# meiva:link meizel/docs/lint/lint-common-admission.md
+# See meizel/docs/lint/lint-common-admission.md.
 @dataclass(frozen=True, slots=True)
 class SourceTree:
     root: Path
@@ -97,7 +94,6 @@ class SourceTree:
     toolchain: Callable[[], Path | None] = field(default=lambda: None)
 
 
-# meiva:note
 # The checkout a decision layer works on: the root it reads and the files under it. The decision
 # modules of `meizel/contracts` take this handle and never build one, so what they decide stays
 # separable from the git and file reads that answer it; `meizel.checkout.GitRepo` is the one
@@ -106,7 +102,6 @@ class Checkout(Protocol):
     @property
     def root(self) -> Path: ...
 
-    # meiva:note
     # The same checkout as a value: the filesystem reads a deciding module may take, bound where the
     # checkout is owned, so a caller that only judges does not import the shell that runs git.
     @property
@@ -246,7 +241,6 @@ class Universe:
         physical = self._python_aliases.get(head)
         return physical.replace("/", ".") + separator + tail if physical else dotted
 
-    # meiva:note
     # Resolve root imports and explicit standalone wheel names to physical source.
     def resolve_module(self, dotted: str) -> Module | None:
         if dotted in self._modules:

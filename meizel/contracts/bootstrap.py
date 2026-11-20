@@ -21,7 +21,6 @@ __all__ = ["Bootstrap", "bootstrap", "is_test_path", "plan_bootstrap", "render_m
 Edges = dict[tuple[str, str], list[Fact]]
 
 
-# meiva:note
 # What `meizel bootstrap` reads from argv, checked once at the dispatch boundary: the directory to
 # mirror manifests into and the worker count, instead of `Any` attributes of a parsed namespace.
 @dataclass(frozen=True)
@@ -131,7 +130,6 @@ def _witness(fact: Fact) -> str:
     return f"{fact.src}:{fact.line} -> {fact.dst} ({fact.detail})"
 
 
-# meiva:note
 # The report `--out` writes as `report.json`: its shape is fixed by this module, so it is spelled out
 # here instead of a `dict[str, Any]` that the summary line and every later reader would re-check.
 class _Component(TypedDict):

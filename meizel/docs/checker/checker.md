@@ -130,7 +130,7 @@ that is loading and creates no edge.
 Dynamic imports, `exec`/`compile`, non-literal Python subprocesses, string patch targets
 on first-party code, `sys.modules` writes, and attribute names or `__getattr__` hooks that only
 the run resolves are governed by
-[[meizel/docs/checker/restricted/restricted.md|restricted Python, `[loads]`, `[external]`, and `[dynamic-attrs]`]].
+[restricted Python, `[loads]`, `[external]`, and `[dynamic-attrs]`](restricted/restricted.md).
 
 ## Frontend dependencies
 

@@ -63,7 +63,6 @@ def repo(
     )
 
 
-# meiva:note
 # The (kind, target) pairs a file acquires, whatever the rule judges.
 def acquired(make_repo: RepoFactory, source: str) -> list[tuple[str, str]]:
     root = repo(make_repo, {"app/mod.py": source})
@@ -375,7 +374,6 @@ def test_a_class_may_be_listed_as_a_name_and_as_a_call(make_repo: RepoFactory) -
     assert diagnostics(root, "policy-syntax") == []
 
 
-# meiva:note
 # A reader defined in `z00` and imported on down the chain, each module sorting before the one it
 # imports from, so that each round of the scan can follow only one hop.
 def chain(length: int) -> dict[str, str]:

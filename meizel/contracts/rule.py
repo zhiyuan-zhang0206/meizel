@@ -60,20 +60,17 @@ class Projection(NamedTuple):
         owner = fact.dst.rpartition("/")[0]
         return not owner or fact.src.startswith(f"{owner}/")
 
-    # meiva:note
     # The fact's source and target, relative to the directory that judges it.
     def relative(self) -> tuple[str, str]:
         cut = len(self.lca) + 1 if self.lca else 0
         return self.fact.src[cut:], self.fact.dst[cut:]
 
-    # meiva:note
     # The debt a violation of this projection would be recorded as, owned by its `lca`.
     def debt_key(self, name: str | None = None) -> DebtKey:
         src, dst = self.relative()
         key = f"{src} -> {dst}"
         return DebtKey(self.lca, f"{key}#{name}" if name else key)
 
-    # meiva:note
     # A fact whose local edge is a recorded back-edge: it closes a cycle in `lca`.
     def cycle_edge(self) -> Diagnostic:
         fact = self.fact
@@ -205,7 +202,6 @@ def _private_name_diagnostics(proj: Projection) -> list[Diagnostic]:
     ]
 
 
-# meiva:note
 # Every way one fact edge violates the three conditions of the rule.
 def _judge(proj: Projection, manifests: dict[str, Manifest]) -> list[Diagnostic]:
     fact = proj.fact

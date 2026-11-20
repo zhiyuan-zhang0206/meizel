@@ -53,7 +53,6 @@ from meizel.graph.ambient_surface import (
 )
 from meizel.graph.model import AmbientKind
 
-# meiva:note
 # The channel modules as objects, spelled with static imports.
 _MODULES: dict[str, types.ModuleType] = {
     "ctypes.util": ctypes.util,
@@ -88,7 +87,6 @@ _MODULES: dict[str, types.ModuleType] = {
 }
 
 
-# meiva:note
 # The typeshed that the type checker ships: it lists the names of every platform and of the
 # interpreter versions the live module on this machine does not have.
 _TYPESHED = Path(basedpyright.__file__).parent / "dist" / "typeshed-fallback" / "stdlib"
@@ -122,7 +120,6 @@ def _stub_names(module: str) -> set[str]:
     return found
 
 
-# meiva:note
 # What each channel module defines in a fresh interpreter that runs `channel_module_names.py`, a
 # script that imports the standard library only: no test file, no site-package import. The test
 # process is not asked: a library imported by any other test in the same process can add names to a
@@ -143,7 +140,6 @@ def _live_names() -> dict[str, frozenset[str]]:
     return {module: frozenset(names) for module, names in json.loads(done.stdout).items()}
 
 
-# meiva:note
 # The public names of a channel module: a clean interpreter's and the stub's, without the submodules
 # (`os.path` is judged as a module of its own) and the fallbacks a platform leaves as `None`.
 def _public_names(module: str) -> set[str]:
@@ -234,7 +230,6 @@ def test_no_channel_module_is_judged_by_a_bare_wildcard() -> None:
     )
 
 
-# meiva:note
 # Every name the table judges a read, with the kinds that were chosen for it, written out here by
 # hand and not derived from the table: moving a name to another group, dropping it from the group
 # that carries its kind, or adding a read the table's author did not mean fails here. A name that
@@ -587,7 +582,6 @@ _READS: dict[AmbientKind, list[str]] = {
 }
 
 
-# meiva:note
 # A representative of each way a name reads nothing, so that a name does not drift into a kind
 # from the other side.
 _NOT_READS: list[str] = [
@@ -646,7 +640,6 @@ def test_the_pinned_reads_are_exactly_the_reads_of_the_table() -> None:
     ), "a name is pinned twice under one kind"
 
 
-# meiva:note
 # The calls that read several channels at once, with every channel written out: a caller that pays
 # one of them back still owes the others, and a table that records one kind per name loses them.
 _MULTIPLE: dict[str, frozenset[AmbientKind]] = {

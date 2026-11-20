@@ -21,8 +21,8 @@ which removes all of its keys at once.
 
 ## The names
 
-These names list more than one kind (see [[meizel/docs/ambient-surface.md|the ambient
-surface node]] for how); each was read in the source of the pinned interpreter (3.12) unless the
+These names list more than one kind (see [the ambient
+surface node](ambient-surface.md) for how); each was read in the source of the pinned interpreter (3.12) unless the
 name does not exist there, and a read counts when it is part of the ordinary outcome of the call and
 not of an error path. The kinds come from what the call does, never from what its result is used for.
 

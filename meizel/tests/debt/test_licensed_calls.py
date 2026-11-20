@@ -18,7 +18,6 @@ def repo(make_repo: RepoFactory, files: dict[str, str], manifest: str = "") -> P
     )
 
 
-# meiva:note
 # The same read recorded twice, second face: `[roots]` licenses the clock in this file and
 # `[debt.impure-call]` charges the same call again. The purity rule leaves the call unrecorded, and
 # the conflict is reported against the entry so `debt prune` drops it -- a counting correction, not a
@@ -34,7 +33,6 @@ def test_a_root_that_also_pays_for_its_call_is_a_conflict(make_repo: RepoFactory
     assert ("legal-read-recorded", "app/meizel.toml") in failures(root)
 
 
-# meiva:note
 # Only the kind the root declares is licensed: a root that pays for another kind's call is exactly
 # what `[debt.impure-call]` is for, and the exemption must not swallow it.
 def test_a_root_paying_for_a_call_of_another_kind_is_no_conflict(make_repo: RepoFactory) -> None:
@@ -49,7 +47,6 @@ def test_a_root_paying_for_a_call_of_another_kind_is_no_conflict(make_repo: Repo
     assert "legal-read-recorded" not in {code for code, _ in failures(root)}
 
 
-# meiva:note
 # The other face of the same rule: no entry, no violation. A strict root that reads the kind it
 # declares is clean, so the licensing is a property of the rule and not of the debt table.
 def test_a_licensed_call_in_a_strict_root_is_no_violation(make_repo: RepoFactory) -> None:
@@ -61,7 +58,6 @@ def test_a_licensed_call_in_a_strict_root_is_no_violation(make_repo: RepoFactory
     assert analysis_of(root).verdict == []
 
 
-# meiva:note
 # The boundary this rule keeps: sleeping is an effect, not a read of any ambient kind
 # (`meizel/graph/ambient_process_table.py`, the `time` table), so a clock root that waits still owes
 # the record. Suppressing it would turn `[roots]` into a waiver of every effect in that file.
@@ -77,7 +73,6 @@ def test_a_wait_in_a_clock_root_keeps_its_record(make_repo: RepoFactory) -> None
     ]
 
 
-# meiva:note
 # A call the ambient table names only by its method name (`Path.expanduser`) is licensed on the line
 # the scan records the acquisition on: the two rules see one call from two sides, and the table
 # carries no dotted name for it to join on.

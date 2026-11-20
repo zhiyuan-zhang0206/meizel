@@ -266,7 +266,6 @@ def _discover_native_spawners(
     return frozenset(spawners)
 
 
-# meiva:note
 # Constructs a pure `TestCheckout` value from discovered paths, config texts, and raw AST facts.
 def build_test_checkout(
     all_files: Iterable[str],

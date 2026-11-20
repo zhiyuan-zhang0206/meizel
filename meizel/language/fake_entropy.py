@@ -1,4 +1,3 @@
-# meiva:note
 # Where a file uses a reading that is not entropy as an identifier or a random draw.
 #
 # An interval clock (`time.monotonic`, `time.perf_counter` and their `_ns` forms), an object address
@@ -87,7 +86,6 @@ def _last(expr: ast.expr) -> str:
     return expr.id if isinstance(expr, ast.Name) else ""
 
 
-# meiva:note
 # `loop.time()` on `asyncio.get_running_loop()` or on a name that says it is the loop: the event
 # loop's monotonic clock, an interval clock like `time.monotonic`.
 def is_loop_clock(call: ast.Call, dotted: Dotted) -> bool:
@@ -100,7 +98,6 @@ def is_loop_clock(call: ast.Call, dotted: Dotted) -> bool:
     return _last(holder) in _LOOP_NAMES
 
 
-# meiva:note
 # What one scope's readings do, judged with the names the file resolves.
 class _Spend:
     def __init__(self, dotted: Dotted, unbound: Unbound, counters: frozenset[str]) -> None:
@@ -109,7 +106,6 @@ class _Spend:
         self.counters = counters
         self.names: dict[str, str] = {}
 
-    # meiva:note
     # The dotted name a call goes to; a builtin that nothing shadows is named by itself.
     def callee(self, func: ast.expr) -> str | None:
         found = self.dotted(func)
@@ -133,7 +129,6 @@ class _Spend:
             return _COUNTER
         return None
 
-    # meiva:note
     # The source a value derives from; a difference is a duration and derives from none.
     def reading(self, expr: ast.expr) -> str | None:
         found = self.source(expr)
@@ -175,7 +170,6 @@ def _assignment(node: ast.AST) -> tuple[list[ast.expr], ast.expr | None]:
     return [], None
 
 
-# meiva:note
 # The reading among a call's arguments, positional or keyword: `uuid.UUID(int=id(self))` and
 # `"{}".format(stamp)` spend it as surely as `str(stamp)` does.
 def _first_reading(call: ast.Call, spend: _Spend) -> str | None:
@@ -201,7 +195,6 @@ def _spent(call: ast.Call, spend: _Spend) -> Iterator[tuple[str, str]]:
             yield reading, f".{call.func.attr}()"
 
 
-# meiva:note
 # The readings one scope's own statements spend as identity or randomness. `body` is a function
 # body or a module body; nested functions and classes are their own scopes.
 def function_sites(
@@ -239,7 +232,6 @@ def _operator(op: ast.operator) -> str:
     return _OPERATORS[type(op)]
 
 
-# meiva:note
 # The clock an expression reads when it is a call without arguments: an interval clock by name, or
 # the loop's.
 def _clock_call(expr: ast.expr, dotted: Dotted) -> str | None:
@@ -251,7 +243,6 @@ def _clock_call(expr: ast.expr, dotted: Dotted) -> str | None:
     return _LOOP if is_loop_clock(expr, dotted) else None
 
 
-# meiva:note
 # The clock a function is a one-line wrapper over: a function without parameters (a method with
 # only `self` or `cls`) whose only statement is `return <interval clock>()`, or None. The name is
 # not judged here: the fake-entropy rule leaves a public wrapper alone because another module may
@@ -279,7 +270,6 @@ def _takes_nothing(args: ast.arguments, *, method: bool) -> bool:
     )
 
 
-# meiva:note
 # The clock a module-level value is under another name: `_now = time.monotonic`, `_now = lambda:
 # time.monotonic()` and `_now = functools.partial(time.monotonic)`. A call of it reads the clock
 # and no signature says so.

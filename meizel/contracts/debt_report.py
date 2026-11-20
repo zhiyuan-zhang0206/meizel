@@ -37,7 +37,6 @@ __all__ = [
     "totals_at",
 ]
 
-# meiva:note
 # What one tree records, entry by entry: owner directory -> code -> key -> count. `Baselines` carries
 # the owner and the reason each entry waits for; the views here compare counts, and a ref may record a
 # code the checker has since retired, which `Code` cannot spell.
@@ -69,7 +68,6 @@ def _judged_directories(universe: Universe) -> set[str]:
     return judged
 
 
-# meiva:note
 # The summary document `--json` prints and `_text` reads back. Its shape is fixed by this module, so it
 # is spelled out here instead of a `dict[str, Any]` that every reader has to re-check.
 class _Counts(TypedDict):
@@ -143,7 +141,6 @@ def _report(universe: Universe, *, unowned_list: bool = False) -> _Report:
     return report
 
 
-# meiva:note
 # A count with its noun in the number the count takes: the summary says "1 recorded debt names no
 # owner", not "1 recorded debts name no owner".
 def _counted(count: int, one: str, many: str) -> str:
@@ -200,7 +197,6 @@ def _text(data: _Report) -> str:
     return "\n".join(lines)
 
 
-# meiva:note
 # How many recorded debts name no owner: the entries a backfill has to reach, and the occurrences
 # they carry. A bare count and an entry without `owner` count the same here.
 def _unowned(baselines: Baselines) -> tuple[int, int]:
@@ -212,10 +208,8 @@ def _unowned(baselines: Baselines) -> tuple[int, int]:
     return entries, occurrences
 
 
-# meiva:note
 # Every recorded debt that names no owner, one line each: what a backfill pass reads instead of
 # grepping the entries by hand.
-# meiva:note
 # How many recorded debts state no exit condition, and the occurrences they carry: read the same way
 # `_unowned` reads its number, straight from the `[debt]` tables. Two questions, two counts -- an
 # entry that names an owner and no `until` shows up here and not there, and the other way round.
@@ -228,7 +222,6 @@ def _without_until(baselines: Baselines) -> tuple[int, int]:
     return entries, occurrences
 
 
-# meiva:note
 # How many recorded debts carry an exit condition `record` wrote and nobody has read: the third state,
 # counted apart from a missing `until` so a placeholder can never pass for a reason. Both numbers this
 # module shows come from the `[debt]` tables, never from a diagnostic.
@@ -264,7 +257,6 @@ def _is_table(value: object) -> TypeGuard[dict[str, object]]:
     return _is_raw_dict(value) and all(isinstance(k, str) for k in value)
 
 
-# meiva:note
 # Every entry one manifest text records, read leniently: a ref is history, and it may record debt
 # under a code the tool has since retired without stopping the comparison.
 def _cells_in(text: str) -> dict[str, dict[str, int]]:
@@ -291,7 +283,6 @@ def _totals_in(text: str) -> Counter[str]:
     return Counter({code: sum(rows.values()) for code, rows in _cells_in(text).items()})
 
 
-# meiva:note
 # The text of every `meizel.toml` at a git ref, by repository path.
 def manifest_texts_at(repo: Checkout, ref: str) -> dict[str, str]:
     if ref.startswith("-"):
@@ -323,7 +314,6 @@ def totals_at(repo: Checkout, ref: str, *, texts: Mapping[str, str] | None = Non
     return totals
 
 
-# meiva:note
 # What one tree's baselines record, entry by entry: the working tree keeps the owner and the reason
 # each entry waits for, and a merge decides counts, which is all these views compare.
 def _recorded(baselines: Baselines) -> Recorded:
@@ -336,7 +326,6 @@ def _recorded(baselines: Baselines) -> Recorded:
     }
 
 
-# meiva:note
 # What `ref` records, entry by entry. `manifest_texts_at` reads the blobs, so a ref costs no checkout.
 def _recorded_at(repo: Checkout, ref: str, *, texts: Mapping[str, str] | None = None) -> Recorded:
     recorded: Recorded = {}
@@ -356,7 +345,6 @@ def _recorded_totals(recorded: Recorded) -> Counter[str]:
     return totals
 
 
-# meiva:note
 # The commit this change and `ref` last shared: what the change itself is measured from.
 def _common_ancestor(repo: Checkout, ref: str) -> str:
     if ref.startswith("-"):
@@ -364,7 +352,6 @@ def _common_ancestor(repo: Checkout, ref: str) -> str:
     return repo.run_text("merge-base", "HEAD", ref).strip()
 
 
-# meiva:note
 # What this change would leave recorded on `ref`: an entry the change moved, at the count the change
 # gives it; every other entry at the count `ref` records now.
 #
@@ -434,7 +421,6 @@ Targets = Counter[tuple[str, str]]
 _OTHER = "(other)"
 
 
-# meiva:note
 # The target of a patch entry `file#form target`.
 def _target_of(key: str) -> str:
     return key.partition("#")[2].partition(" ")[2]

@@ -25,7 +25,6 @@ FILES = {
 HEADER = "from base.host.boundary.untyped import object_of\nimport cfg\nfrom cfg import get_field\n"
 
 
-# meiva:note
 # The (kind, target) pairs `app/mod.py` acquires, whatever the rule judges.
 def acquired(make_repo: RepoFactory, body: str) -> list[tuple[str, str]]:
     root = make_repo({**FILES, "app/mod.py": f"{HEADER}\nreaders = [get_field]\n\n{body}\n"})

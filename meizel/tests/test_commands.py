@@ -206,7 +206,6 @@ def test_remove_entries_handles_multiline_values_and_keeps_other_sections() -> N
     assert out == '[uses]\n"a" = ["y"]\n\n[loads]\n"l.py" = ["d"]\n'
 
 
-# meiva:note
 # A shell declaration is a one-line table, and the dangling-declaration prune drops it like any
 # other keyed entry instead of stopping the comparison that measures the change.
 def test_remove_entries_drops_a_one_line_purity_table() -> None:
@@ -432,7 +431,6 @@ def test_impacted_fails_closed_on_syntax_error(
     assert "cannot compute impacted Python files" in captured.err
 
 
-# meiva:note
 # `read_args` is the checker's own twin of `base.host.boundary.options.options` — a twin because the
 # root `meizel.toml` declares no cross-package `[uses]` entry for `meizel`. These cases pin the rules
 # the two readers must share: an extra attribute is ignored, a missing or wrong-typed one is refused
@@ -478,7 +476,6 @@ def test_a_bool_is_not_a_whole_number() -> None:
         read_args(argparse.Namespace(paths=[], limit=True), _Shape)
 
 
-# meiva:note
 # The shape is checked before its fields are read, so a caller that hands over something other than a
 # dataclass gets the analyzer's own error instead of an `AttributeError` from `fields`.
 def test_a_shape_that_is_not_a_dataclass_is_refused() -> None:
@@ -486,7 +483,6 @@ def test_a_shape_that_is_not_a_dataclass_is_refused() -> None:
         read_args(argparse.Namespace(paths=[]), dict)
 
 
-# meiva:note
 # A real command invocation preserves the original gate while publishing the full report.
 # Unchanged near-cap rows stay in the artifact; the summary contains only edited rows.
 def test_check_reports_changed_headroom_without_a_new_failure(

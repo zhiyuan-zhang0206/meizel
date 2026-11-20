@@ -29,19 +29,16 @@ from meizel.test_graph.model import TestLanes, TestSelection
 
 __all__ = ["CommandDeps", "build_parser", "dispatch"]
 
-# meiva:note
 # This text is consumed by argparse as native CLI help, not discarded source prose.
-# meiva:link meizel/docs/checker/checker.md
+# See meizel/docs/checker/checker.md.
 _DESCRIPTION = (
     "Command line: check, explain, impacted, tests, sync --prune, bootstrap, debt and roles."
 )
 
-# meiva:note
 # The debt modes whose parser declares a `paths` operand; the reader refuses a missing attribute.
 _DEBT_MODES_WITH_PATHS = frozenset({"record", "resolve", "sites"})
 
 
-# meiva:note
 # The checkout as these commands read it: `meizel.graph.Checkout` names the file half, and the test
 # query is added here, beside the two commands that ask it, so `graph` does not depend on
 # `test_graph` for a signature.
@@ -56,7 +53,6 @@ class Repository(Checkout, Protocol):
     ) -> TestSelection: ...
 
 
-# meiva:note
 # What only the process entry can build, handed down: where this installation sits, the four
 # readers the command layer is not allowed to own — the roles manifest, a file the argv names, a
 # typed target resolved against the directory the entry resolved, and the filesystem of a tree
@@ -75,7 +71,6 @@ def _within(path: str, targets: list[str]) -> bool:
     return any(not t or path == t or path.startswith(f"{t}/") for t in targets)
 
 
-# meiva:note
 # Whether a warning about `manifest` belongs to the run the caller asked for: the manifest sits at
 # or under a target, or a target names a file in the manifest's own directory -- that file's
 # manifest is the one being judged, so the table's warning is about the run that was asked for.
@@ -128,21 +123,18 @@ def _untracked_for_targets(
     ]
 
 
-# meiva:note
 # The items of a container annotation's value: a `str` is a `Sequence[str]` whose items are `str`, so a
 # flag answered with one string where a list was declared is a parser bug, not a one-item list.
 def _is_items(value: object) -> TypeGuard[collections.abc.Collection[object]]:
     return isinstance(value, collections.abc.Collection) and not isinstance(value, str | bytes)
 
 
-# meiva:note
 # Whether `value` is of the container `kind` a generic annotation names; stated over `object` so the
 # check does not narrow the caller's value to an unknown item type.
 def _is_kind(value: object, kind: type) -> bool:
     return isinstance(value, kind)
 
 
-# meiva:note
 # Whether `value` can stand for `hint`: `object` takes anything (an opaque value the handler narrows
 # itself), a union takes any member, a one-argument collection checks its elements, and `int` refuses
 # a `bool`, because a flag answered `True` for a count is a parser bug rather than a number.
@@ -163,7 +155,6 @@ def _accepts(value: object, hint: object) -> bool:
     return _accepts_plain(value, hint)
 
 
-# meiva:note
 # A one-argument collection annotation (`Sequence[str]`, `frozenset[str]`): the value must be of that
 # container kind and every element must fit the argument. An annotation with another arity is not a
 # shape this reader promises to check.
@@ -177,7 +168,6 @@ def _accepts_container(value: object, origin: object, arguments: tuple[object, .
     )
 
 
-# meiva:note
 # A plain annotation: `int` refuses a `bool` (a flag answered `True` for a count is a parser bug), and
 # every other class is its own `isinstance` test.
 def _accepts_plain(value: object, hint: type) -> bool:
@@ -186,7 +176,6 @@ def _accepts_plain(value: object, hint: type) -> bool:
     return isinstance(value, hint)
 
 
-# meiva:note
 # The attributes `shape` declares, read once off the parsed namespace and checked against their
 # annotations; the namespace may carry attributes the shape does not name, which are ignored.
 # This is the checker's own twin of `base.host.boundary.options.options`, and it is a twin only
@@ -217,7 +206,6 @@ def read_args[T](args: argparse.Namespace, shape: type[T]) -> T:
     return shape(**values)
 
 
-# meiva:note
 # The flags are `Sequence`, not `list`: `frozen` here means this carrier is never rewritten, not that
 # it is hashable — argparse hands over the list it built and nobody hashes it.
 @dataclass(frozen=True)
@@ -247,7 +235,6 @@ def _run_check(repo: Repository, deps: CommandDeps, opts: Check) -> int:
     diagnostics = _select(analysis, targets)
     print(analysis.coverage_line())
     check_report.emit(repo, deps.read_roles, only, opts.budget_input)
-    # meiva:note
     # Warnings report a declaration the run cannot honour; they never change the verdict, because
     # no rule is violated by writing a table the policy does not reach. A file target names a file
     # whose directory the table claims to govern, so it reports that directory's warning too.
@@ -531,7 +518,6 @@ def _run_impacted(repo: Repository, deps: CommandDeps, opts: Impacted) -> int:
     return 0
 
 
-# meiva:note
 # `meizel debt ...`: the commands that read or write recorded debt, and the one that measures the
 # world reads a baseline cannot hold. Kept out of `_dispatch` so the dispatch stays a list of commands.
 # The mode shapes live in `debt_carry` with their handlers, so this function hands that module the
@@ -572,7 +558,6 @@ def _run_sync(repo: Repository, deps: CommandDeps, opts: Sync) -> int:
 
 
 def _run_surface(repo: Repository, against: str) -> int:
-    # meiva:note
     # The base is a worktree of its own, so both sides are read by the same readers: the policy's
     # and the manifests' as they stand there. A ref whose tree cannot
     # be checked out is a run that cannot compare, and exits as one.
@@ -666,7 +651,6 @@ def _print_selection_query(
     return 0
 
 
-# meiva:note
 # What `meizel tests` reads from argv, checked once at the dispatch boundary: `--changed` is
 # `nargs="*"`, so a bare `--changed` arrives as an empty list rather than as "not asked".
 @dataclass(frozen=True)
@@ -738,7 +722,6 @@ def _run_reachability(repo: Repository, deps: CommandDeps, opts: Reachability) -
     return 0
 
 
-# meiva:note
 # The subcommand the entry parsed. Read first, because every command below reads its own shape and
 # only this one decides which shape that is.
 @dataclass(frozen=True)
@@ -746,7 +729,6 @@ class Command:
     command: str
 
 
-# meiva:note
 # The command a parsed argv names: a table of commands and nothing else. The entry parsed the argv
 # and opened the repository; this decides which command sees which values, and hands the two shell
 # readers down to the one command that needs them.

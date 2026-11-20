@@ -31,7 +31,6 @@ ROOT = '[uses]\n"new" = ["lib"]\n"old" = ["lib"]\n\n' + baseline(
 )
 
 
-# meiva:note
 # The counts each entry records, whether the entry is a bare number or a table naming its owner and
 # exit condition: a test that judges where a debt was carried says nothing about either field.
 def debt_of(root: Path, directory: str) -> dict[str, dict[str, int]]:
@@ -100,7 +99,6 @@ def test_a_moved_target_rewrites_the_key_of_the_file_that_uses_it(make_repo: Rep
     assert failures(root) == set()
 
 
-# meiva:note
 # A file-scoped debt belongs to its own directory, so a move into a directory without a manifest
 # creates that manifest. The command says so: recording it in an ancestor instead would be dead on
 # arrival, because `check` looks the entry up under the file's own directory and would call it paid.
@@ -125,7 +123,6 @@ def test_file_scoped_debt_moves_with_the_file_and_creates_the_manifest_it_needs(
     assert debt_of(root, "new") == {"restricted-python": {"test_p.py#exec of source text": 1}}
 
 
-# meiva:note
 # The notice is about a manifest this command had to create: a move that lands in a directory that
 # already has one says nothing extra.
 def test_a_move_into_a_directory_with_a_manifest_reports_no_creation(
@@ -148,7 +145,6 @@ def test_a_move_into_a_directory_with_a_manifest_reports_no_creation(
     assert "manifests created" not in out
 
 
-# meiva:note
 # The mirror of the test above with a file-scoped code: the same kind of move into a directory whose
 # manifest already exists creates nothing, so neither a path line nor a notice appears, and the entry
 # still lands in that directory rather than staying behind.
@@ -170,7 +166,6 @@ def test_a_file_scoped_move_into_a_directory_with_a_manifest_creates_nothing(
     assert failures(root) == set()
 
 
-# meiva:note
 # One notice for the whole run, and its number is the count of path lines just printed: a move that
 # creates two manifests says `them`, not `it`.
 def test_two_created_manifests_are_one_plural_notice(

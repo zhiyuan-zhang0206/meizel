@@ -91,8 +91,8 @@ added. What to do instead is in
 A few test-support files patch on purpose — an autouse guard, the entry of a subprocess a test
 starts, or the global setup of the test runner — and the policy lists each with its reason, so none of
 its patches is recorded or judged. Which files qualify, what the count budget on the list is, and what
-a stale or refused entry fails as: [[meizel/docs/checker/patching/approved-files.md|files
-approved to patch]].
+a stale or refused entry fails as: [files
+approved to patch](approved-files.md).
 
 
 ## Recording

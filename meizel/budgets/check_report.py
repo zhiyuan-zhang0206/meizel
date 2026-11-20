@@ -1,4 +1,3 @@
-# meiva:note
 # Check's report composition: source measurements use the same scope and cap owners as
 # structure lint. Independent owners can contribute explicit data snapshots; the checker
 # never runs inspected code or discovers a user's live Memory pool.
@@ -44,7 +43,6 @@ def _source_rows(
     )
 
 
-# meiva:note
 # An unborn repository still has real index/worktree measurements. Missing history makes
 # provenance partial; it does not erase known readings or invent a revision.
 def _revision(repo: Checkout) -> str:
@@ -54,7 +52,6 @@ def _revision(repo: Checkout) -> str:
         return "not-provided"
 
 
-# meiva:note
 # This measurement identity binds changed claims to these exact readings, including dirty
 # worktree contents. HEAD identifies source history; it is not mislabeled as a clean snapshot.
 def _source_snapshot(
@@ -88,7 +85,6 @@ def _source_snapshot(
     return Snapshot("source", tuple(rows), SOURCE_KINDS, provenance)
 
 
-# meiva:note
 # A failed snapshot never becomes a fabricated zero row. File failures retain their explicit
 # requested label even when unreadable bytes cannot identify an external owner.
 def _collect(
@@ -120,7 +116,6 @@ def _write(repo: Checkout, table: str) -> None:
         print(table)
 
 
-# meiva:note
 # Coverage/provenance stays with its rows in the full table and changed summary. Missing pool
 # inputs are not-provided; collection/parse failures unavailable; missing kinds/provenance partial.
 # Every state is advisory and keeps the dependency check's original exit status.

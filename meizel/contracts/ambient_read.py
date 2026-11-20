@@ -1,4 +1,3 @@
-# meiva:note
 # `ambient-read`: only a composition root reaches the world a process runs in.
 #
 # A file that takes the clock, an interval clock, the environment, the home or working directory, the
@@ -48,7 +47,6 @@ __all__ = [
 
 _CALL_MARK = "()"
 _READERS = "ambient-readers"
-# meiva:note
 # The roles whose source code is governed: what ships, the runnable templates and the tooling.
 _GOVERNED_ROLES = ("application", "standalone", "templates", "tooling", "frontend")
 _WHAT: dict[str, str] = {
@@ -64,7 +62,6 @@ _WHAT: dict[str, str] = {
     AmbientKind.FILESYSTEM: "the contents of files",
     AmbientKind.SLEEP: "a wait",
 }
-# meiva:note
 # The three lines every ambient-read carries: the principle, the recipe and the rule.
 _WHY = (
     "why: code that reads the world itself cannot be tested by handing it a value, and it answers "
@@ -103,7 +100,6 @@ def _state_digest(manifests: Mapping[str, Manifest]) -> str:
     return hashlib.sha256(json.dumps(entries, separators=(",", ":")).encode()).hexdigest()
 
 
-# meiva:note
 # The state a repository keeps: modules that declare `[state]`, and the policy's names for it.
 def sources_from(manifests: Mapping[str, Manifest], policy: Policy, universe: Universe) -> Sources:
     cache_key, cached = load_cached_sources(universe, _state_digest(manifests), policy)
@@ -129,7 +125,6 @@ def sources_from(manifests: Mapping[str, Manifest], policy: Policy, universe: Un
     return result
 
 
-# meiva:note
 # Whether the rule governs this file: a governed top-level role (tests record no acquisitions).
 def in_scope(path: str, manifests: Mapping[str, Manifest]) -> bool:
     root = manifests.get("")
@@ -156,7 +151,6 @@ def _diagnostic(scan: FileScan, acquisition: Acquisition, mode: str, owner: str)
     )
 
 
-# meiva:note
 # Every acquisition in a governed file whose directory manifest does not declare its kind -- and every
 # `[debt.impure-call]` entry that pays for the same call the declaration licenses (`unlicensed`): the
 # read a root makes is one fact, so the ledger states it once.
@@ -181,7 +175,6 @@ def ambient_diagnostics(
     return found
 
 
-# meiva:note
 # The `[debt.impure-call]` entries this run leaves unrecorded because `[roots]` licenses the call: one
 # read declared twice, kept as a number `debt prune` drops. This note is the only trace of the drop,
 # so it names the entry; it records a counting correction, not a repayment -- the code still calls.
@@ -217,7 +210,6 @@ def _legal_calls_recorded(
     return found
 
 
-# meiva:note
 # A declared root kind that its file no longer acquires; only a whole run can know. `filesystem` and
 # `sleep` derive no acquisition, so they are acquired where the purity rule charges a call of them: a
 # root of either kind whose file makes no such call is stale like any other, and a declaration cannot
@@ -251,7 +243,6 @@ def stale_roots(
     return found
 
 
-# meiva:note
 # The policy's reader entries as `dotted name -> kind`: the calls (`name()`) or the bare names, which
 # acquire where they are imported or read as an attribute.
 def _readers(policy: Policy, *, call: bool) -> dict[str, KindName]:
@@ -263,7 +254,6 @@ def _readers(policy: Policy, *, call: bool) -> dict[str, KindName]:
     }
 
 
-# meiva:note
 # The `unless` clause of one entry: the parameter, and where it sits among the arguments that can
 # be given by position. The reason the clause cannot be read - no such module, not a module-level
 # function, no such parameter - comes back as text instead, for the stale-reader diagnostic.
@@ -290,7 +280,6 @@ def _unless(universe: Universe, target: str, parameter: str) -> Unless | str:
     return f"names no parameter {parameter!r}"
 
 
-# meiva:note
 # The readers whose read a passed parameter spares, by the name a call spells them: the clause is a
 # property of the entry, so a re-exported spelling keeps it only where the policy lists that
 # spelling. Entries whose clause cannot be read are left to `stale_readers`.
@@ -305,7 +294,6 @@ def _spared(universe: Universe, policy: Policy) -> dict[str, Unless]:
     return found
 
 
-# meiva:note
 # The shape of the policy's `[ambient-readers.<kind>]` entries: a fully qualified call
 # (`pkg.module.name()`, `pkg.module.Class.method()`) or name (`pkg.module.NAME`), listed under
 # exactly one kind.
@@ -338,7 +326,6 @@ def reader_problems(policy: Policy) -> list[Diagnostic]:
     return found
 
 
-# meiva:note
 # The module that defines a dotted reader: its dotted name, its file and the member path below it
 # (`name` or `Class.method`). The longest prefix that names a tracked module wins.
 def _locate(universe: Universe, target: str) -> tuple[str, str, tuple[str, ...]] | None:
@@ -352,7 +339,6 @@ def _locate(universe: Universe, target: str) -> tuple[str, str, tuple[str, ...]]
     return None
 
 
-# meiva:note
 # How a module defines a top-level name: "function", "class" or "value" (an assignment); None when
 # it does so some other way. The last definition wins, as it does at run time.
 def _definition(universe: Universe, file: str, name: str) -> str | None:
@@ -369,7 +355,6 @@ def _definition(universe: Universe, file: str, name: str) -> str | None:
     return found
 
 
-# meiva:note
 # An entry is written the way its target is used: `name()` for a function, a class or a method (a
 # call), `name` for a value. The other spelling would match nothing, and `stale-reader` is the one
 # place that notices.
@@ -387,7 +372,6 @@ def _spelling_problem(
     return None
 
 
-# meiva:note
 # Why a reader can no longer be found, or None when the module that the policy names defines it:
 # a `def`, a class or an assignment there, or a method of a class there, spelled as it is used. A
 # name the module only imports is not a definition: a function that moved leaves a re-export
@@ -415,7 +399,6 @@ def _missing_reader(universe: Universe, target: str, *, call: bool) -> str | Non
     return f"class `{head}` in {file} defines no `{'.'.join(member[1:])}`"
 
 
-# meiva:note
 # A listed reader that no longer exists fails, like any other stale allowance; only a
 # whole-repository run knows.
 def stale_readers(universe: Universe, policy: Policy) -> list[Diagnostic]:
@@ -448,7 +431,6 @@ def stale_readers(universe: Universe, policy: Policy) -> list[Diagnostic]:
 _REEXPORT_HOPS = 12
 
 
-# meiva:note
 # The names a module binds by importing, as `local name -> dotted origin`; an unparsable file binds none.
 def _imports(universe: Universe, path: str) -> dict[str, str]:
     text = universe.repo.load_text(path)
@@ -464,7 +446,6 @@ def _imports(universe: Universe, path: str) -> dict[str, str]:
 type _Spellings = dict[str, dict[str, KindName]]
 
 
-# meiva:note
 # What can be re-exported, by its dotted origin: `module.name` -> {tail: kind}, where the tail is
 # the method path below it (empty for a function).
 def _origins(universe: Universe, readers: Mapping[str, KindName]) -> _Spellings:
@@ -477,7 +458,6 @@ def _origins(universe: Universe, readers: Mapping[str, KindName]) -> _Spellings:
     return exported
 
 
-# meiva:note
 # One round: every module among `candidates` that imports a known origin spells it under its own
 # name too. Returns whether a new spelling appeared.
 def _spread(
@@ -502,7 +482,6 @@ def _spread(
     return grew
 
 
-# meiva:note
 # The readers and every spelling a module gives them by importing them at its top level: a call
 # through a re-export is still the call of the reader. Only the non-test sources that mention one
 # of the names are read, so the cost follows the readers, not the repository.

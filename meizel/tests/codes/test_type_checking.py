@@ -169,7 +169,6 @@ def test_the_guard_is_hard_and_cannot_be_recorded(
     assert "debt.type-checking" not in (root / "meizel.toml").read_text()
 
 
-# meiva:note
 # The diagnostic carries the rule's whole handover: the ban, the repair, why a guarded import costs
 # the annotations here, what the site now owns, and the document that states it. Asserted on
 # fragments, not sentences.

@@ -30,7 +30,6 @@ _ABSTRACT_BASES = frozenset({"Protocol", "ABC"})
 _REEXPORT_HOPS = 6
 
 
-# meiva:note
 # A class defined at the top level of a module: what it defines, whether it is abstract
 # (`Protocol` or `ABC` among its bases, an `ABCMeta` metaclass, or an `@abstractmethod`), and the
 # dotted origin of each base as the defining module's imports name it.
@@ -72,7 +71,6 @@ def is_imported_binding(bindings: Bindings, name: str) -> bool:
     )
 
 
-# meiva:note
 # The bindings of the tracked `file` in `universe`; an untracked, unreadable or unparsable file is
 # treated as dynamic.
 def module_bindings(universe: Universe, file: str, *, seen: set[str] | None = None) -> Bindings:
@@ -130,7 +128,6 @@ def _read(source: str, file: str) -> Bindings:
     )
 
 
-# meiva:note
 # The module-level names bound exactly once, to a string literal.
 def _string_constants(scope: Scope) -> tuple[tuple[str, str], ...]:
     return tuple(
@@ -280,7 +277,6 @@ def _class_facts(tree: ast.Module, scope: Scope, file: str) -> tuple[ClassFacts,
     return tuple(facts)
 
 
-# meiva:note
 # The class a dotted name refers to, wherever a chain of re-exports defines it. None when the
 # name is not a first-party class: an unknown module, a name the module does not define, or a
 # chain of re-exports longer than `hops`.
@@ -309,7 +305,6 @@ def find_class(
     )
 
 
-# meiva:note
 # The methods a class defines or inherits from first-party classes (dunders excluded).
 def overridable_methods(
     universe: Universe, facts: ClassFacts, *, seen: set[str] | None = None

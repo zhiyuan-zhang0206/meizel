@@ -256,7 +256,6 @@ def _parse_inline_imports(code: str) -> list[str]:
     return found
 
 
-# meiva:note
 # Resolves `Path(__file__).resolve().parents[k]` or `Path(__file__).parents[k]` to a repo-relative
 # directory prefix so downstream `/` path expressions record exact anchored resource edges.
 def _resolve_file_parents_anchor(path: str, expr: ast.expr) -> str | None:
@@ -561,7 +560,6 @@ def _inspect_argv_sequence(elts: list[ast.expr], collector: _Collector) -> None:
                 collector.dynamic_modules.update(_parse_inline_imports(next_elt.value))
 
 
-# meiva:note
 # Parses one Python source into layout-independent raw test/import facts without consulting the
 # checkout's module table.
 def scan_raw_test_facts(
@@ -688,7 +686,6 @@ def _preliminary_file_imports(
     return imps, reexp, sym_uses
 
 
-# meiva:note
 # Resolves raw per-file AST facts against the checkout's module table, `[loads]` rules, and
 # two-hop re-export chains.
 def resolve_test_facts(

@@ -1,10 +1,9 @@
-# meiva:note
 # The two structure ceilings and every judgment they make, as functions over values the shells have
 # already read: a directory's entry names and kinds, a judged file's text, a Git path listing and the
 # paths a target names. Nothing here opens a file, lists a directory, resolves a link or starts a
 # process; which files and directories the ceilings judge, what they leave out and what the report
 # says are decided here.
-# meiva:link meizel/docs/meizel.md
+# See meizel/docs/meizel.md.
 
 from __future__ import annotations
 
@@ -28,7 +27,6 @@ HARD_CEILING = 800
 DIRECTORY_CEILING = 20
 _PYTHON_SUFFIX = ".py"
 _MANIFEST = "meizel.toml"
-# meiva:note
 # The two names the file budget never enters: the interpreter's cache, and the migrations tree,
 # whose files are append-only history rather than framework code.
 _CACHE = "__pycache__"
@@ -49,11 +47,9 @@ _DIRECTORY_CEILING_GUIDANCE = (
     "meizel.toml exports doors"
 )
 
-# meiva:note
 # The document that states both ceilings; every message of this module points here.
 _DOC = "docs/conventions/python-conventions.md (per-file line budget, directory budget)"
 
-# meiva:note
 # Why the file ceiling exists and what the author of a file over it owns: length decides how much of
 # a module one reader, one diff and one test run have to hold at once, and the boundary that fixes
 # it is a decision the number cannot make for them.
@@ -64,7 +60,6 @@ _FILE_CEILING_WHY = (
     "a split that only shortens the file leaves the same boundary in two places"
 )
 
-# meiva:note
 # What a directory over the cap owes, kept to what the guidance does not already say — the guidance
 # states the purpose and the repair, so the reason carries only the consequence and the ownership.
 _DIRECTORY_CEILING_WHY = (
@@ -74,7 +69,6 @@ _DIRECTORY_CEILING_WHY = (
 )
 
 
-# meiva:note
 # Every directory's direct children from Git's NUL-delimited tracked paths. A `meizel.toml`
 # manifest describes its directory and is not one of its entries, and a listing that does not end
 # at a NUL or holds a path Git could not have written is refused rather than half-read.
@@ -94,7 +88,6 @@ def tracked_children(listing: str) -> dict[str, set[str]]:
     return children
 
 
-# meiva:note
 # The judged directories for the given targets, each with its direct entry count: a target's tracked
 # descendants and its ancestors, the whole tree for the repository root itself, which never answers
 # the cap on its own, and nothing for a target outside the repository.
@@ -120,7 +113,6 @@ def judged_directories(
     return {name: len(children[name]) for name in selected.intersection(children).difference({""})}
 
 
-# meiva:note
 # Whether one directory entry is a candidate of the file budget: a link is not entered, a hidden
 # name and the interpreter's cache are not source, and the migrations tree is append-only history
 # rather than framework code. A *file* named migrations is not that tree, so the entry's kind
@@ -131,14 +123,12 @@ def entry_candidate(name: str, *, is_symlink: bool, is_directory: bool) -> bool:
     return not (name == _APPEND_ONLY and is_directory)
 
 
-# meiva:note
 # What the file budget counts as source: a `.py` suffix, read the way `Path.suffix` reads it, so a
 # directory or a notes file a target names straight is not read.
 def is_python_file(name: str) -> bool:
     return PurePosixPath(name).suffix == _PYTHON_SUFFIX
 
 
-# meiva:note
 # Which of the two the file budget judges for one target and one structure directory, or None when
 # they are disjoint or the judged path runs through a hidden name, the interpreter's cache or the
 # migrations tree. The two are compared as the paths they are, so a target that holds the repository
@@ -159,7 +149,6 @@ def judged_path(target: Path, scope: Path, repo_root: Path) -> Path | None:
     return selected
 
 
-# meiva:note
 # Hard violations retain their existing gate. The former per-file warning is now the same
 # changed-only headroom table as `check`, shared by every measured kind including directories.
 def ceiling_report(

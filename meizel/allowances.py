@@ -1,9 +1,8 @@
-# meiva:note
 # `meizel.policy.toml` is the one closed list of allowances, so a declaration that disappears is a
 # narrowing of what the checker still reports, and every comparison against the base stays green
 # while it happens. This module owns the file's format and reader; the declarations a change takes
 # away, and the `Policy-Removal` line that answers them, belong to the same owner for that reason.
-# meiva:link meizel/docs/checker/policy/policy.md
+# See meizel/docs/checker/policy/policy.md.
 
 
 from __future__ import annotations
@@ -42,14 +41,12 @@ _RULE_NAME = re.compile(r"[a-z][a-z0-9-]*")
 SECTIONS_TABLE = "sections"
 ANY_SECTION = "*"
 
-# meiva:note
 # The shapes a section takes: `reasons` is a table of `name = reason`; `readers` is that table too,
 # or `name = { why, unless }` for an entry whose read a passed parameter spares; `names` is a list.
 REASONS = "reasons"
 READERS = "readers"
 NAMES = "names"
 
-# meiva:note
 # The checker's own rules: rule -> section -> shape. A host's rules declare theirs in the policy's
 # `[sections]` table (`Policy.sections`), so the checker reads and reviews their tables without
 # knowing what they mean. `ambient` has no fixed sections: each key of that table declares one kind of state the repository
@@ -104,7 +101,6 @@ RULES: dict[str, dict[str, str]] = {
 }
 
 
-# meiva:note
 # The sections one rule may hold: the checker's own for its rules, the host's declaration for a host
 # rule. `ambient` takes its sections from the declared state kinds, and `ambient-readers` adds one
 # readers table per declared kind to the standard library's.
@@ -118,7 +114,6 @@ def _sections(
     return RULES.get(rule) or host.get(rule, {})
 
 
-# meiva:note
 # The shape one section of one rule is written in. A host rule that declares `"*"` holds a table per
 # name it governs, each in that shape, besides the sections it names.
 def _shape_in(sections: Mapping[str, str], section: str) -> str | None:
@@ -137,30 +132,25 @@ class Policy:
     named: dict[tuple[str, str], tuple[str, ...]] = field(
         default_factory=dict[tuple[str, str], tuple[str, ...]]
     )
-    # meiva:note
     # The `unless` of each entry that carries one, beside `listed` so that a change of the clause
     # alone shows in `policy diff`; the entry's reason stays in `listed`.
     unless: dict[tuple[str, str], dict[str, str]] = field(
         default_factory=dict[tuple[str, str], dict[str, str]]
     )
     lines: list[str] = field(default_factory=list[str])
-    # meiva:note
     # The kinds of state this repository keeps itself, in the order `[ambient]` declares them: the
     # keys of that table. Each is a kind a manifest's `[state]` and `[roots]` may name besides the
     # standard library's own, and each may have an `[ambient-readers.<kind>]` table.
     state_kinds: tuple[str, ...] = ()
-    # meiva:note
     # The host's rules as `[sections]` declares them: rule -> section -> shape, `"*"` for a table per
     # governed name.
     sections: dict[str, dict[str, str]] = field(default_factory=dict[str, dict[str, str]])
 
-    # meiva:note
     # The shape `[rule] section` is written in, or None when neither the checker nor the host's
     # declaration knows it.
     def section_shape(self, rule: str, section: str) -> str | None:
         return _shape_in(_sections(rule, self.state_kinds, self.sections), section)
 
-    # meiva:note
     # Every kind a reader may be listed under: the standard library's and the declared ones.
     @property
     def reader_kinds(self) -> tuple[str, ...]:
@@ -171,7 +161,6 @@ class Policy:
         self._known(rule, section, REASONS, READERS)
         return dict(self.listed.get((rule, section), {}))
 
-    # meiva:note
     # The line of the first uncommented line that quotes `name`, within `[table]` when one is given;
     # 1 when none does.
     def line_of(self, name: str, table: str | None = None) -> int:
@@ -194,14 +183,12 @@ class Policy:
         self._known(rule, section, NAMES)
         return self.named.get((rule, section), ())
 
-    # meiva:note
     # The parameter each entry names, as `entry -> parameter`: the reader did not read the world
     # when a call hands it this one. The entry's reason stays in `reasons`.
     def unless_for(self, rule: str, section: str) -> dict[str, str]:
         self._known(rule, section, READERS)
         return dict(self.unless.get((rule, section), {}))
 
-    # meiva:note
     # A host rule this policy does not declare holds no table here, so it lists nothing; a section a
     # declared rule does not name is a reader's typo, refused like one of the checker's own.
     def _known(self, rule: str, section: str, *shapes: str) -> None:
@@ -240,7 +227,6 @@ def _reasons(table: object, where: str, problems: list[str]) -> dict[str, str]:
     return found
 
 
-# meiva:note
 # An `[ambient-readers.<kind>]` table: `name = reason`, or `name = { why, unless }` where `unless`
 # names the one parameter whose value spares the read. The two halves are kept apart so a reason
 # edit and a clause edit are different lines in `policy diff`.
@@ -268,7 +254,6 @@ def _reader_entries(
     return reasons, unless
 
 
-# meiva:note
 # One table-shaped entry: its `why` and its optional `unless`, or None when either is unusable.
 def _reader_entry(
     entry: object, name: str, where: str, problems: list[str]
@@ -300,7 +285,6 @@ def _names(value: object, where: str, problems: list[str]) -> tuple[str, ...]:
     return tuple(value)
 
 
-# meiva:note
 # What one parse fills: the tables of the policy, and the problems that make it unusable.
 @dataclass(frozen=True, slots=True)
 class _Sections:
@@ -316,7 +300,6 @@ class _Sections:
     problems: list[str] = field(default_factory=list[str])
 
 
-# meiva:note
 # The kinds of state a document declares: the keys of its `[ambient]` table. A key that spells a
 # kind of the standard library, or is not a lowercase name, is reported and declares nothing.
 def _state_kinds(document: Mapping[str, object], problems: list[str]) -> tuple[str, ...]:
@@ -337,7 +320,6 @@ def _state_kinds(document: Mapping[str, object], problems: list[str]) -> tuple[s
     return tuple(found)
 
 
-# meiva:note
 # A list section. `purity`'s `max-*` limits are written as one integer and kept as its text.
 def _names_section(rule: str, section: str, value: object, where: str, into: _Sections) -> None:
     if (
@@ -407,7 +389,6 @@ def _checker(
     return parsed_external, parsed_dynamic, parsed_loads, tuple(defaults)
 
 
-# meiva:note
 # The host's rules a document declares under `[sections]`: one table per rule, naming each section and
 # its shape. A rule the checker owns, a malformed name or a shape that is neither `names` nor
 # `reasons` is reported and declares nothing.
@@ -435,7 +416,6 @@ def _host_sections(
     return found
 
 
-# meiva:note
 # The shapes an older policy wrote its host tables in, read off the values themselves: a list is a
 # names section, a table is a reasons table. A policy from before `[sections]` existed is read this way
 # when a comparison needs the base's declarations; the live file never is.
@@ -496,14 +476,12 @@ def parse(text: str) -> tuple[Policy, list[str]]:
     return _parse(text, infer=False)
 
 
-# meiva:note
 # A policy from another revision, as a comparison reads its base: the same reader, except that a host
 # table the revision does not declare under `[sections]` takes the shape its values are written in.
 def parse_snapshot(text: str) -> tuple[Policy, list[str]]:
     return _parse(text, infer=True)
 
 
-# meiva:note
 # The policy of the checkout the caller already holds, read through the checkout's own port: this
 # module decides the file's format and never opens it, so the read belongs to whatever entry built
 # the checkout (a process entry, a lint script, the comparison snapshot a command runs in). An
@@ -518,14 +496,12 @@ def load(repo: Checkout) -> Policy:
     return policy
 
 
-# meiva:note
 # Mutable comparison snapshots replace their policy after validating the old input. Cache
 # invalidation belongs to this reader and runs only once the snapshot mutation has completed.
 def invalidate_cache() -> None:
     load.cache_clear()
 
 
-# meiva:note
 # One entry of the policy: the table that holds it, its name, and how the file writes it. `named` is
 # the one string a `Policy-Removal` line names it with.
 @dataclass(frozen=True, slots=True)
@@ -539,7 +515,6 @@ class Declaration:
         return f"{self.table}.{self.entry}"
 
 
-# meiva:note
 # One `Policy-Removal` line: what it names, why the declaration went, and what covers it now.
 @dataclass(frozen=True, slots=True)
 class Removal:
@@ -548,7 +523,6 @@ class Removal:
     replacement: str
 
 
-# meiva:note
 # What a change took away from the policy, and what the record says about it. `unanswered` is the
 # failure this exists for; `unused` is a line that names a declaration the change did not remove — a
 # record of something else, never a failure; `problems` is one entry per line of the record that
@@ -562,7 +536,6 @@ class RemovalReport:
     unused: tuple[Removal, ...]
     problems: tuple[str, ...]
 
-    # meiva:note
     # The lines that would answer `unanswered`: the entry alone, or the table that lost several.
     def templates(self) -> tuple[str, ...]:
         grouped: dict[str, list[Declaration]] = {}
@@ -584,7 +557,6 @@ _PLACEHOLDER = re.compile(r"<[^<>]+>")
 _MIN_FIELD = 8
 
 
-# meiva:note
 # Every declaration the policy makes, keyed by the string a line names it with. The four checker
 # tables hold one declaration per entry; a list section holds one per name, so a shortened list loses
 # exactly the names it dropped and a deleted section loses all of them.
@@ -613,7 +585,6 @@ def _declarations(policy: Policy) -> dict[str, Declaration]:
     return found
 
 
-# meiva:note
 # A line that names something but whose prose fields still hold the template, so it answers nothing.
 @dataclass(frozen=True, slots=True)
 class _Skeleton:
@@ -621,7 +592,6 @@ class _Skeleton:
     line: str
 
 
-# meiva:note
 # The shape of one answer: `<table>[.<entry>] — <why> — <replacement or gap>`. A line with fewer
 # than three fields is a problem rather than a non-answer, and git's own template comments are
 # skipped as for any trailer. A line whose prose fields are still placeholders is neither: it is the
@@ -671,7 +641,6 @@ def _declared_removals(
     return tuple(found), tuple(skeletons), tuple(problems)
 
 
-# meiva:note
 # One name, two names with "and", three or more with commas and a closing "and".
 def _and(names: list[str]) -> str:
     if len(names) == 1:
@@ -679,7 +648,6 @@ def _and(names: list[str]) -> str:
     return f"{', '.join(names[:-1])} and {names[-1]}"
 
 
-# meiva:note
 # A prose field is answered when it says something and is not a placeholder: `<why ...>` is the
 # template, not a reason.
 def _answered(text: str) -> bool:
@@ -687,7 +655,6 @@ def _answered(text: str) -> bool:
     return len(value) >= _MIN_FIELD and _PLACEHOLDER.search(value) is None
 
 
-# meiva:note
 # A line answers a declaration when it names it, or names a table or rule that contains it: an entry
 # disappears on its own, a section with everything it held, or a rule with all its sections, and one
 # line per name would turn a deleted section into a page of boilerplate.
@@ -697,7 +664,6 @@ def _answers(removal: Removal, declaration: Declaration) -> bool:
     )
 
 
-# meiva:note
 # The declarations `new` dropped, and which of them the `record` answers, in one pass.
 def removal_report(old: Policy, new: Policy, record: str) -> RemovalReport:
     before = _declarations(old)

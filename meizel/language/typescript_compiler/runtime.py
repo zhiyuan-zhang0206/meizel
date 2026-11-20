@@ -14,7 +14,7 @@ from meizel.language.typescript_compiler.model import TsScan
 from meizel.lint_common import run_node_analyzer
 
 
-# meiva:link meizel/docs/checker/typescript.md
+# See meizel/docs/checker/typescript.md.
 def scan_batch(
     universe: Universe, contents: dict[str, str], policy: Policy, sources: Sources
 ) -> dict[str, TsScan]:
@@ -33,12 +33,10 @@ def scan_batch(
         "ambient": {"names": sources.names, "calls": sources.calls},
     }
     producer = Path(__file__).with_name("producer.mjs")
-    # meiva:note
     # The compiler comes from this tool's own frontend install, never the checked repository's: the
     # checker runs against repositories that have no frontend at all, and a tree beside the inspected
     # code would be one more thing that code could change under the analysis.
-    # meiva:link meizel/docs/frontend-deps.md
-    # meiva:note
+    # See meizel/docs/frontend-deps.md.
     # The tree is the reader, not the directory read: its predicates take the path they are asked
     # about, so the preflight still observes this installation's frontend and never the checked
     # repository's. A strict module holds the checkout as data (`universe.repo`), and the tree is

@@ -24,7 +24,6 @@ from meizel.language.restricted import RestrictedForms, const_str
 
 __all__ = ["PythonCommands"]
 
-# meiva:note
 # The fourth evidence is a parameter the caller typed with this file's `Interpreter` name, which
 # widens the list in the module docstring by exactly that form. A parameter is the caller's promise:
 # `def go(python: Interpreter)` says which interpreter the caller chose, so a command built from it
@@ -84,7 +83,6 @@ class PythonCommands(RestrictedForms):
         text = const_str(expr)
         return text is not None and "/" not in text and self.is_interpreter(expr)
 
-    # meiva:note
     # `sys.executable`, a literal `.../python[3[.x]]`, a name bound once to one of those, or a
     # parameter the caller typed as `Interpreter`.
     def is_interpreter(self, expr: ast.expr, depth: int = 0) -> bool:
@@ -102,7 +100,6 @@ class PythonCommands(RestrictedForms):
             return value is not None and self.is_interpreter(value, depth + 1)
         return False
 
-    # meiva:note
     # Whether `name` is a parameter declared with this file's `Interpreter` type. The scope walk
     # stops where an inner binding shadows the name, so a rebound parameter is no evidence.
     def interpreter_parameter(self, name: str) -> bool:

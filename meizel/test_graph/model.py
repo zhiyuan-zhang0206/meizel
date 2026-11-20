@@ -92,7 +92,6 @@ class ModuleTable:
         return tuple(out)
 
 
-# meiva:note
 # Layout-independent per-file AST facts keyed only by file path and source digest so SQLite cache
 # entries stay valid across branch switches that add or remove sibling modules.
 @dataclass(frozen=True, slots=True)
@@ -124,7 +123,6 @@ class FileTestFacts:
     flags: int
 
 
-# meiva:note
 # What a repository says about its own tests under `[test-graph]` in `meizel.policy.toml`: the
 # fixtures, markers and modules that need native services, the tests that read the whole tree, the
 # paths whose change reaches every test or none, and where its documentation lives. Every field is
@@ -144,7 +142,6 @@ class TestGraphPolicy:
     doc_excluded_roots: frozenset[str] = frozenset()
     doc_excluded_names: frozenset[str] = frozenset()
 
-    # meiva:note
     # The `[test-graph]` table of a policy text as a value; a policy with no such table, or none at
     # all, declares nothing. The table's shape is the policy reader's to refuse, so a value of the wrong
     # type here declares nothing instead of failing a selection.

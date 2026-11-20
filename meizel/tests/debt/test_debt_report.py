@@ -225,7 +225,6 @@ def test_a_ref_that_records_a_retired_code_still_counts(
     assert "-2" in out
 
 
-# meiva:note
 # A branch and the main it fell behind: `main` pays the debt in `a/` that the branch never touched,
 # and the branch carries work of its own on top of the commit the two share. `debt diff` compared the
 # branch's tree with `main` alone, so the entry `main` had paid stayed recorded on the branch and was

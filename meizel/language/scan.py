@@ -65,12 +65,10 @@ __all__ = [
     "typescript_scopes",
 ]
 
-# meiva:note
 # The document that states the rule against type-only guards; the diagnostic of every face that
 # reports one points here.
 TYPE_CHECKING_DOC = "docs/conventions/python-conventions.md (no `if TYPE_CHECKING:`)"
 
-# meiva:note
 # Why a direct `typing.TYPE_CHECKING` guard is a violation here, written beside the scanner that
 # records one so the guard and its cost share an owner: an application loads every dependency on the
 # runtime path anyway, so the guard saves no work and costs the annotations.
@@ -81,7 +79,6 @@ TYPE_CHECKING_WHY = (
     "produce"
 )
 
-# meiva:note
 # The one sentence a direct guard owes its reader: the fact, the repair, why the rule exists, what
 # the guarded file now owns, and the document that states it. `meizel check` and the standalone
 # adapter both print it, so the reason is written once.
@@ -122,7 +119,6 @@ _ARGV_UNPACKED_FROM = {
 }
 
 
-# meiva:note
 # The wrappers a policy adds to that table: a call that takes an argv list and starts a process. The
 # list is a fact of the policy the run parsed, so a run that judges another repository is handed
 # that repository's policy instead of reading this one's.
@@ -184,7 +180,6 @@ def _is_object_list(value: object) -> TypeGuard[list[object]]:
     return isinstance(value, list)
 
 
-# meiva:note
 # `ast.iter_fields` yields `tuple[str, Any]`. Reading the value through this parameter makes it an
 # `object`: annotating the loop target instead does not work -- `for _, value in ...` binds an
 # `Any` name whatever the body does with it.
@@ -285,7 +280,6 @@ class Scanner(AmbientAccess):
         self.purity_state.mark_annotations(self.tree)
         self.children(self.tree)
         self.purity_state.record_module(self.tree)
-        # meiva:note
         # A declared site this file did not honour (the call is gone, the receiver is not a parameter)
         # approves nothing: the problem rides the file, so a run that reads only this file says it.
         declared = {s for s in self.injected_sites if s.startswith(f"{self.path}#")}
@@ -362,7 +356,6 @@ class Scanner(AmbientAccess):
             ):
                 self.ambient.used("builtins.input", "builtins.input", node.lineno)
 
-    # meiva:note
     # Whether a name or attribute read is a value the file acquires: not in a test file and not in a
     # position that only names a type.
     def records_value(self, node: ast.Name | ast.Attribute) -> bool:
@@ -676,7 +669,6 @@ class Scanner(AmbientAccess):
         )
         self.children(node)
 
-    # meiva:note
     # A call the policy declares an injected callable: the site is listed and the receiver is a
     # parameter of the enclosing function, where one built here (`Path("x")`, `self.path`) is a path.
     def injected_site(self, node: ast.Call) -> bool:
@@ -791,7 +783,6 @@ def scan_typescript_files(
     return {path: _typescript_scan(scan) for path, scan in scans.items()}
 
 
-# meiva:note
 # This is the scanner boundary for a disposable snapshot whose policy has changed. Each cache
 # owner invalidates its own entries; callers neither reach into private caches nor skip the
 # original snapshot validation to avoid them.

@@ -20,7 +20,6 @@ __all__ = [
     "tree_scan_pins",
 ]
 
-# meiva:note
 # The paths whose change reaches every test in any repository: the test runner's configuration, the
 # lockfile, the interpreter pin and the checker's own policy. A repository adds its own under
 # `[test-graph] global-files` and `global-prefixes`.
@@ -36,7 +35,6 @@ _GLOBAL_NAMES = frozenset(
 )
 
 
-# meiva:note
 # Propagates collectable test consumers through forward dependency `edges` (including cycles) via
 # integer bitsets, avoiding O(V*E) set-copy blowup on dense module graphs.
 def propagate_test_consumers(
@@ -71,7 +69,6 @@ def propagate_test_consumers(
     return reverse
 
 
-# meiva:note
 # Builds per-test package-init, ancestor `conftest.py`, and `path_scopes.toml` dependency edges.
 def fixture_dependency_edges(
     checkout: TestCheckout,
@@ -141,7 +138,6 @@ def _runtime_consumers_for_path(path: str, reverse: Mapping[str, set[str]]) -> s
     return found
 
 
-# meiva:note
 # A Markdown file no test reads as code: one at the root, one under a declared documentation root, or
 # one inside a `docs` directory, unless a test directory or an excluded root holds it or its name is
 # one a repository's tooling reads (`[test-graph] doc-excluded-names`).
@@ -270,7 +266,6 @@ def _accumulate_selected_tests(
     return selected
 
 
-# meiva:note
 # Computes impacted collectable tests for `changed_paths`, failing closed to `"FULL"` on global
 # config edits, syntax errors, deleted paths without `--base-ref`, or opaque dynamic imports.
 def select_impacted_tests(

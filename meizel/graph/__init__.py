@@ -1,4 +1,3 @@
-# meiva:note
 # Public source-layout and reverse-dependency queries consumed by callers and the checkout shell.
 from meizel.graph.ambient_surface import (
     INTERVAL_CLOCKS,

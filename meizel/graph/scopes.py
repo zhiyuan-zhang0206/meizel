@@ -63,7 +63,6 @@ class Scope:
             self.shadowed.add(name)
         self.imports[name] = origin
 
-    # meiva:note
     # Whether `name` is a parameter here or in an enclosing function, and its annotation. Walks
     # outward and stops at the first scope that binds the name: a parameter there answers with its
     # annotation, any other binding there means the name is no longer the caller's promise.
@@ -169,7 +168,6 @@ def _assigned(scope: Scope, node: ast.Assign | ast.AnnAssign) -> None:
     _assigned_value(scope, node)
 
 
-# meiva:note
 # The compound statements whose statement lists run in the enclosing scope (`ast.Match` is read
 # whole; function and class bodies are scopes of their own).
 _NESTED_BODIES = (
