@@ -71,6 +71,7 @@ RULES: dict[str, dict[str, str]] = {
         "max-attr-hops": NAMES,
     },
     "public-surface": {"names": NAMES},
+    "lint": {"tooling": NAMES},
     "test-graph": dict.fromkeys(
         (
             "native-fixtures",

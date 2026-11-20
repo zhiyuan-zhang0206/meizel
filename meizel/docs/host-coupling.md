@@ -7,8 +7,7 @@ tooling. Paths are non-test code and lines are those of the commit that wrote th
 
 - Contracts: `contracts/enumerations.py:190` `_outside_rule` (`meizel/`, `docs/`);
   `contracts/ambient_read.py:50` `_GOVERNED_ROLES`, the host's role vocabulary.
-- Paths of the host's tooling: `lint_common.py:67-74` (`scripts/lint/`, `scripts/structure/`, ...);
-  `language/purity.py:72` (`scripts/<top>.py`); `language/python_commands.py:8`;
+- Paths of the host's tooling: `language/purity.py:72` (`scripts/<top>.py`); `language/python_commands.py:8`;
   `graph/python_layout.py:176-183` (the standalone-project CI contract: `uv.lock`, a `cpu` extra).
 - Documentation paths in diagnostics: `budgets/budget_plans.py` and `language/scan.py` point at
   `docs/conventions/python-conventions.md`.

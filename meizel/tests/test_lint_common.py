@@ -383,3 +383,19 @@ def test_the_analyzer_refuses_before_it_starts_node(
             "{}",
             frontend=frontend,
         )
+
+
+# A changed file a lint does not own judges only itself; one under the code a repository declares as
+# its lint tooling (`[lint] tooling`), or the policy and lockfile any repository has, widens the run
+# to everything, because it can change the verdict of files nobody touched.
+def test_a_change_to_declared_lint_tooling_widens_the_changed_files_run(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    _git_fixture(root, "app/x.py", "tools/lint/rule.py", "tools/lint/tests/test_rule.py")
+    (root / "meizel.policy.toml").write_text(
+        '[lint]\ntooling = ["tools/lint/"]\n', encoding="utf-8"
+    )
+    tree = open_repository(root).tree
+    assert lint_common.changed_scope(tree, ["app/x.py"]) == frozenset({"app/x.py"})
+    assert lint_common.changed_scope(tree, ["tools/lint/rule.py"]) is None
+    assert lint_common.changed_scope(tree, ["tools/lint/tests/test_rule.py"]) is not None
+    assert lint_common.changed_scope(tree, ["meizel.policy.toml"]) is None

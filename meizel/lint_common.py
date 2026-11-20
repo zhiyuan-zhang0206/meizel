@@ -5,7 +5,7 @@ import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
-from meizel import is_repo_test_file, is_test_path, restrict, split_only
+from meizel import allowances, is_repo_test_file, is_test_path, restrict, split_only
 from meizel.frontend_deps import FrontendDeps, FrontendDepsError, classify, observe, refusal
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import SourceTree
@@ -59,15 +59,15 @@ def scan_roots(tree: SourceTree, dirs: Iterable[str]) -> list[Path]:
     return roots
 
 
-_LINT_TOOLING = (
-    # The checker is an installed dependency: the lockfile pins its version.
-    "uv.lock",
-    "meizel.policy.toml",
-    "scripts/lint/",
-    "scripts/structure/",
-    "scripts/content_lint/",
-    "scripts/lint/pool_keepalives.py",
-)
+# The paths whose change can move the verdict of a file nobody touched, in any repository: the
+# lockfile that pins the checker and the policy. A repository adds the code of its own lints under
+# `[lint] tooling` in that policy.
+_LINT_TOOLING = ("uv.lock", allowances.POLICY)
+
+
+def _declared_tooling(tree: SourceTree) -> tuple[str, ...]:
+    text = read_utf8_text(tree, tree.root / allowances.POLICY)
+    return allowances.parse(text)[0].names("lint", "tooling") if text else ()
 
 
 def changed_scope(
@@ -86,7 +86,7 @@ def changed_scope(
     if missing:
         raise SystemExit(f"error: target path(s) not found: {', '.join(missing)}")
     changed = frozenset(_rel_or_abs((tree.root / a).absolute(), tree.root) for a in only)
-    widening = (*_LINT_TOOLING, *inputs)
+    widening = (*_LINT_TOOLING, *_declared_tooling(tree), *inputs)
     if any(path.startswith(widening) and not is_test_path(path) for path in changed):
         return None  # a lint's own tests are not its tooling
     return changed
