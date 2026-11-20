@@ -11,13 +11,14 @@ from meizel.graph.universe import Universe, parent_of
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import RunView
 from meizel.language.python.fixtures import FixtureIndex, fixture_facts
-from meizel.language.python.mounts import mount_facts
+from meizel.language.python.judge.mounts import mount_facts
 from meizel.language.python.record import python_record
+from meizel.language.python.resolve import PythonModules, python_modules
 
 __all__ = ["python_companions", "python_facts"]
 
 
-def _fixture_facts(view: RunView, universe: Universe) -> list[Fact]:
+def _fixture_facts(view: RunView, universe: PythonModules) -> list[Fact]:
     records = {path: python_record(scan) for path, scan in view.scans.items()}
     defined = {
         path: record.fixtures.defs | record.imported
@@ -43,11 +44,12 @@ def python_facts(view: RunView) -> tuple[list[Fact], list[Diagnostic]]:
     universe = view.universe
     if universe is None:
         return [], []
-    mounts, unmounted = mount_facts(universe, view.changed)
-    return [*_fixture_facts(view, universe), *mounts], unmounted
+    modules = python_modules(universe)
+    mounts, unmounted = mount_facts(modules, view.changed)
+    return [*_fixture_facts(view, modules), *mounts], unmounted
 
 
-def _ancestor_conftests(universe: Universe, path: str) -> list[str]:
+def _ancestor_conftests(universe: PythonModules, path: str) -> list[str]:
     found: list[str] = []
     directory = parent_of(path)
     while True:
@@ -59,7 +61,7 @@ def _ancestor_conftests(universe: Universe, path: str) -> list[str]:
         directory = parent_of(directory)
 
 
-def _needed_conftests(universe: Universe, scans: Mapping[str, FileScan]) -> list[str]:
+def _needed_conftests(universe: PythonModules, scans: Mapping[str, FileScan]) -> list[str]:
     needed: set[str] = set()
     for scan in scans.values():
         fixtures = python_record(scan).fixtures
@@ -68,7 +70,7 @@ def _needed_conftests(universe: Universe, scans: Mapping[str, FileScan]) -> list
     return sorted(needed - scans.keys())
 
 
-def _missing_plugins(universe: Universe, scans: Mapping[str, FileScan]) -> list[str]:
+def _missing_plugins(universe: PythonModules, scans: Mapping[str, FileScan]) -> list[str]:
     found: set[str] = set()
     for scan in scans.values():
         for name, _ in python_record(scan).fixtures.plugins:
@@ -81,10 +83,11 @@ def _missing_plugins(universe: Universe, scans: Mapping[str, FileScan]) -> list[
 # The ancestor `conftest.py` files of the scans that request fixtures or declare plugins, and then the
 # modules those plugins name, each round read through `scan_more` until nothing is missing.
 def python_companions(
-    universe: Universe,
+    base: Universe,
     scans: Mapping[str, FileScan],
     scan_more: Callable[[list[str]], dict[str, FileScan]],
 ) -> dict[str, FileScan]:
+    universe = python_modules(base)
     known = dict(scans)
     added: dict[str, FileScan] = {}
     conftests = _needed_conftests(universe, known)

@@ -9,7 +9,6 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 
 from meizel.graph.model import Code, Diagnostic, FactKind
-from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import RunView
 from meizel.language.python.fixtures import (
@@ -24,13 +23,14 @@ from meizel.language.python.purity import (
     IMPURE_STDLIB_MODULES,
 )
 from meizel.language.python.record import python_record
+from meizel.language.python.resolve import PythonModules, python_modules
 from meizel.language.test_files import is_test_file
 
 __all__ = ["impure_fixture_diagnostics"]
 
 
 def _build_fixture_index(
-    scans: Mapping[str, FileScan], universe: Universe | None = None
+    scans: Mapping[str, FileScan], universe: PythonModules | None = None
 ) -> FixtureIndex:
     records = {path: python_record(scan) for path, scan in scans.items()}
     defined = {
@@ -196,7 +196,9 @@ def impure_fixture_diagnostics(view: RunView) -> list[Diagnostic]:
     judged_scans = list(view.judged)
     for scan in judged_scans:
         scans.setdefault(scan.path, scan)
-    index = _build_fixture_index(scans, view.universe)
+    index = _build_fixture_index(
+        scans, None if view.universe is None else python_modules(view.universe)
+    )
     pure_third_party = frozenset(view.policy.names("purity", "pure-third-party"))
     external_impure = DEFAULT_IMPURE_FIXTURES | frozenset(
         view.policy.names("purity", "impure-fixtures")

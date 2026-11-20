@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 
 from meizel.allowances import Policy
-from meizel.graph.model import Code, Diagnostic, Fact, Sources
+from meizel.graph.model import Code, Diagnostic, Fact, Sources, WorldReads
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
-from meizel.language.typescript.adapter import scan_source, typescript_extensions, typescript_files
+from meizel.language.typescript.adapter import scan_source
 from meizel.language.typescript.cache import scan_typescript_cached
+from meizel.language.typescript.files import (
+    typescript_candidates,
+    typescript_extensions,
+    typescript_files,
+)
 from meizel.language.typescript.forms import DYNAMIC_ATTR_FORMS, EXTERNAL_FORMS, restricted_hint
 
 __all__ = ["TYPESCRIPT"]
@@ -57,6 +62,22 @@ def _evidence(_universe: Universe, _scans: Mapping[str, FileScan], _node: str) -
     return []
 
 
+def _impacted(
+    _universe: Universe, _changed: Sequence[str], _jobs: int | None
+) -> frozenset[str] | None:
+    return frozenset()
+
+
+def _projects(_universe: Universe) -> tuple[str, ...]:
+    return ()
+
+
+def _world_reads(
+    _universe: Universe, _files: Sequence[str], _scans: Mapping[str, FileScan]
+) -> WorldReads:
+    return WorldReads()
+
+
 def _scan_source(
     universe: Universe, path: str, source: bytes, sources: Sources, policy: Policy
 ) -> FileScan:
@@ -66,6 +87,7 @@ def _scan_source(
 TYPESCRIPT = Frontend(
     "typescript",
     _owns,
+    typescript_candidates,
     typescript_files,
     _scan,
     _sources,
@@ -77,6 +99,9 @@ TYPESCRIPT = Frontend(
     _rules,
     _companions,
     _evidence,
+    _impacted,
+    _projects,
+    _world_reads,
     Code.RESTRICTED_TS,
     "TypeScript",
     restricted_hint,

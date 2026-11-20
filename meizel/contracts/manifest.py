@@ -24,7 +24,7 @@ from meizel.graph import licensed
 from meizel.graph.graphs import cycle_through, strongly_connected, unneeded_back_edges
 from meizel.graph.model import OS_KINDS, Code, Diagnostic, KindName, PurityItem, covered_kinds
 from meizel.graph.universe import MANIFEST, SOURCE_EXTENSIONS, Universe, is_private_module
-from meizel.language import FileScan
+from meizel.language import FileScan, source_candidates
 from meizel.roles import check_table
 
 __all__ = [
@@ -360,9 +360,7 @@ class _Reader:
                     f"role entry {name!r} is not a tracked top-level directory",
                 )
         source_tops = {
-            path.split("/", 1)[0]
-            for path in (*self.universe.python_files, *self.universe.typescript_files)
-            if "/" in path
+            path.split("/", 1)[0] for path in source_candidates(self.universe) if "/" in path
         }
         for name in sorted(source_tops - listed):
             if not name.startswith("."):

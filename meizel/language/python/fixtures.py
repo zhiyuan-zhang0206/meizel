@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from meizel.graph.model import Fact, FactKind
-from meizel.graph.universe import Universe, parent_of
+from meizel.graph.universe import parent_of
+from meizel.language.python.resolve import PythonModules
 
 __all__ = [
     "DEFAULT_IMPURE_FIXTURES",
@@ -60,7 +61,7 @@ class FixtureState:
 class FixtureIndex:
     """What each scanned file defines, for resolving a request to its definer."""
 
-    universe: Universe | None
+    universe: PythonModules | None
     defined: dict[str, set[str]]
     plugins: dict[str, list[str]]
     _plugin_cache: dict[str, list[str]] = field(

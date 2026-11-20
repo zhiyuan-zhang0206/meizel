@@ -1,0 +1,12 @@
+exports = ["__init__.py"]
+
+[uses]
+"__init__.py" = ["bindings.py", "impacted.py", "imports.py", "modules.py", "scopes.py"]
+"bindings.py" = ["imports.py", "modules.py"]
+"impacted.py" = ["layout.py", "modules.py", "scopes.py"]
+"imports.py" = ["modules.py", "scopes.py"]
+"modules.py" = ["layout.py"]
+
+[purity]
+"." = "strict"
+

@@ -26,6 +26,7 @@ from meizel.contracts.debt_sites import target_under
 from meizel.contracts.manifest import manifest_path
 from meizel.graph.model import Code, MeizelError
 from meizel.graph.universe import MANIFEST, Checkout, Universe, parent_of
+from meizel.language import source_candidates
 
 __all__ = [
     "Recorded",
@@ -58,7 +59,7 @@ def _by_code(baselines: Baselines) -> Counter[Code]:
 def _judged_directories(universe: Universe) -> set[str]:
     """Directories with Python anywhere below them: the ones whose rules can be violated."""
     judged: set[str] = set()
-    for path in (*universe.python_files, *universe.typescript_files):
+    for path in source_candidates(universe):
         directory = parent_of(path)
         while True:
             judged.add(directory)

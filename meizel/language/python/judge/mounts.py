@@ -13,7 +13,7 @@ import tomllib
 from collections.abc import Collection
 
 from meizel.graph.model import Code, Diagnostic, Fact, FactKind, MeizelError
-from meizel.graph.universe import Universe
+from meizel.language.python.resolve import PythonModules
 from meizel.source_text import object_mapping
 
 __all__ = ["SCOPE_FILE", "mount_facts"]
@@ -30,7 +30,7 @@ def _line_of(lines: list[str], module: str) -> int:
 
 
 def mount_facts(
-    universe: Universe, only: Collection[str] | None = None
+    universe: PythonModules, only: Collection[str] | None = None
 ) -> tuple[list[Fact], list[Diagnostic]]:
     """One plugin fact per mounted module of every tracked `path_scopes.toml`, and the mounts that miss.
 

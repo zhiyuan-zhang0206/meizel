@@ -7,14 +7,6 @@ from collections.abc import Callable
 from typing import TypeGuard
 
 from meizel import allowances
-from meizel.graph.imports import (
-    Scope,
-    absolute_base,
-    bind_target,
-    collect_scope,
-    dotted_chain,
-    parameter_names,
-)
 from meizel.graph.model import (
     AnyCollaboratorSite,
     Code,
@@ -27,9 +19,19 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan, read_source
 from meizel.language.python import fixture_scan, fixtures, purity
 from meizel.language.python.ambient import AmbientAccess
-from meizel.language.python.bindings import unambiguous_function_lines
 from meizel.language.python.input_mutations import input_list_appends
 from meizel.language.python.record import InputListAppend, PythonRecord
+from meizel.language.python.resolve import (
+    PythonModules,
+    Scope,
+    absolute_base,
+    bind_target,
+    collect_scope,
+    dotted_chain,
+    parameter_names,
+    python_modules,
+    unambiguous_function_lines,
+)
 from meizel.language.python.restricted import const_str
 from meizel.lint_common import is_test_path
 
@@ -176,7 +178,7 @@ def _unwrap_annotation_expr(expr: ast.expr) -> ast.expr | None:
 class Scanner(AmbientAccess):
     def __init__(
         self,
-        universe: Universe,
+        universe: PythonModules,
         path: str,
         tree: ast.Module,
         *,
@@ -687,7 +689,8 @@ def scan_tree(
     walrus: bool,
     policy: allowances.Policy,
 ) -> FileScan:
-    return Scanner(universe, path, tree, walrus=walrus, sources=sources, policy=policy).run()
+    modules = python_modules(universe)
+    return Scanner(modules, path, tree, walrus=walrus, sources=sources, policy=policy).run()
 
 
 def scan_file(

@@ -7,7 +7,6 @@ from functools import cache
 
 from meizel import allowances
 from meizel.graph.model import Code, EnumSubsetUse, PurityItem
-from meizel.graph.universe import Universe
 from meizel.language.python.purity_structure import (
     ALLOWED_STDLIB_MODULES,
     DEFAULT_IMPURE_IMPORTS,
@@ -20,6 +19,7 @@ from meizel.language.python.purity_structure import (
     record_params,
     record_pass_through,
 )
+from meizel.language.python.resolve import PythonModules
 
 __all__ = [
     "ALLOWED_STDLIB_MODULES",
@@ -53,7 +53,9 @@ def _is_impure_stdlib(module_name: str) -> bool:
     return top not in ALLOWED_STDLIB_MODULES
 
 
-def _is_first_party_module(universe: Universe | None, name: str, current_path: str = "") -> bool:
+def _is_first_party_module(
+    universe: PythonModules | None, name: str, current_path: str = ""
+) -> bool:
     if universe is None:
         return False
     top = name.split(".", 1)[0]
@@ -79,7 +81,7 @@ def _is_first_party_module(universe: Universe | None, name: str, current_path: s
 def _is_impure_import(
     name: str,
     pure_third_party: frozenset[str],
-    universe: Universe | None = None,
+    universe: PythonModules | None = None,
     current_path: str = "",
 ) -> tuple[bool, str]:
     top = name.split(".", 1)[0]
@@ -269,7 +271,7 @@ class PurityState:
     enum_subsets: list[EnumSubsetUse] = field(default_factory=list[EnumSubsetUse])
     defined_classes: set[str] = field(default_factory=set[str])
     pure_third_party: frozenset[str] = field(default_factory=frozenset[str])
-    universe: Universe | None = None
+    universe: PythonModules | None = None
     current_path: str = ""
 
     def finalize_subsets(self) -> list[EnumSubsetUse]:
@@ -415,7 +417,7 @@ def _rules_for(
 
 # The policy the run admitted: read through the universe that holds the tree, never from a path
 # this module computes itself.
-def make_state(universe: Universe, path: str = "") -> PurityState:
+def make_state(universe: PythonModules, path: str = "") -> PurityState:
     text = universe.repo.load_text(allowances.POLICY) if allowances.POLICY in universe.files else ""
     pure_third_party, calls, impure_imports, max_pub, max_params, max_hops = _rules_for(text)
     return PurityState(

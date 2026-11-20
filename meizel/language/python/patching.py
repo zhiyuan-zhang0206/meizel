@@ -10,17 +10,17 @@ import ast
 import sys
 
 from meizel.graph.model import Code, FactKind, Patch
-from meizel.graph.universe import Universe
 from meizel.language.python import purity
-from meizel.language.python.bindings import (
+from meizel.language.python.python_commands import PythonCommands
+from meizel.language.python.resolve import (
     ClassFacts,
+    PythonModules,
     find_class,
     is_imported_binding,
     module_bindings,
     overridable_methods,
     provides,
 )
-from meizel.language.python.python_commands import PythonCommands
 from meizel.language.python.restricted import const_str
 from meizel.language.test_files import is_test_file
 from meizel.lint_common import is_test_path
@@ -57,7 +57,9 @@ def _is_dunder(name: str) -> bool:
 
 # The patch forms of one file, found as the scanner visits it.
 class PatchForms(PythonCommands):
-    def __init__(self, universe: Universe, path: str, tree: ast.Module, *, walrus: bool) -> None:
+    def __init__(
+        self, universe: PythonModules, path: str, tree: ast.Module, *, walrus: bool
+    ) -> None:
         super().__init__(universe, path, tree, walrus=walrus)
         self.test_file = is_test_file(path)
         self.purity_state = purity.make_state(universe, path=path)

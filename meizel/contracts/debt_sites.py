@@ -8,20 +8,17 @@ some prefixes. It reports what the source holds now, whether or not the baseline
 
 from __future__ import annotations
 
-import ast
 import json
-from collections import Counter
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 
 from meizel.contracts.ambient_read import in_scope
 from meizel.contracts.analysis import load_policy, scan_all
 from meizel.contracts.debt import PATCH_CODES
 from meizel.contracts.manifest import Manifest
-from meizel.graph.imports import Scope, collect_scope, dotted_chain
-from meizel.graph.model import Code, MeizelError, Sources
+from meizel.graph.model import Code, MeizelError, Sources, WorldReadSite, WorldReadWrapper
 from meizel.graph.universe import Universe
-from meizel.language import FileScan
+from meizel.language import FileScan, enabled_frontends
 from meizel.lint_common import is_test_path
 
 __all__ = [
@@ -75,11 +72,16 @@ def sites(
     """
     wanted = _code(code)
     scopes = [p.rstrip("/") for p in paths]
-    files = [p for p in (*universe.python_files, *universe.typescript_files) if _within(p, scopes)]
     found: list[Site] = []
     policy, problems = load_policy(universe)
     if problems:
         raise MeizelError(problems[0].render())
+    files = [
+        p
+        for frontend in enabled_frontends(policy)
+        for p in frontend.candidates(universe)
+        if _within(p, scopes)
+    ]
     for path, scan in sorted(scan_all(universe, Sources(), jobs, files, policy=policy).items()):
         found.extend(
             Site(path, patch.line, wanted.value, patch.form, patch.target)
@@ -145,25 +147,9 @@ def format_approved(found: list[Approval], *, as_json: bool) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class _Site:
-    path: str
-    line: int
-    wrapper: str
-
-
-@dataclass(frozen=True, slots=True)
-class _Wrapper:
-    name: str
-    path: str
-    line: int
-    sites: int
-    acquires: bool
-
-
-@dataclass(frozen=True, slots=True)
 class _Propagation:
-    sites: list[_Site]
-    wrappers: list[_Wrapper]
+    sites: list[WorldReadSite]
+    wrappers: list[WorldReadWrapper]
 
     # The measurement as lines: the count, the widest wrappers, then every site. The first line says
     # what the number is, because it is the one line somebody quotes later.
@@ -188,75 +174,6 @@ class _Propagation:
         return "\n".join(lines)
 
 
-# The dotted module a file defines (`pkg/mod.py` -> `pkg.mod`, `pkg/__init__.py` -> `pkg`).
-def _dotted(path: str) -> str:
-    parts = path.removesuffix(".py").split("/")
-    return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
-
-
-def _tree(universe: Universe, path: str) -> ast.Module | None:
-    try:
-        return ast.parse(universe.repo.load_text(path), filename=path)
-    except (SyntaxError, ValueError):
-        return None
-
-
-# Every node of a module with the qualified name of the function that holds it, "" at module level:
-# a class keeps its methods' names (`Class.method`), a nested function its outer's (`outer.inner`).
-def _nodes(
-    body: Sequence[ast.AST], prefix: str = "", current: str = ""
-) -> Iterator[tuple[str, ast.AST]]:
-    for node in body:
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
-            name = f"{prefix}{node.name}"
-            yield name, node
-            yield from _nodes(node.body, f"{name}.", name)
-        elif isinstance(node, ast.ClassDef):
-            yield current, node
-            yield from _nodes(node.body, f"{prefix}{node.name}.", current)
-        else:
-            yield current, node
-            yield from _nodes(list(ast.iter_child_nodes(node)), prefix, current)
-
-
-def _spans(tree: ast.Module) -> list[tuple[int, int, str]]:
-    return [
-        (node.lineno, node.end_lineno or node.lineno, name)
-        for name, node in _nodes(tree.body)
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
-    ]
-
-
-def _enclosing(spans: list[tuple[int, int, str]], line: int) -> str:
-    inside = [span for span in spans if span[0] <= line <= span[1]]
-    return min(inside, key=lambda span: span[1] - span[0])[2] if inside else ""
-
-
-def _module_scope(tree: ast.Module, path: str) -> Scope:
-    scope = Scope(None)
-    collect_scope(scope, tree.body, path.split("/")[:-1], walrus=True)
-    return scope
-
-
-def _module_level(tree: ast.Module) -> set[str]:
-    return {
-        node.name
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
-    }
-
-
-def _callee(func: ast.expr, scope: Scope, module: str, defined: set[str]) -> str | None:
-    chain = dotted_chain(func)
-    if chain is None:
-        return None
-    base, attrs = chain
-    origin, _ = scope.find(base.id)
-    if origin is not None:
-        return ".".join([origin, *attrs])
-    return f"{module}.{base.id}" if not attrs and base.id in defined else None
-
-
 # The governed production files this measurement reads: a file declared under `[roots]` reads by
 # design -- that is what a composition root is for -- so what leaves it was handed down on purpose,
 # and a test records no acquisition at all.
@@ -271,81 +188,17 @@ def _measured_files(manifests: Mapping[str, Manifest], scans: Mapping[str, FileS
     ]
 
 
-def _read(
-    universe: Universe, path: str, acquisitions: Iterable[int]
-) -> tuple[dict[str, str], dict[str, tuple[str, int]], list[tuple[str, str, str, int]]]:
-    tree = _tree(universe, path)
-    if tree is None:
-        return {}, {}, []
-    module = _dotted(path)
-    scope = _module_scope(tree, path)
-    defined = _module_level(tree)
-    spans = _spans(tree)
-    holders = {
-        f"{module}.{holder}"
-        for holder in {_enclosing(spans, line) for line in acquisitions}
-        if holder
-    }
-    found = {
-        f"{module}.{name}": (path, node.lineno)
-        for name, node in _nodes(tree.body)
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
-    }
-    calls = [
-        (f"{module}.{current}" if current else module, callee, path, node.lineno)
-        for current, node in _nodes(tree.body)
-        if isinstance(node, ast.Call)
-        for callee in [_callee(node.func, scope, module, defined)]
-        if callee is not None
-    ]
-    return dict.fromkeys(holders, path), found, calls
-
-
-# The functions that reach an acquisition through calls: a function that calls one inherits its
-# read, and so does the caller of that caller, at any depth.
-def _closure(acquiring: set[str], calls: list[tuple[str, str, str, int]]) -> set[str]:
-    inside = set(acquiring)
-    edges: dict[str, set[str]] = {}
-    for caller, callee, _, _ in calls:
-        edges.setdefault(caller, set()).add(callee)
-    changed = True
-    while changed:
-        changed = False
-        for caller, callees in edges.items():
-            if caller not in inside and not callees.isdisjoint(inside):
-                inside.add(caller)
-                changed = True
-    return inside
-
-
 # The world reads a call site inherits through a function, and where they enter the governed code.
 def propagation(
     universe: Universe, manifests: Mapping[str, Manifest], scans: Mapping[str, FileScan]
 ) -> _Propagation:
-    acquiring: dict[str, str] = {}
-    defined: dict[str, tuple[str, int]] = {}
-    calls: list[tuple[str, str, str, int]] = []
-    for path in _measured_files(manifests, scans):
-        holders, functions, edges = _read(universe, path, (a.line for a in scans[path].ambient))
-        acquiring.update(holders)
-        defined.update(functions)
-        calls.extend(edges)
-    inside = _closure(set(acquiring), calls)
-    sites = sorted(
-        (
-            _Site(path, line, callee)
-            for caller, callee, path, line in calls
-            if callee in inside and caller not in acquiring
+    policy, _ = load_policy(universe)
+    files = _measured_files(manifests, scans)
+    reads = [frontend.world_reads(universe, files, scans) for frontend in enabled_frontends(policy)]
+    return _Propagation(
+        sorted((s for each in reads for s in each.sites), key=lambda site: (site.path, site.line)),
+        sorted(
+            (w for each in reads for w in each.wrappers),
+            key=lambda wrapper: (-wrapper.sites, wrapper.name),
         ),
-        key=lambda site: (site.path, site.line),
     )
-    counted = Counter(site.wrapper for site in sites)
-    wrappers = sorted(
-        (
-            _Wrapper(name, defined[name][0], defined[name][1], counted[name], name in acquiring)
-            for name in inside
-            if name in defined and counted[name]
-        ),
-        key=lambda wrapper: (-wrapper.sites, wrapper.name),
-    )
-    return _Propagation(sites, wrappers)

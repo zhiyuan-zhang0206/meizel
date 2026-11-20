@@ -7,38 +7,13 @@ from meizel.allowances import Policy
 from meizel.graph.model import MeizelError, Sources
 from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan, read_source
-from meizel.language.typescript.compiler import TsScan, load_ts_config, scan_batch
+from meizel.language.typescript.compiler import TsScan, scan_batch
 
 __all__ = [
     "scan_source",
     "scan_typescript",
     "scan_typescript_files",
-    "typescript_extensions",
-    "typescript_files",
-    "typescript_scopes",
 ]
-
-
-def typescript_files(universe: Universe, policy: Policy) -> tuple[str, ...]:
-    config = load_ts_config(policy)
-    active = (*config.scopes, *config.import_sources)
-    return tuple(
-        path
-        for path in universe.typescript_files
-        if path.endswith(config.extensions)
-        and (not active or any(path == p or path.startswith(f"{p}/") for p in active))
-    )
-
-
-# The extensions the policy reads as TypeScript (`[typescript].extensions`).
-def typescript_extensions(policy: Policy) -> tuple[str, ...]:
-    return tuple(load_ts_config(policy).extensions)
-
-
-# The directories whose TypeScript behavior this repository judges (`[typescript].scopes`): the
-# caller needs the list, not the whole config.
-def typescript_scopes(policy: Policy) -> tuple[str, ...]:
-    return load_ts_config(policy).scopes
 
 
 def scan_typescript(

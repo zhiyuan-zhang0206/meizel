@@ -160,7 +160,7 @@ def test_a_scan_read_back_from_the_cache_is_the_scan_that_was_stored(
 def test_the_files_of_this_repository_round_trip() -> None:
     universe = GitRepo(Path(__file__).resolve().parents[3]).universe()
     policy = allowances.load(universe.repo)
-    paths = [path for path in universe.python_files if path.startswith("meizel/")]
+    paths = [path for path in universe.files_ending((".py",)) if path.startswith("meizel/")]
     assert len(paths) > 100
     for path in paths:
         scan = scan_source(universe, path, universe.repo.load_bytes(path), Sources(), policy=policy)

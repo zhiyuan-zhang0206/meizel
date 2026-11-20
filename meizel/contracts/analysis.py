@@ -37,7 +37,6 @@ from meizel.contracts.rule import (
     purity_diagnostics,
     stale_exports,
 )
-from meizel.graph import python_reverse_closure
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind, Patch, Sources
 from meizel.graph.universe import Universe
 from meizel.language import (
@@ -69,7 +68,6 @@ __all__ = [
     "load_manifests",
     "load_policy",
     "manifest_diagnostics",
-    "python_reverse_closure",
     "read_entry",
     "render_policy",
     "scan_all",

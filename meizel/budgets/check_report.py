@@ -14,6 +14,7 @@ from meizel.budgets.report import BudgetRow, source_rows
 from meizel.budgets.snapshot import SOURCE_KINDS, Snapshot, decode_snapshot, render_snapshots
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import Checkout, EditPlan
+from meizel.language import candidates_of
 from meizel.roles import select_packages
 
 __all__ = ["emit"]
@@ -23,7 +24,7 @@ def _source_rows(
     repo: Checkout, roles: Mapping[str, tuple[str, ...]], changed: Collection[str]
 ) -> list[BudgetRow]:
     scopes = select_packages(roles, "application", "standalone", "tests", "tooling")
-    texts = repo.universe().python_files
+    texts = candidates_of(repo.universe(), "python")
     judged_texts = {
         repo.root / name: repo.load_text(name)
         for name in texts

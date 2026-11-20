@@ -75,9 +75,20 @@ shape of Python's habits; with two the common part is visible. Today the checker
   five of twelve, and no helper), so a scan read back from the cache equals the scan that was stored;
   `language/tests/test_scan_roundtrip.py` states that for every field of `FileScan`, `PythonRecord`,
   `FixtureState` and `FixtureFunction`.
-- `graph/`: Python import resolution (`imports.py`, `python_layout.py`, `Universe.resolve_module`,
-  `python_files`) and the hard-coded `typescript_files`. Plan: files per frontend in `Universe`; done
-  together with the Rust frontend, since both need the same change.
+- Done (0.11.0): Python import resolution. `Universe` is the tracked files and directories and names no
+  language (`files_ending(suffixes)`, and `memo` for what a language derives from it, which is not
+  pickled into a worker process). Module resolution, the lexical import bindings, the metadata of
+  independently packaged projects and the reverse import closure live in `language/python/resolve/`
+  (`PythonModules`, built once per universe by `python_modules`), the judgments built on them in
+  `language/python/judge/`. `Frontend` gains `candidates` (every tracked file of the language),
+  `impacted`, `projects` and `world_reads` (the Python call-graph propagation of `debt propagation`).
+  **Breaking for a host that reads a `Universe`**: `python_files`, `typescript_files`, `roots`,
+  `standalone_projects`, `resolve_module`, `canonical_name`, `is_first_party_name`, `context`,
+  `context_for_module` and `source_files` are no longer attributes of it, `python_reverse_closure`
+  is no longer exported by `meizel` or `meizel.graph` (`meizel.api.python_reverse_closure_at` keeps its
+  name and meaning), and the metadata of an independently packaged project is read when Python first
+  needs a module, not when the repository is opened, so a command that reads no Python no longer
+  stops on a project whose metadata is invalid. `meizel.api` names are otherwise unchanged.
 
 Each step is accepted by running the whole repository before and after and comparing everything the
 run reports (the check output, recorded debt, the test lanes, every file's `FileScan`, every fact and
@@ -112,8 +123,7 @@ keep production governance separate from the root distribution environment.
 
 - `graph/`, `language/` and `contracts/` are the checker, documented in
   [the checker node](checker/checker.md): `graph/` holds the model,
-  the universe of tracked files, graph algorithms, name scopes and import
-  access, and `universe.py` the two handles a decision layer reads a checkout
+  the universe of tracked files, graph algorithms, and `universe.py` the two handles a decision layer reads a checkout
   with — the `Checkout` protocol and the `SourceTree` its `tree` property
   returns, a frozen dataclass whose reads are function fields, so a module that
   only decides takes one and reads nothing itself; `language/` the frontends

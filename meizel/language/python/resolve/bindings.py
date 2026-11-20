@@ -9,8 +9,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from functools import cache
 
-from meizel.graph.imports import Scope, collect_scope, dotted_chain
-from meizel.graph.universe import Universe
+from meizel.language.python.resolve.imports import Scope, collect_scope, dotted_chain
+from meizel.language.python.resolve.modules import PythonModules
 
 __all__ = [
     "Bindings",
@@ -73,7 +73,9 @@ def is_imported_binding(bindings: Bindings, name: str) -> bool:
 
 # The bindings of the tracked `file` in `universe`; an untracked, unreadable or unparsable file is
 # treated as dynamic.
-def module_bindings(universe: Universe, file: str, *, seen: set[str] | None = None) -> Bindings:
+def module_bindings(
+    universe: PythonModules, file: str, *, seen: set[str] | None = None
+) -> Bindings:
     if seen is not None:
         seen.add(file)
     if file not in universe.files:
@@ -281,7 +283,7 @@ def _class_facts(tree: ast.Module, scope: Scope, file: str) -> tuple[ClassFacts,
 # name is not a first-party class: an unknown module, a name the module does not define, or a
 # chain of re-exports longer than `hops`.
 def find_class(
-    universe: Universe,
+    universe: PythonModules,
     dotted: str,
     hops: int = _REEXPORT_HOPS,
     *,
@@ -307,7 +309,7 @@ def find_class(
 
 # The methods a class defines or inherits from first-party classes (dunders excluded).
 def overridable_methods(
-    universe: Universe, facts: ClassFacts, *, seen: set[str] | None = None
+    universe: PythonModules, facts: ClassFacts, *, seen: set[str] | None = None
 ) -> frozenset[str]:
     found = set(facts.methods)
     pending = [(base, _REEXPORT_HOPS) for base in facts.bases]

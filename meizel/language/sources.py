@@ -6,9 +6,15 @@ from meizel.allowances import Policy
 from meizel.graph.model import Diagnostic, Sources
 from meizel.graph.universe import Universe
 from meizel.language.frontend import StateKinds
-from meizel.language.frontends import enabled_frontends
+from meizel.language.frontends import FRONTENDS, enabled_frontends
 
-__all__ = ["ambient_sources", "stale_readers"]
+__all__ = [
+    "ambient_sources",
+    "candidates_of",
+    "projects",
+    "source_candidates",
+    "stale_readers",
+]
 
 
 # What a run's scans treat as ambient sources: each enabled frontend names its own, and the run
@@ -30,3 +36,22 @@ def stale_readers(universe: Universe, policy: Policy) -> list[Diagnostic]:
         for frontend in enabled_frontends(policy)
         for found in frontend.stale_readers(universe, policy)
     ]
+
+
+# The directories of the independently packaged projects the enabled languages read.
+def projects(universe: Universe, policy: Policy) -> list[str]:
+    return [
+        directory
+        for frontend in enabled_frontends(policy)
+        for directory in frontend.projects(universe)
+    ]
+
+
+# Every tracked source file of every built-in language, whatever the policy enables or scopes.
+def source_candidates(universe: Universe) -> tuple[str, ...]:
+    return tuple(path for frontend in FRONTENDS.values() for path in frontend.candidates(universe))
+
+
+# Every tracked source file of the language named `name`.
+def candidates_of(universe: Universe, name: str) -> tuple[str, ...]:
+    return tuple(FRONTENDS[name].candidates(universe))

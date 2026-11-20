@@ -1,7 +1,8 @@
 exports = ["python", "test_files.py", "typescript"]
 
 [uses]
-"__init__.py" = ["file_scan.py", "frontend.py", "frontends.py", "sources.py"]
+"__init__.py" = ["closure.py", "file_scan.py", "frontend.py", "frontends.py", "sources.py"]
+"closure.py" = ["frontends.py"]
 "frontend.py" = ["file_scan.py"]
 "frontends.py" = ["file_scan.py", "frontend.py", "python", "typescript"]
 "json_fields.py" = ["json_containers.py"]
@@ -15,6 +16,7 @@ exports = ["python", "test_files.py", "typescript"]
 "." = "strict"
 "file_scan.py" = "strict"
 "frontend.py" = "strict"
+"closure.py" = "strict"
 "frontends.py" = "strict"
 "json_containers.py" = "strict"
 "json_fields.py" = "strict"

@@ -18,7 +18,6 @@ from meizel.checkout import (
     apply_plan,
     lanes_at,
     load_universe,
-    python_reverse_closure_at,
     roles_at,
     source_tree,
     toplevel,
@@ -42,6 +41,7 @@ from meizel.language.python import (
     type_checking_lines,
     type_checking_violations,
 )
+from meizel.language.python.closure_at import python_reverse_closure_at
 from meizel.language.typescript import typescript_files
 from meizel.roles import (
     all_packages,

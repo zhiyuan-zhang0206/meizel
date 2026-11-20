@@ -30,6 +30,9 @@ __all__ = [
     "Sources",
     "TypeCastSite",
     "Unless",
+    "WorldReadSite",
+    "WorldReadWrapper",
+    "WorldReads",
     "covered_kinds",
     "known_kind",
 ]
@@ -242,6 +245,31 @@ class Acquisition:
     line: int
     kind: KindName
     target: str
+
+
+# A call that reaches a function acquiring the world, the function it calls and where the call is.
+@dataclass(frozen=True, slots=True)
+class WorldReadSite:
+    path: str
+    line: int
+    wrapper: str
+
+
+# A function through which world reads travel: where it is defined, how many calls reach it, and
+# whether it acquires the world itself (otherwise only by calling one that does).
+@dataclass(frozen=True, slots=True)
+class WorldReadWrapper:
+    name: str
+    path: str
+    line: int
+    sites: int
+    acquires: bool
+
+
+@dataclass(frozen=True, slots=True)
+class WorldReads:
+    sites: list[WorldReadSite] = field(default_factory=list[WorldReadSite])
+    wrappers: list[WorldReadWrapper] = field(default_factory=list[WorldReadWrapper])
 
 
 # How the policy spells a reader: the `[ambient-readers]` rule, and the `()` a reader that is called

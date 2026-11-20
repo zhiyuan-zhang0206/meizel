@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import ast
 
-from meizel.graph.imports import Scope
 from meizel.language.python.record import InputListAppend
+from meizel.language.python.resolve import Scope
 
 __all__ = ["input_list_appends"]
 

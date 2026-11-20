@@ -1,0 +1,9 @@
+exports = ["__init__.py"]
+
+[uses]
+"__init__.py" = ["explain.py", "pytest_scope.py", "readers.py", "rules.py", "world_reads.py"]
+"pytest_scope.py" = ["mounts.py"]
+"rules.py" = ["fixture_purity.py"]
+
+[purity]
+"." = "strict"

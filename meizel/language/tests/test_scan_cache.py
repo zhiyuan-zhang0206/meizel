@@ -10,7 +10,6 @@ import pytest
 
 from meizel.allowances import Policy
 from meizel.checkout import GitRepo
-from meizel.graph import python_reverse_closure
 from meizel.graph.model import (
     OS_KINDS,
     Acquisition,
@@ -36,12 +35,15 @@ from meizel.language.python import (
     FixtureRequest,
     FixtureState,
     InputListAppend,
+    PythonModules,
     PythonRecord,
     cached_module_imports,
     decode_record,
     encode_record,
     load_cached_sources,
+    python_modules,
     python_record,
+    python_reverse_closure,
     store_cached_sources,
 )
 from meizel.language.scan_codec import decode_file_scan, encode_file_scan
@@ -120,7 +122,7 @@ class _RecordingCheckout:
 
     def universe(self) -> Universe:
         base = self.inner.universe()
-        return Universe(self, sorted(base.files), projects=base.standalone_projects)
+        return Universe(self, sorted(base.files))
 
     @contextmanager
     def checkout(self, ref: str) -> Generator[Checkout]:
@@ -297,7 +299,7 @@ def test_sources_and_corrupt_sqlite_entries_degrade_gracefully(tmp_path: Path) -
     root = _init_git_repo(tmp_path, {"pkg/__init__.py": "", "pkg/a.py": "VALUE = 1\n"})
     policy = Policy()
     repo = GitRepo(root)
-    universe = repo.universe()
+    universe = python_modules(repo.universe())
 
     sources = Sources(
         names={"os.environ": AmbientKind.ENVIRON},
@@ -311,12 +313,12 @@ def test_sources_and_corrupt_sqlite_entries_degrade_gracefully(tmp_path: Path) -
     store_cached_sources(universe, key, sources)
     _, hit = load_cached_sources(universe, "state-1", policy)
     assert hit == sources
-    _, sqlite_hit = load_cached_sources(GitRepo(root).universe(), "state-1", policy)
+    _, sqlite_hit = load_cached_sources(python_modules(GitRepo(root).universe()), "state-1", policy)
     assert sqlite_hit == sources
 
     calls: list[str] = []
 
-    def _compute(_u: Universe, path: str) -> dict[str, str]:
+    def _compute(_u: PythonModules, path: str) -> dict[str, str]:
         calls.append(path)
         return {"x": "pkg.x"}
 
@@ -326,7 +328,9 @@ def test_sources_and_corrupt_sqlite_entries_degrade_gracefully(tmp_path: Path) -
     assert calls == ["pkg/a.py"]
 
     repo.cache_put_many({key: "{not-json"})
-    _, corrupted_sources = load_cached_sources(GitRepo(root).universe(), "state-1", policy)
+    _, corrupted_sources = load_cached_sources(
+        python_modules(GitRepo(root).universe()), "state-1", policy
+    )
     assert corrupted_sources is None
 
     db_path = root / ".git" / "meizel-scan-cache-v1.sqlite3"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from meizel.language.closure import reverse_closure
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.frontends import (
@@ -14,7 +15,13 @@ from meizel.language.frontends import (
     scan_all,
     scan_source,
 )
-from meizel.language.sources import ambient_sources, stale_readers
+from meizel.language.sources import (
+    ambient_sources,
+    candidates_of,
+    projects,
+    source_candidates,
+    stale_readers,
+)
 
 __all__ = [
     "DYNAMIC_ATTR_FORMS",
@@ -25,10 +32,14 @@ __all__ = [
     "RunView",
     "StateKinds",
     "ambient_sources",
+    "candidates_of",
     "enabled_frontends",
     "frontend_of",
     "invalidate_policy_caches",
+    "projects",
+    "reverse_closure",
     "scan_all",
     "scan_source",
+    "source_candidates",
     "stale_readers",
 ]

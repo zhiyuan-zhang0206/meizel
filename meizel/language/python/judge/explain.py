@@ -10,6 +10,7 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.python.fixtures import FixtureFunction, FixtureIndex, FixtureRequest
 from meizel.language.python.record import python_record
+from meizel.language.python.resolve import PythonModules, python_modules
 
 __all__ = ["python_evidence"]
 
@@ -30,7 +31,8 @@ class _Display:
 
 # What a Python file's scan saw under `node`: the lists a function appends to and the fixture request
 # chains of its tests.
-def python_evidence(universe: Universe, scans: Mapping[str, FileScan], node: str) -> list[str]:
+def python_evidence(base: Universe, scans: Mapping[str, FileScan], node: str) -> list[str]:
+    universe = python_modules(base)
     selected = {
         path: scan
         for path, scan in scans.items()
@@ -54,7 +56,7 @@ def python_evidence(universe: Universe, scans: Mapping[str, FileScan], node: str
 
 
 def _fixture_lines(
-    universe: Universe, scans: Mapping[str, FileScan], selected: dict[str, FileScan]
+    universe: PythonModules, scans: Mapping[str, FileScan], selected: dict[str, FileScan]
 ) -> list[str]:
     records = {path: python_record(scan) for path, scan in scans.items()}
     index = FixtureIndex(
