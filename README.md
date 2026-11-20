@@ -1,5 +1,18 @@
 # meizel
 
+**Machine-checked architecture that only tightens, for codebases that AI agents change.**
+
+When people write the code, architecture survives through review and shared understanding. When
+agents write much of it, there is no shared understanding to rely on, and review cannot keep up with
+the output. meizel keeps the architecture as data in the repository and checks every change against
+it in CI. A known violation is recorded as debt with an exit condition, so the record can shrink and
+never grow.
+
+Module-boundary checkers (import-linter, tach, eslint-plugin-boundaries, Nx module boundaries) cover
+the first of the pieces below. meizel adds two more and puts them over one dependency graph for
+several languages: the purity rules, which turn "functional core, imperative shell" into a check,
+and the debt ledger. It is not a build system, a general lint collection or a formatter.
+
 meizel checks the structure of a repository from data the repository keeps beside its code:
 
 - **Module manifests** (`meizel.toml` in each directory): what a directory exports and which sibling
