@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeGuard
 
 from meizel.allowances import POLICY, Policy, parse, parse_snapshot
 from meizel.contracts.analysis import Analysis, analyze
@@ -14,7 +16,7 @@ from meizel.contracts.debt_edit import prune as prune_debt
 from meizel.contracts.declare import declare
 from meizel.contracts.enumerations import write as write_role_regions
 from meizel.contracts.manifest import manifest_path
-from meizel.contracts.manifest_text import ENTRY, HEADER, entry_end, items, unquote
+from meizel.contracts.manifest_text import ENTRY, HEADER, entry_end, items, set_scope, unquote
 from meizel.graph.model import MeizelError
 from meizel.graph.universe import MANIFEST, Checkout, EditPlan
 from meizel.language import SOURCE_EXTENSIONS
@@ -227,9 +229,67 @@ def sync_manifests(
     return lines, left
 
 
+def _is_str_table(value: object) -> TypeGuard[dict[str, object]]:
+    return isinstance(value, dict) and all(isinstance(k, str) for k in value)
+
+
+# Rewrite pre-v0.12 `[purity]` spellings (`"strict-to-be"` -> `"ratchet"`, `{ mode = "none", ... }`
+# -> `{ mode = "off", ... }`) inside a disposable historical comparison snapshot only. Live `check`
+# keeps zero aliases; malformed entries are left untouched so `_refuse_unreadable` still stops them.
+def _normalize_purity_text(text: str, raw: object) -> str | None:
+    if isinstance(raw, str):
+        return set_scope(text, "purity", {".": "ratchet"}, {}) if raw == "strict-to-be" else None
+    if not _is_str_table(raw):
+        return None
+    declarations: dict[str, str] = {}
+    reasons: dict[str, str] = {}
+    changed = False
+    for key, value in raw.items():
+        if isinstance(value, str) and value in {"strict", "ratchet"}:
+            declarations[key] = value
+            reasons[key] = ""
+        elif value == "strict-to-be":
+            declarations[key] = "ratchet"
+            reasons[key] = ""
+            changed = True
+        elif (
+            _is_str_table(value)
+            and set(value) == {"mode", "why"}
+            and isinstance(value["why"], str)
+            and value["why"].strip()
+            and value["mode"] in {"off", "none"}
+        ):
+            declarations[key] = "off"
+            reasons[key] = value["why"].strip()
+            changed = changed or value["mode"] == "none"
+        else:
+            return None
+    return set_scope(text, "purity", declarations, reasons) if changed else None
+
+
+def _normalize_purity_snapshots(repo: Checkout) -> None:
+    writes: dict[Path, str] = {}
+    for relative in sorted(repo.universe().files):
+        if relative != MANIFEST and not relative.endswith(f"/{MANIFEST}"):
+            continue
+        text = repo.load_text(relative)
+        try:
+            document = tomllib.loads(text)
+        except tomllib.TOMLDecodeError:
+            continue
+        if "purity" not in document:
+            continue
+        rewritten = _normalize_purity_text(text, document["purity"])
+        if rewritten is not None:
+            writes[repo.root / relative] = rewritten
+    if writes:
+        repo.apply_plan(EditPlan(writes=writes))
+
+
 # The policy of a disposable comparison checkout, read once before anything is written there: a
 # malformed or unknown table fails the comparison as unreadable instead of being judged.
 def prepare_policy_snapshot(repo: Checkout) -> Policy:
+    _normalize_purity_snapshots(repo)
     if not repo.has_file(POLICY):
         return Policy()
     text = repo.load_text(POLICY)
