@@ -406,6 +406,49 @@ def test_rule_comparison_refreshes_policy_after_validating_the_old_snapshot(
     assert row[1:] == ["0", "1", "1", "+1", "+0", "+0"]
 
 
+def test_rule_diff_normalizes_legacy_purity_modes_in_base_snapshot_only(
+    make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = base_repo(
+        make_repo,
+        {
+            "app/__init__.py": "",
+            "app/shell.py": '"""Keep the historical note: strict-to-be and mode = "none"."""\n',
+            "app/core.py": "def pure(x: int) -> int:\n    return x + 1\n",
+            "app/meizel.toml": (
+                "[purity]\n"
+                '"." = "strict-to-be"\n'
+                '"shell.py" = { mode = "none", why = "legacy strict-to-be shell" }\n'
+                '"core.py" = "strict"\n'
+            ),
+            "sub/__init__.py": "",
+            "sub/mod.py": "def f(x: int) -> int:\n    return x\n",
+            "sub/meizel.toml": 'purity = "strict-to-be"\n',
+        },
+    )
+    # Live check still refuses legacy spellings (zero live aliases).
+    assert run(root, "check") == 1
+    assert "manifest-syntax" in capsys.readouterr().out
+
+    # Migrating HEAD to the v0.12 spellings lets `debt diff` replay the pre-v0.12 base cleanly.
+    write(
+        root,
+        {
+            "app/meizel.toml": (
+                "[purity]\n"
+                '"." = "ratchet"\n'
+                '"shell.py" = { mode = "off", why = "legacy strict-to-be shell" }\n'
+                '"core.py" = "strict"\n'
+            ),
+            "sub/meizel.toml": 'purity = "ratchet"\n',
+        },
+    )
+    capsys.readouterr()
+    assert diff(root) == 0
+    out = capsys.readouterr().out
+    assert "total" in out
+
+
 def test_type_cast_rule_baseline_uses_existing_application_content(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
 ) -> None:
