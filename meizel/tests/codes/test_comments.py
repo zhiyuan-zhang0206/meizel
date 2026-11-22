@@ -274,7 +274,7 @@ def test_debt_diff_succeeds_when_introducing_comments_ratchet(
             "meizel.toml": "",
         }
     )
-    git(root, "commit", "-m", "base")
+    git(root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "base")
     git(root, "branch", "-M", "main")
     (root / "meizel.policy.toml").write_text(
         '[comments]\nmode = "ratchet"\nbaseline = "meizel.comments_baseline.json"\n'
