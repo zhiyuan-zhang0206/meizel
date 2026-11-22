@@ -20,7 +20,7 @@ __all__ = [
     "Projection",
     "is_private",
     "judge_facts",
-    "paid_strict_to_be",
+    "paid_ratchet",
     "project",
     "purity_diagnostics",
     "stale_exports",
@@ -293,7 +293,7 @@ def _module_purity_diagnostics(
         if fact.kind not in {FactKind.IMPORT, FactKind.ATTRIBUTE} or fact.dst == scan.path:
             continue
         if (
-            effective_purity(fact.dst, manifests, include_tests=is_test_file(scan.path)) == "none"
+            effective_purity(fact.dst, manifests, include_tests=is_test_file(scan.path)) == "off"
             and (fact.line, fact.dst) not in seen_edges
         ):
             seen_edges.add((fact.line, fact.dst))
@@ -304,7 +304,7 @@ def _module_purity_diagnostics(
                     Code.IMPURE_EDGE,
                     f"{fact.edge()} ({fact.detail}): {mode} module depends on impure module {fact.dst}",
                     (
-                        "mark the dependency `strict` or `strict-to-be`, or move the impure dependency to an adapter outside the strict core",
+                        "mark the dependency `strict` or `ratchet`, or move the impure dependency to an adapter outside the strict core",
                     ),
                     purity_debt(owner, scan.path, fact.dst, mode),
                 )
@@ -329,7 +329,7 @@ def _test_purity_diagnostics(
     scan: FileScan, owner: str, manifests: dict[str, Manifest]
 ) -> list[Diagnostic]:
     test_mode = test_purity_mode(scan, manifests)
-    if test_mode == "none":
+    if test_mode == "off":
         return []
     return [
         Diagnostic(
@@ -349,7 +349,7 @@ def _file_purity_diagnostics(scan: FileScan, manifests: dict[str, Manifest]) -> 
     found: list[Diagnostic] = []
     owner = scan.path.rpartition("/")[0]
     mode = effective_purity(scan.path, manifests)
-    if mode in {"strict", "strict-to-be"}:
+    if mode in {"strict", "ratchet"}:
         found.extend(_module_purity_diagnostics(scan, owner, mode, manifests))
     if is_test_file(scan.path):
         found.extend(_test_purity_diagnostics(scan, owner, manifests))
@@ -368,7 +368,7 @@ def _wide_fanout_diagnostics(manifests: dict[str, Manifest], policy: Policy) -> 
     for directory, manifest in sorted(manifests.items()):
         if (
             "/" in directory
-            and manifest.purity_default in {"strict", "strict-to-be"}
+            and manifest.purity_default in {"strict", "ratchet"}
             and len(manifest.exports) > max_exports
         ):
             found.append(
@@ -386,7 +386,7 @@ def _wide_fanout_diagnostics(manifests: dict[str, Manifest], policy: Policy) -> 
         for child, targets in sorted(manifest.uses.items()):
             child_path = f"{directory}/{child}" if directory else child
             mode = effective_purity(child_path, manifests)
-            if mode in {"strict", "strict-to-be"} and len(targets) > max_uses:
+            if mode in {"strict", "ratchet"} and len(targets) > max_uses:
                 found.append(
                     Diagnostic(
                         manifest.path,
@@ -417,7 +417,7 @@ def _domain_subset_diagnostics(
         if is_test_file(scan.path):
             continue
         mode = effective_purity(scan.path, manifests)
-        if mode not in {"strict", "strict-to-be"}:
+        if mode not in {"strict", "ratchet"}:
             continue
         owner = scan.path.rpartition("/")[0]
         for use in scan.enum_subsets:
@@ -470,7 +470,7 @@ def stale_exports(
                 continue
             child_path = f"{directory}/{child}"
             mode = effective_purity(child_path, manifests)
-            if mode not in {"strict", "strict-to-be"}:
+            if mode not in {"strict", "ratchet"}:
                 continue
             debt = purity_debt(directory, child_path, "exports", mode)
             found.append(
@@ -511,13 +511,13 @@ def _target_has_purity_diag(purity_diags: list[Diagnostic], directory: str, targ
     return False
 
 
-def paid_strict_to_be(
+def paid_ratchet(
     manifests: dict[str, Manifest], purity_diags: list[Diagnostic]
 ) -> list[Diagnostic]:
     found: list[Diagnostic] = []
     for directory, manifest in sorted(manifests.items()):
         for child, level in sorted(manifest.purity.items()):
-            if level != "strict-to-be":
+            if level != "ratchet":
                 continue
             target = f"{directory}/{child}" if directory else child
             if not _target_has_purity_diag(
@@ -528,12 +528,12 @@ def paid_strict_to_be(
                         manifest.path,
                         manifest.line_of(child),
                         Code.DEBT_PAID,
-                        f"[purity] {child!r} is strict-to-be but 0 purity violations remain",
+                        f"[purity] {child!r} is ratchet but 0 purity violations remain",
                         ('promote it to `"strict"`',),
                     )
                 )
         if (
-            manifest.purity_default == "strict-to-be"
+            manifest.purity_default == "ratchet"
             and not any(not directory or within(d.path, directory) for d in purity_diags)
             and not _has_purity_debt(manifests, directory)
         ):
@@ -542,7 +542,7 @@ def paid_strict_to_be(
                     manifest.path,
                     manifest.line_of("purity"),
                     Code.DEBT_PAID,
-                    f"purity of {directory or '.'} is strict-to-be but 0 purity violations remain",
+                    f"purity of {directory or '.'} is ratchet but 0 purity violations remain",
                     ('promote `purity` to `"strict"`',),
                 )
             )

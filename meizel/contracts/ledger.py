@@ -1,7 +1,7 @@
 """Reconcile what the rules found with what each directory has recorded as debt.
 
 A directory with an empty baseline is strict: every violation fails. A directory with recorded
-debt is strict-to-be: recorded violations pass, a new one fails, and a recorded debt that no
+debt is ratchet: recorded violations pass, a new one fails, and a recorded debt that no
 longer occurs fails too, so the baseline can only shrink.
 """
 
@@ -333,7 +333,7 @@ def _counted(count: int, one: str, many: str) -> str:
 
 
 # The account's notes for the ok line: how many occurrences are recorded and across how many
-# strict-to-be directories, then how many entries name no owner and how much they carry. Either
+# ratchet directories, then how many entries name no owner and how much they carry. Either
 # clause disappears when it is zero, so a clean tree's line stays short; the unowned entries are what
 # a backfill has to touch.
 def account_line(
@@ -359,7 +359,7 @@ def account_line(
         if not debts
         else f"; {_counted(debts, 'recorded debt', 'recorded debts')} "
         f"{'remains' if debts == 1 else 'remain'} in "
-        f"{_counted(recorded, 'strict-to-be directory', 'strict-to-be directories')}"
+        f"{_counted(recorded, 'ratchet directory', 'ratchet directories')}"
     )
     ownerless = (
         ""

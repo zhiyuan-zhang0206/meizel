@@ -24,7 +24,7 @@ def repo(make_repo: RepoFactory, files: dict[str, str], manifest: str = "") -> P
 # repayment: the code still reads the clock.
 def test_a_root_that_also_pays_for_its_call_is_a_conflict(make_repo: RepoFactory) -> None:
     manifest = (
-        '[purity]\n"mod.py" = "strict-to-be"\n'
+        '[purity]\n"mod.py" = "ratchet"\n'
         '[roots]\n"mod.py" = { kinds = ["clock"], why = "the clock door" }\n'
         '\n[debt.impure-call]\n"mod.py#time.time" = 1\n'
     )
@@ -37,7 +37,7 @@ def test_a_root_that_also_pays_for_its_call_is_a_conflict(make_repo: RepoFactory
 # what `[debt.impure-call]` is for, and the exemption must not swallow it.
 def test_a_root_paying_for_a_call_of_another_kind_is_no_conflict(make_repo: RepoFactory) -> None:
     manifest = (
-        '[purity]\n"mod.py" = "strict-to-be"\n'
+        '[purity]\n"mod.py" = "ratchet"\n'
         '[roots]\n"mod.py" = { kinds = ["environ"], why = "reads the environment" }\n'
         '\n[debt.impure-call]\n"mod.py#time.time" = 1\n'
     )
@@ -107,7 +107,7 @@ def test_a_sleep_root_licenses_time_sleep(make_repo: RepoFactory) -> None:
 
 def test_a_sleep_root_rejects_duplicate_debt(make_repo: RepoFactory) -> None:
     conflict_manifest = (
-        '[purity]\n"mod.py" = "strict-to-be"\n'
+        '[purity]\n"mod.py" = "ratchet"\n'
         '[roots]\n"mod.py" = { kinds = ["sleep"], why = "the timer door" }\n'
         '\n[debt.impure-call]\n"mod.py#time.sleep" = 1\n'
     )

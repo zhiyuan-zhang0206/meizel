@@ -79,7 +79,7 @@ class _Counts(TypedDict):
 class _Top(TypedDict):
     total: int
     by_code: dict[str, int]
-    strict_to_be_directories: int
+    ratchet_directories: int
     unowned_entries: int
     unowned: int
 
@@ -105,13 +105,13 @@ def _report(universe: Universe, *, unowned_list: bool = False) -> _Report:
             {
                 "total": 0,
                 "by_code": {},
-                "strict_to_be_directories": 0,
+                "ratchet_directories": 0,
                 "unowned_entries": 0,
                 "unowned": 0,
             },
         )
         top["total"] += total(table)
-        top["strict_to_be_directories"] += 1
+        top["ratchet_directories"] += 1
         entries, occurrences = unowned(table)
         top["unowned_entries"] += entries
         top["unowned"] += occurrences
@@ -133,7 +133,7 @@ def _report(universe: Universe, *, unowned_list: bool = False) -> _Report:
         "by_code": {c.value: n for c, n in sorted(_by_code(baselines).items(), key=str)},
         "by_top_level": dict(sorted(tops.items())),
         "directories": {
-            "strict_to_be": len(baselines),
+            "ratchet": len(baselines),
             "strict": len(judged - set(baselines)),
         },
     }
@@ -152,7 +152,7 @@ def _text(data: _Report) -> str:
     modes = data["directories"]
     lines = [
         f"meizel debt: {_counted(data['total'], 'recorded locality debt', 'recorded locality debts')}"
-        f" in {_counted(modes['strict_to_be'], 'directory', 'directories')} with recorded debt "
+        f" in {_counted(modes['ratchet'], 'directory', 'directories')} with recorded debt "
         f"({_counted(modes['strict'], 'directory', 'directories')} without recorded debt)",
         data["basis"],
         "",
@@ -189,7 +189,7 @@ def _text(data: _Report) -> str:
     ranked = sorted(data["by_top_level"].items(), key=lambda item: (-item[1]["total"], item[0]))
     lines.extend(
         f"  {name:<20}{top['total']:>8}  in "
-        f"{_counted(top['strict_to_be_directories'], 'directory', 'directories')}"
+        f"{_counted(top['ratchet_directories'], 'directory', 'directories')}"
         for name, top in ranked
     )
     listed = data.get("unowned_list")

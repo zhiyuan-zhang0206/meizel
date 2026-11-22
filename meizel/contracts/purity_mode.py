@@ -25,8 +25,6 @@ def test_purity_mode(scan: FileScan, manifests: dict[str, Manifest]) -> str:
     if not targets:
         return own_mode
     target_modes = {effective_purity(dst, manifests) for dst in targets}
-    if "none" in target_modes:
-        return "none"
-    return (
-        "strict-to-be" if own_mode == "strict-to-be" or "strict-to-be" in target_modes else "strict"
-    )
+    if "off" in target_modes:
+        return "off"
+    return "ratchet" if own_mode == "ratchet" or "ratchet" in target_modes else "strict"

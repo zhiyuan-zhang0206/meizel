@@ -12,7 +12,7 @@ repository wires this into hooks and CI is that repository's policy.
 A directory's mode follows from its baseline:
 
 - **strict**: nothing recorded. Every violation fails.
-- **strict-to-be**: something recorded. A recorded violation passes, a new one
+- **ratchet**: something recorded. A recorded violation passes, a new one
   fails, and a recorded debt that no longer occurs also fails (`debt-paid`,
   repaid by `debt prune`). The baseline can therefore only go down, and a
   directory whose baseline reaches zero is strict again.
@@ -21,7 +21,7 @@ These are debt states, separate from manifest `purity` modes. An empty baseline
 does not establish semantic purity, effect freedom or test-resource requirements.
 
 There is no lenient mode and no per-directory switch. A violation in a
-strict-to-be directory names the directory and how many debts it carries; the
+ratchet directory names the directory and how many debts it carries; the
 fix is to repair it, since `debt record` is for deliberate exceptions.
 
 ## The baseline is local
@@ -79,7 +79,7 @@ placeholder `record` writes and the three numbers `debt` counts are in
 
 - `debt` inventories manifests without source analysis, even for unparsable code.
   JSON adds `basis` describing that limit, `unowned` and `unstated` (the entries naming no owner and
-  the entries stating no exit condition, each with the occurrences they carry); its legacy `directories.strict_to_be` and `strict` mean with/without
+  the entries stating no exit condition, each with the occurrences they carry); its `directories.ratchet` and `strict` mean with/without
   recorded debt, not manifest purity modes. `--unowned` appends a list of them below the
   tables, one entry per line.
 - `debt record <paths...> [--owner TASK] [--until TEXT]` writes the current violations under the

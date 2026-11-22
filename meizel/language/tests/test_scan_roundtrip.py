@@ -29,7 +29,7 @@ _FILES = {
         '"pkg/mod.py#gone#deps.read_text" = "approves nothing: no such function"\n'
     ),
     "pkg/__init__.py": "",
-    "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+    "pkg/meizel.toml": 'purity = "ratchet"\n',
     "pkg/plugin.py": (
         "import pytest\n\n\n@pytest.fixture\ndef shared(tmp_path):\n    return tmp_path\n"
     ),

@@ -156,7 +156,7 @@ def test_policy_is_loaded_from_the_analyzed_repository(
 
 @pytest.mark.parametrize(
     "purity",
-    ['{ mode = "none", why = "not judged" }', '"strict-to-be"', '"strict"'],
+    ['{ mode = "off", why = "not judged" }', '"ratchet"', '"strict"'],
 )
 def test_the_guard_is_hard_and_cannot_be_recorded(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str], purity: str

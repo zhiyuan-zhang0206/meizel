@@ -94,7 +94,7 @@ that acquires a kind its manifest entry does not declare. The key is `file#kind 
 (`daemon.py#clock time.time`) and the owner is the file's directory, so the diagnostic is
 recordable debt like any patch: recorded sites pass, a new one fails, a paid one is `debt-paid`. A
 file under `purity = "strict"` has no debt: its read is a plain error. A test file records
-nothing; what a test sets is the patch family's concern. `none` files are judged too, which is
+nothing; what a test sets is the patch family's concern. `off` files are judged too, which is
 the point: a shell executes a plan and reads no environment.
 
 `ambient-unjudged` guards the vocabulary itself. The standard-library names that acquire a kind are

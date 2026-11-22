@@ -46,12 +46,12 @@ def test_summary_counts_by_code_top_level_directory_and_mode(
     assert report["by_top_level"]["base"] == {
         "total": 10,
         "by_code": {"private-module": 4, "private-name": 4, "restricted-python": 2},
-        "strict_to_be_directories": 2,
+        "ratchet_directories": 2,
         "unowned_entries": 4,
         "unowned": 10,
     }
     assert report["by_top_level"]["."]["total"] == 5
-    assert report["directories"] == {"strict_to_be": 4, "strict": 2}
+    assert report["directories"] == {"ratchet": 4, "strict": 2}
 
 
 def test_summary_text_names_the_modes_and_the_counts(
@@ -81,7 +81,7 @@ def test_no_debt_does_not_imply_a_strict_purity_mode(
     assert run(root, "debt", "--json") == 0
     report = json.loads(capsys.readouterr().out)
     assert report["total"] == 0
-    assert report["directories"] == {"strict_to_be": 0, "strict": 2}
+    assert report["directories"] == {"ratchet": 0, "strict": 2}
     assert "no source, semantic purity, or test-resource analysis" in report["basis"]
 
 

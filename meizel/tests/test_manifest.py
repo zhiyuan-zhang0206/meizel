@@ -55,16 +55,18 @@ def code_for(
         ('[roots]\n"a.py" = { kinds = ["environ"], why = "x", also = 1 }\n', "manifest-syntax"),
         ('[roots]\n"a.py" = { kinds = ["environ", "environ"], why = "x" }\n', "manifest-duplicate"),
         ("roots = 3\n", "manifest-syntax"),
-        ('[purity]\n"a.py" = "none"\n', "manifest-syntax"),
-        ('[purity]\n"." = "none"\n', "manifest-syntax"),
-        ('purity = "none"\n', "manifest-syntax"),
-        ('[purity]\n"a.py" = { mode = "none" }\n', "manifest-syntax"),
-        ('[purity]\n"a.py" = { mode = "none", why = " " }\n', "manifest-syntax"),
-        ('[purity]\n"a.py" = { mode = "none", why = 3 }\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = "off"\n', "manifest-syntax"),
+        ('[purity]\n"." = "off"\n', "manifest-syntax"),
+        ('purity = "off"\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = "strict-to-be"\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = { mode = "none", why = "x" }\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = { mode = "off" }\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = { mode = "off", why = " " }\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = { mode = "off", why = 3 }\n', "manifest-syntax"),
         ('[purity]\n"a.py" = { mode = "strict", why = "x" }\n', "manifest-syntax"),
-        ('[purity]\n"a.py" = { mode = "none", why = "x", also = 1 }\n', "manifest-syntax"),
+        ('[purity]\n"a.py" = { mode = "off", why = "x", also = 1 }\n', "manifest-syntax"),
         ('[purity]\n"a.py" = { why = "x" }\n', "manifest-syntax"),
-        ('[purity]\n"ghost.py" = { mode = "none", why = "x" }\n', "manifest-unknown-child"),
+        ('[purity]\n"ghost.py" = { mode = "off", why = "x" }\n', "manifest-unknown-child"),
         ('[state]\n"a.py" = ["environ"]\n', "manifest-syntax"),
         ('[state]\n"a.py" = "settings"\n', "manifest-syntax"),
         ('[state]\n"ghost.py" = ["settings"]\n', "manifest-unknown-child"),
@@ -80,12 +82,12 @@ def test_malformed_manifests_fail_with_a_located_diagnostic(
     assert all(d.line >= 1 for d in found)
 
 
-@pytest.mark.parametrize("manifest", ['[purity]\n"a.py" = "none"\n', 'purity = "none"\n'])
-def test_the_bare_none_is_refused_with_the_spelling_to_use(
+@pytest.mark.parametrize("manifest", ['[purity]\n"a.py" = "off"\n', 'purity = "off"\n'])
+def test_the_bare_off_is_refused_with_the_spelling_to_use(
     make_repo: RepoFactory, manifest: str
 ) -> None:
     [found] = code_for(make_repo, manifest, "manifest-syntax")
-    assert '{ mode = "none", why = "..." }' in found.message
+    assert '{ mode = "off", why = "..." }' in found.message
 
 
 def test_an_underscore_child_cannot_be_exported(make_repo: RepoFactory) -> None:
@@ -187,12 +189,12 @@ def test_a_kind_the_policy_declares_is_accepted_whatever_it_is_called(
 
 def test_a_file_that_is_not_judged_says_why(make_repo: RepoFactory) -> None:
     manifest = (
-        '[purity]\n"." = { mode = "none", why = "the shell of the directory" }\n'
-        '"a.py" = "strict-to-be"\n"b.py" = { mode = "none", why = "reads what the plan asks for" }\n'
+        '[purity]\n"." = { mode = "off", why = "the shell of the directory" }\n'
+        '"a.py" = "ratchet"\n"b.py" = { mode = "off", why = "reads what the plan asks for" }\n'
     )
     root = make_repo({**BASE, "pkg/meizel.toml": manifest})
     read = analysis_of(root).manifests["pkg"]
-    assert (read.purity_default, read.purity) == ("none", {"a.py": "strict-to-be", "b.py": "none"})
+    assert (read.purity_default, read.purity) == ("off", {"a.py": "ratchet", "b.py": "off"})
     assert read.purity_why == {
         ".": "the shell of the directory",
         "a.py": "",

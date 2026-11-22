@@ -114,7 +114,7 @@ def test_the_message_says_what_to_do_instead(make_repo: RepoFactory) -> None:
     assert "pass the fake in" in text
 
 
-def test_a_patch_can_be_recorded_and_the_directory_becomes_strict_to_be(
+def test_a_patch_can_be_recorded_and_the_directory_becomes_ratchet(
     make_repo: RepoFactory,
 ) -> None:
     source = (
@@ -133,7 +133,7 @@ def test_a_patch_can_be_recorded_and_the_directory_becomes_strict_to_be(
     assert [d for d in analysis_of(root).verdict if d.code.value == "first-party-patch"] == []
 
 
-def test_a_new_patch_in_a_strict_to_be_directory_fails(make_repo: RepoFactory) -> None:
+def test_a_new_patch_in_a_ratchet_directory_fails(make_repo: RepoFactory) -> None:
     source = "from lib import mod\n\ndef test_a(monkeypatch):\n    monkeypatch.setattr(mod, 'helper', None)\n    monkeypatch.setattr(mod, 'other', None)\n"
     baseline = '[debt.first-party-patch]\n"test_x.py#monkeypatch.setattr lib.mod.helper" = 1\n'
     root = make_repo(
@@ -141,7 +141,7 @@ def test_a_new_patch_in_a_strict_to_be_directory_fails(make_repo: RepoFactory) -
     )
     [found] = [d for d in analysis_of(root).verdict if d.code.value == "first-party-patch"]
     assert "lib.mod.other" in found.message
-    assert "app is strict-to-be" in found.render()
+    assert "app is ratchet" in found.render()
 
 
 TEST_MODULE = {

@@ -22,7 +22,7 @@ def test_a_directory_without_debt_is_strict(make_repo: RepoFactory) -> None:
     _, found = verdict_of(make_repo, DECLARED)
     [private] = found
     assert private.code.value == "private-name"
-    assert "strict-to-be" not in private.render()
+    assert "ratchet" not in private.render()
 
 
 def test_a_recorded_debt_is_allowed(make_repo: RepoFactory) -> None:
@@ -31,7 +31,7 @@ def test_a_recorded_debt_is_allowed(make_repo: RepoFactory) -> None:
     assert analysis_of(root).diagnostics, "the violation is still found; only the verdict allows it"
 
 
-def test_a_new_violation_in_a_strict_to_be_directory_fails_and_says_why(
+def test_a_new_violation_in_a_ratchet_directory_fails_and_says_why(
     make_repo: RepoFactory,
 ) -> None:
     extra = {"pkg/c.py": "from pkg.b import _other\n"}
@@ -40,7 +40,7 @@ def test_a_new_violation_in_a_strict_to_be_directory_fails_and_says_why(
     [new] = found
     assert (new.path, new.code.value) == ("pkg/c.py", "private-name")
     text = new.render()
-    assert "pkg is strict-to-be: it carries 1 recorded locality debts that must only shrink" in text
+    assert "pkg is ratchet: it carries 1 recorded locality debts that must only shrink" in text
     assert "Fix this violation rather than recording it" in text
     assert "debt record" in text
 
@@ -187,7 +187,7 @@ def test_a_new_import_on_a_recorded_back_edge_fails_with_both_counts(
     found = [d for d in analysis_of(root).verdict if d.code.value == "cycle-edge"]
     assert {d.line for d in found} == {1, 2}
     assert all("1 recorded, 2 found" in d.render() for d in found)
-    assert all("pkg is strict-to-be" in d.render() for d in found)
+    assert all("pkg is ratchet" in d.render() for d in found)
 
 
 def test_a_new_file_on_a_recorded_back_edge_is_a_new_violation(make_repo: RepoFactory) -> None:
@@ -225,7 +225,7 @@ def test_a_cycle_the_back_edges_do_not_cover_still_fails_and_says_so(
     )
     root = make_repo({**files, "pkg/meizel.toml": manifest})
     [found] = [d for d in analysis_of(root).verdict if d.code.value == "manifest-cycle"]
-    assert "pkg is strict-to-be" in found.render()
+    assert "pkg is ratchet" in found.render()
 
 
 def test_facts_on_an_edge_that_no_longer_closes_a_cycle_are_paid(make_repo: RepoFactory) -> None:
@@ -261,7 +261,7 @@ def test_a_fact_on_a_back_edge_is_still_judged_by_the_other_rules(make_repo: Rep
     }
 
 
-def test_the_debt_of_one_directory_makes_only_that_directory_strict_to_be(
+def test_the_debt_of_one_directory_makes_only_that_directory_ratchet(
     make_repo: RepoFactory,
 ) -> None:
     files = {
@@ -275,4 +275,4 @@ def test_the_debt_of_one_directory_makes_only_that_directory_strict_to_be(
     root = make_repo(files)
     [found] = analysis_of(root).verdict
     assert found.path == "other/a.py"
-    assert "strict-to-be" not in found.render()
+    assert "ratchet" not in found.render()

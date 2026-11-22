@@ -155,7 +155,7 @@ def add_exports(text: str, names: set[str]) -> str:
 _RESTORED_WHY = "restored from a historical registry that recorded no reason"
 
 
-# One declaration as the manifest spells it: a roots entry carries its kinds and why, a purity `none`
+# One declaration as the manifest spells it: a roots entry carries its kinds and why, a purity `off`
 # its mode and why (a placeholder when the base recorded none), everything else the bare value.
 def _declaration(
     table: str, name: str, declared: str | tuple[KindName, ...], reasons: Mapping[str, str]
@@ -164,8 +164,8 @@ def _declaration(
     why = json.dumps(reasons.get(name) or _RESTORED_WHY)
     if table == "roots":
         return f"{{ kinds = {values}, why = {why} }}"
-    if table == "purity" and declared == "none":
-        return f'{{ mode = "none", why = {why} }}'
+    if table == "purity" and declared == "off":
+        return f'{{ mode = "off", why = {why} }}'
     return values
 
 
