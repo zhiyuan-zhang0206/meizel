@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import platform
 from pathlib import Path
 
 import pytest
 
-from meizel.entry import main, open_repository
+from meizel.entry import host_environment, main, open_repository
 from meizel.tests.synthetic import RepoFactory, commit, git
 
 PYPROJECT = '[tool.pytest.ini_options]\ntestpaths = ["tests", "pkg/**/tests"]\n'
@@ -265,3 +266,14 @@ def test_a_test_in_the_native_lane_is_never_cached(
     assert "tests/test_db.py" not in plan["keys"]  # type: ignore[operator]
     native = cached(root, capsys, "plan", "--lane", "native")
     assert native["uncacheable"] == {"tests/test_db.py": "native-lane:fixture:db_url"}
+
+
+def test_host_environment_uses_os_name_without_kernel_release() -> None:
+    env = host_environment([])
+    assert env["platform"] == platform.system()
+    assert env["machine"] == platform.machine()
+    release = platform.release()
+    if release:
+        assert release not in env["platform"]
+    if platform.platform() != platform.system():
+        assert env["platform"] != platform.platform()

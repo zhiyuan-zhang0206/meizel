@@ -48,7 +48,7 @@ def host_environment(declared: Sequence[str]) -> dict[str, str]:
     environment = {
         "python": sys.version,
         "implementation": sys.implementation.name,
-        "platform": platform.platform(),
+        "platform": platform.system(),
         "machine": platform.machine(),
     }
     for name in declared:
