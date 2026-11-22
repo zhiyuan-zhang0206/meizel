@@ -18,6 +18,7 @@ from meizel.graph.model import (
     WorldReads,
 )
 from meizel.graph.universe import Universe
+from meizel.language.comment_scan import CommentOptions, CommentScan
 from meizel.language.file_scan import FileScan
 
 __all__ = ["Frontend", "RunView", "StateKinds"]
@@ -122,3 +123,6 @@ class Frontend:
     restricted_code: Code
     restricted_subset: str
     restricted_hint: Callable[[str, str], str]
+    # Every tracked file of this language that the `[comments]` rule scans, and its comment scanner.
+    comment_files: Callable[[Universe], Sequence[str]]
+    scan_comments: Callable[[Universe, Sequence[str], CommentOptions], dict[str, CommentScan]]

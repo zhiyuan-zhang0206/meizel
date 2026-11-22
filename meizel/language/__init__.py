@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from meizel.language.closure import reverse_closure
+from meizel.language.comment_scan import CommentBlock, CommentLink, CommentOptions, CommentScan
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.frontends import (
@@ -34,6 +35,10 @@ __all__ = [
     "FRONTENDS",
     "PACKAGE_INITS",
     "SOURCE_EXTENSIONS",
+    "CommentBlock",
+    "CommentLink",
+    "CommentOptions",
+    "CommentScan",
     "FileScan",
     "Frontend",
     "RunView",

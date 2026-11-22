@@ -31,10 +31,13 @@ from meizel.contracts.policy import POLICY, Policy, load_policy, render_policy
 from meizel.contracts.policy import check as check_policy
 from meizel.contracts.purity_mode import purity_debt, test_purity_mode
 from meizel.contracts.rule import (
+    CommentsCommand,
     Projection,
+    check_comments,
     judge_facts,
     paid_ratchet,
     purity_diagnostics,
+    run_comments,
     stale_exports,
 )
 from meizel.graph.model import Code, DebtKey, Diagnostic, Fact, FactKind, Patch, Sources
@@ -59,9 +62,11 @@ _PRUNE = "run `python -m meizel sync --prune` to remove it"
 __all__ = [
     "POLICY",
     "Analysis",
+    "CommentsCommand",
     "DebtEntry",
     "Policy",
     "analyze",
+    "check_comments",
     "diagnose",
     "entry_value",
     "exempt_test_modules",
@@ -70,6 +75,7 @@ __all__ = [
     "manifest_diagnostics",
     "read_entry",
     "render_policy",
+    "run_comments",
     "scan_all",
     "set_debt",
 ]
@@ -653,6 +659,7 @@ def analyze(
             _stale_approvals(policy, universe.files, {p: len(s.patches) for p, s in scans.items()})
         )
         diagnostics.extend(paid_ratchet(manifests, purity_diags))
+    diagnostics.extend(check_comments(universe, policy, changed=scope))
     diagnostics.extend(purity_diags)
     diagnostics = _distinct(diagnostics)
     return Analysis(

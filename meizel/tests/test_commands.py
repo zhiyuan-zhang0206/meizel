@@ -588,7 +588,7 @@ def test_the_public_api_is_the_pinned_list() -> None:
         [
             "Analysis", "EditPlan", "Fact", "FactKind", "GitRepo", "MeizelError", "SourceTree",
             "Sources", "Universe", "all_packages", "allowances", "analyze", "apply_plan",
-            "exempt_test_modules", "framework_dirs", "is_mapping", "is_object_list", "lanes_at",
+            "check_comments", "exempt_test_modules", "framework_dirs", "is_mapping", "is_object_list", "lanes_at",
             "limits", "lint_common", "load_policy", "load_universe", "main", "object_of",
             "open_repository", "package_local_tests", "parse_roles", "prepare_policy_snapshot",
             "propagate_test_consumers", "pytest_test_hosts", "python_reverse_closure_at",

@@ -114,6 +114,9 @@ class Code(StrEnum):
     DEEP_ATTR_CHAIN = "deep-attr-chain"
     FAKE_TEST_ONLY_ISLAND = "fake-test-only-island"
     DISCONNECTED_ISLAND = "disconnected-island"
+    BROKEN_COMMENT_LINK = "broken-comment-link"
+    CODE_COMMENT = "code-comment"
+    COMMENT_RATCHET_STALE = "comment-ratchet-stale"
 
 
 # The name of a kind of ambient read as a manifest and the policy spell it: an `AmbientKind` value,

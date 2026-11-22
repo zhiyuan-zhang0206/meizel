@@ -19,6 +19,10 @@ from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend, RunView, StateKinds
 from meizel.language.typescript.adapter import scan_source
 from meizel.language.typescript.cache import scan_typescript_cached
+from meizel.language.typescript.comments import (
+    scan_typescript_comments,
+    typescript_comment_files,
+)
 from meizel.language.typescript.files import (
     typescript_candidates,
     typescript_extensions,
@@ -144,4 +148,6 @@ TYPESCRIPT = Frontend(
     Code.RESTRICTED_TS,
     "TypeScript",
     restricted_hint,
+    typescript_comment_files,
+    scan_typescript_comments,
 )

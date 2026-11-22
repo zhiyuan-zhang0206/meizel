@@ -4,13 +4,15 @@ exports = ["__init__.py"]
 "__init__.py" = ["files.py", "frontend.py"]
 "adapter.py" = ["compiler"]
 "cache.py" = ["adapter.py", "compiler"]
+"comments.py" = []
 "files.py" = ["compiler"]
-"frontend.py" = ["adapter.py", "cache.py", "files.py", "forms.py"]
+"frontend.py" = ["adapter.py", "cache.py", "comments.py", "files.py", "forms.py"]
 "tests" = ["adapter.py", "compiler", "files.py"]
 
 [purity]
 "." = "strict"
 "adapter.py" = "strict"
 "cache.py" = "strict"
+"comments.py" = "strict"
 "files.py" = "strict"
 "frontend.py" = "strict"
