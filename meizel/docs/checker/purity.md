@@ -31,50 +31,50 @@ child under `[purity]`, with `"."` as the directory default:
 
 ```toml
 [purity]
-"." = "strict-to-be"
+"." = "ratchet"
 "model.py" = "strict"
 "scopes.py" = "strict"
 ```
 
-Every Python or TypeScript file resolves to its nearest enclosing declaration (`none` by default):
+Every Python or TypeScript file resolves to its nearest enclosing declaration (`off` by default):
 
-- **`none`**: only locality and patch-recording rules apply. A manifest that names it writes
-  `{ mode = "none", why = "..." }`: an effect shell whose pure decisions are extracted and reviewed.
-  A file no manifest mentions is `none`; the bare string `"none"` is refused (`manifest-syntax`).
-- **`strict-to-be`**: all 15 purity and container-budget rules are evaluated. Existing
+- **`off`**: only locality and patch-recording rules apply. A manifest that names it writes
+  `{ mode = "off", why = "..." }`: an effect shell whose pure decisions are extracted and reviewed.
+  A file no manifest mentions is `off`; the bare string `"off"` is refused (`manifest-syntax`).
+- **`ratchet`**: all 15 purity and container-budget rules are evaluated. Existing
   violations may be recorded in `[debt.<code>]` via `python -m meizel debt record` and can
   only shrink (`debt-paid` fires when a recorded violation is fixed, and also when a
-  `strict-to-be` file or directory reaches zero remaining purity violations so it must be
+  `ratchet` file or directory reaches zero remaining purity violations so it must be
   promoted to `strict`).
 - **`strict`**: all 15 purity and container-budget rules are hard errors and cannot be
   recorded as debt.
 
 Test files (`tests/**`, `test_*.py`, `*_test.py`, `conftest.py`) do not inherit a parent
-directory's module-level `strict` or `strict-to-be` mode for production-code rules, unless
+directory's module-level `strict` or `ratchet` mode for production-code rules, unless
 explicitly targeted. Instead, a test file whose first-party targets are all `strict` or
-`strict-to-be` is judged by the test-purity rules (`impure-test-fixture` and
-`nested-patch-target`) at the strictest shared mode (`strict-to-be` if any target is
-`strict-to-be`, otherwise `strict`).
+`ratchet` is judged by the test-purity rules (`impure-test-fixture` and
+`nested-patch-target`) at the strictest shared mode (`ratchet` if any target is
+`ratchet`, otherwise `strict`).
 
 ## The 15 rules
 
 | Code | Scope | What it catches |
 |---|---|---|
-| `impure-edge` | `strict`, `strict-to-be` module | Importing or reading an attribute from a first-party module whose effective purity is `none` |
-| `impure-call` | `strict`, `strict-to-be` module | `async def`, `global`, `nonlocal`, importing an impure standard library module (from complete `sys.stdlib_module_names` classification), importing any third-party package not listed in `pure-third-party` (fail-closed), or calling an ambient clock, randomness, environment, I/O or filesystem method (`time.*`, `datetime.now`, `os.environ`, `random.*`, `uuid.uuid4`, `open`, the `os` file and descriptor calls, `Path` I/O methods; list: `DEFAULT_IMPURE_CALLS` plus policy `impure-calls`; a call the file's `[roots]` licenses is exempt) |
-| `unfrozen-value` | `strict`, `strict-to-be` module | A class that is not an Enum, Exception, Protocol, TypedDict, NamedTuple, frozen `BaseModel`, or `@dataclass(frozen=True)`, or a module-level mutable literal/comprehension/call assigned to a binding |
-| `untyped-export` | `strict`, `strict-to-be` module | A public function (or exported symbol) missing parameter or return type annotations, or annotated with `Any` or bare `dict` |
-| `pass-through-function` | `strict`, `strict-to-be` module | A public undecorated function whose body only forwards its exact parameters to another function or module attribute call |
-| `nested-attr-write` | `strict`, `strict-to-be` module | Mutating state through a chained attribute (`a.b.c = x` or `self.a.b = x`, depth $\ge 2$) |
-| `domain-subset-leak` | `strict`, `strict-to-be` module | Branching on the same multi-member Enum subset (`x in {E.A, E.B}` or `case E.A \| E.B:`) across 2 or more non-test modules instead of a predicate on the Enum |
-| `stale-export` | `strict`, `strict-to-be` export | An entry in `exports` of a subpackage `meizel.toml` that no external fact edge traverses |
-| `wide-exports` | `strict`, `strict-to-be` manifest | A subpackage `meizel.toml` exporting more than `max-exports` children (default 4) |
-| `wide-fanout` | `strict`, `strict-to-be` child | A `[uses]` entry depending on more than `max-uses` sibling targets (default 8) |
-| `wide-public-surface` | `strict`, `strict-to-be` module | A module defining more than `max-public-symbols` public behavioral symbols (default 6; frozen values, Enums, Protocols, TypedDicts, NamedTuples and Exceptions do not count) |
-| `wide-params` | `strict`, `strict-to-be` module | A function or method taking more than `max-params` parameters excluding `self`/`cls` (default 6) |
-| `deep-attr-chain` | `strict`, `strict-to-be` module | An expression chaining more than `max-attr-hops` non-module attribute accesses (`a.b.c.d`, default 3) |
-| `impure-test-fixture` | test of `strict` / `strict-to-be` | Requesting `monkeypatch`, or any fixture transitively inferred impure via AST taint graph analysis (connecting to runtime infrastructure, async fixtures, impure stdlib/third-party imports, ambient reads) plus optional policy `impure-fixtures` when all first-party targets under test are `strict` or `strict-to-be` |
-| `nested-patch-target` | test of `strict` / `strict-to-be` | Patching through a multi-hop attribute chain (`monkeypatch.setattr(a.b, "c", ...)` or dotted string with $\ge 2$ attribute hops) |
+| `impure-edge` | `strict`, `ratchet` module | Importing or reading an attribute from a first-party module whose effective purity is `off` |
+| `impure-call` | `strict`, `ratchet` module | `async def`, `global`, `nonlocal`, importing an impure standard library module (from complete `sys.stdlib_module_names` classification), importing any third-party package not listed in `pure-third-party` (fail-closed), or calling an ambient clock, randomness, environment, I/O or filesystem method (`time.*`, `datetime.now`, `os.environ`, `random.*`, `uuid.uuid4`, `open`, the `os` file and descriptor calls, `Path` I/O methods; list: `DEFAULT_IMPURE_CALLS` plus policy `impure-calls`; a call the file's `[roots]` licenses is exempt) |
+| `unfrozen-value` | `strict`, `ratchet` module | A class that is not an Enum, Exception, Protocol, TypedDict, NamedTuple, frozen `BaseModel`, or `@dataclass(frozen=True)`, or a module-level mutable literal/comprehension/call assigned to a binding |
+| `untyped-export` | `strict`, `ratchet` module | A public function (or exported symbol) missing parameter or return type annotations, or annotated with `Any` or bare `dict` |
+| `pass-through-function` | `strict`, `ratchet` module | A public undecorated function whose body only forwards its exact parameters to another function or module attribute call |
+| `nested-attr-write` | `strict`, `ratchet` module | Mutating state through a chained attribute (`a.b.c = x` or `self.a.b = x`, depth $\ge 2$) |
+| `domain-subset-leak` | `strict`, `ratchet` module | Branching on the same multi-member Enum subset (`x in {E.A, E.B}` or `case E.A \| E.B:`) across 2 or more non-test modules instead of a predicate on the Enum |
+| `stale-export` | `strict`, `ratchet` export | An entry in `exports` of a subpackage `meizel.toml` that no external fact edge traverses |
+| `wide-exports` | `strict`, `ratchet` manifest | A subpackage `meizel.toml` exporting more than `max-exports` children (default 4) |
+| `wide-fanout` | `strict`, `ratchet` child | A `[uses]` entry depending on more than `max-uses` sibling targets (default 8) |
+| `wide-public-surface` | `strict`, `ratchet` module | A module defining more than `max-public-symbols` public behavioral symbols (default 6; frozen values, Enums, Protocols, TypedDicts, NamedTuples and Exceptions do not count) |
+| `wide-params` | `strict`, `ratchet` module | A function or method taking more than `max-params` parameters excluding `self`/`cls` (default 6) |
+| `deep-attr-chain` | `strict`, `ratchet` module | An expression chaining more than `max-attr-hops` non-module attribute accesses (`a.b.c.d`, default 3) |
+| `impure-test-fixture` | test of `strict` / `ratchet` | Requesting `monkeypatch`, or any fixture transitively inferred impure via AST taint graph analysis (connecting to runtime infrastructure, async fixtures, impure stdlib/third-party imports, ambient reads) plus optional policy `impure-fixtures` when all first-party targets under test are `strict` or `ratchet` |
+| `nested-patch-target` | test of `strict` / `ratchet` | Patching through a multi-hop attribute chain (`monkeypatch.setattr(a.b, "c", ...)` or dotted string with $\ge 2$ attribute hops) |
 
 ## Policy configuration
 

@@ -46,7 +46,7 @@ __all__ = [
     "within",
 ]
 
-_JUDGED = ("strict-to-be", "strict")
+_JUDGED = ("ratchet", "strict")
 _TOP_KEYS = (
     "exports",
     "uses",
@@ -217,11 +217,11 @@ class Manifest:
         """The declared edges whose facts are recorded as closing a cycle."""
         return sorted(self.back)
 
-    # Why a violation in a directory that carries debt fails: it is strict-to-be.
+    # Why a violation in a directory that carries debt fails: it is ratchet.
     def owner_hint(self) -> str:
         where = self.directory or "."
         return (
-            f"{where} is strict-to-be: it carries {total(self.debt)} recorded locality debts that "
+            f"{where} is ratchet: it carries {total(self.debt)} recorded locality debts that "
             "must only shrink. Fix this violation rather than recording it; `python -m meizel debt "
             "record` exists for deliberate exceptions."
         )
@@ -509,25 +509,25 @@ class _Reader:
         kinds = self.kinds(fields.get("kinds"), where, line, (*self.state_kinds, *OS_KINDS))
         return Root(kinds, why.strip()) if kinds else None
 
-    # One purity level: `"strict"`, `"strict-to-be"`, or `{ mode = "none", why = "..." }`. A file or a
+    # One purity level: `"strict"`, `"ratchet"`, or `{ mode = "off", why = "..." }`. A file or a
     # directory that is not judged says why, so that taking it out of the rule is a statement a review
-    # can read; the bare string `"none"` has no place for the reason and is refused.
+    # can read; the bare string `"off"` has no place for the reason and is refused.
     def purity_level(self, key: str, level: object, line: int) -> tuple[str, str] | None:
         if isinstance(level, str) and level in _JUDGED:
             return level, ""
         fields = level if _is_table(level) else None
-        if fields is not None and set(fields) == {"mode", "why"} and fields["mode"] == "none":
+        if fields is not None and set(fields) == {"mode", "why"} and fields["mode"] == "off":
             why = fields["why"]
             if isinstance(why, str) and why.strip():
-                return "none", why.strip()
+                return "off", why.strip()
             self.report(
                 line, Code.MANIFEST_SYNTAX, f"[purity] {key!r} must say why in a non-empty `why`"
             )
             return None
-        if level == "none":
-            message = f'[purity] {key!r}: a file that is not judged says why: {{ mode = "none", why = "..." }}'
+        if level == "off":
+            message = f'[purity] {key!r}: a file that is not judged says why: {{ mode = "off", why = "..." }}'
         else:
-            message = f'[purity] {key!r} must be one of {", ".join(_JUDGED)}, or {{ mode = "none", why = "..." }}'
+            message = f'[purity] {key!r} must be one of {", ".join(_JUDGED)}, or {{ mode = "off", why = "..." }}'
         self.report(line, Code.MANIFEST_SYNTAX, message)
         return None
 
@@ -541,7 +541,7 @@ class _Reader:
                     line,
                     Code.MANIFEST_SYNTAX,
                     f"purity must be one of {', '.join(_JUDGED)}, got {value!r}; "
-                    'a directory that is not judged is [purity] "." = { mode = "none", why = "..." }',
+                    'a directory that is not judged is [purity] "." = { mode = "off", why = "..." }',
                 )
             return
         if not _is_table(value):
@@ -769,4 +769,4 @@ def effective_purity(
         if not directory:
             break
         directory = directory.rpartition("/")[0]
-    return "none"
+    return "off"

@@ -104,7 +104,7 @@ def test_a_filesystem_read_a_root_licenses_and_debt_pays_for_is_a_conflict(
     make_repo: RepoFactory,
 ) -> None:
     manifest = (
-        '[purity]\n"mod.py" = "strict-to-be"\n'
+        '[purity]\n"mod.py" = "ratchet"\n'
         '[roots]\n"mod.py" = { kinds = ["filesystem"], why = "the source tree door" }\n'
         '\n[debt.impure-call]\n"mod.py#Path.read_bytes" = 1\n'
     )

@@ -105,7 +105,7 @@ keyed by form and target without a line number:
 "test_x.py#monkeypatch.setattr time.sleep" = 2
 ```
 
-New patches fail in a strict-to-be directory like any other violation; repaid ones
+New patches fail in a ratchet directory like any other violation; repaid ones
 make the entry `debt-paid`. A new `unresolved-patch` is no way around the rule:
 only what is already in the baseline passes, and CI fails when the recorded total
 grows. See [recorded debt](../debt/debt.md). A renamed

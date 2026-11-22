@@ -42,7 +42,7 @@ a project managed by uv:
 
 ```toml
 [dependency-groups]
-dev = ["meizel @ git+https://github.com/zhiyuan-zhang0206/meizel@v0.5.0"]
+dev = ["meizel @ git+https://github.com/zhiyuan-zhang0206/meizel@v0.12.0"]
 ```
 
 ## Use

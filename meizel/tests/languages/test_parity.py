@@ -29,7 +29,7 @@ def test_both_languages_share_check_record_prune_and_strict_modes(
         if extension == "py"
         else "export const value = (a: number, b: number, c: number, d: number, e: number, f: number, g: number): number => a + b;"
     )
-    root = make_repo({path: source, "pkg/meizel.toml": 'purity = "strict-to-be"\n'})
+    root = make_repo({path: source, "pkg/meizel.toml": 'purity = "ratchet"\n'})
     [diagnostic] = diagnostics(root, "wide-params")
     assert diagnostic.path == path and diagnostic.debt is not None
     assert run(root, "check") == 1
@@ -65,7 +65,7 @@ def test_languages_share_architectural_rule_diagnostics(
     root = make_repo(
         {
             f"pkg/inspect.{extension}": source,
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
             "meizel.toml": '[roles]\napplication = ["pkg"]\n',
         }
     )
@@ -83,7 +83,7 @@ def test_languages_share_architectural_rule_diagnostics(
 def test_typescript_debt_symbol_move_uses_ast_spans(make_repo: RepoFactory) -> None:
     moved = "export const moved = (): number => { const text = '}'; return Date.now() + text.length; };\n"
     kept = "export const kept = (): number => Date.now();\n"
-    root = make_repo({"pkg/old.ts": moved + kept, "pkg/meizel.toml": 'purity = "strict-to-be"\n'})
+    root = make_repo({"pkg/old.ts": moved + kept, "pkg/meizel.toml": 'purity = "ratchet"\n'})
     assert record(root, "pkg") == 0
     git(root, "add", "-A")
     commit(root)
@@ -197,7 +197,7 @@ def test_typescript_rule_comparison_refreshes_policy_after_the_old_snapshot(
     root = make_repo(
         {
             "app/view.ts": "export const value = afterCall();\n",
-            "app/meizel.toml": 'purity = "strict-to-be"\n',
+            "app/meizel.toml": 'purity = "ratchet"\n',
             "rules/engine.py": "RULE = 1\n",
             "meizel.policy.toml": '[typescript]\nimpure-calls = ["beforeCall"]\n',
         }

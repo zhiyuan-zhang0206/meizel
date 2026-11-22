@@ -131,7 +131,7 @@ def test_recorded_debt_of_a_changed_file_is_reconciled_exactly(
     assert run(root, "check", "--changed", "pkg/gone.py") == 0
 
 
-def test_a_changed_file_without_recorded_debt_fails_in_a_strict_to_be_directory(
+def test_a_changed_file_without_recorded_debt_fails_in_a_ratchet_directory(
     make_repo: RepoFactory, capsys: pytest.CaptureFixture[str]
 ) -> None:
     files = {
@@ -143,7 +143,7 @@ def test_a_changed_file_without_recorded_debt_fails_in_a_strict_to_be_directory(
     root = make_repo(files)
     assert run(root, "check", "--changed", "pkg/a.py") == 1
     out = capsys.readouterr().out
-    assert "pkg is strict-to-be" in out
+    assert "pkg is ratchet" in out
 
 
 def test_changed_cannot_be_combined_with_paths(

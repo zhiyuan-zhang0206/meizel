@@ -56,7 +56,7 @@ def _is_module_impure(
         or index.universe.resolve_module(mod_name) is not None
     ):
         mod = index.universe.resolve_module(mod_name)
-        return purity_of(mod.file) == "none" if mod and mod.file else False
+        return purity_of(mod.file) == "off" if mod and mod.file else False
     parts = mod_name.split(".")
     for i in range(len(parts), 0, -1):
         if ".".join(parts[:i]) in IMPURE_DOTTED_STDLIB_MODULES:
@@ -70,7 +70,7 @@ def _has_impure_fact(fn: FixtureFunction, scan: FileScan, purity_of: Callable[[s
     for fact in scan.facts:
         if fact.kind == FactKind.IMPORT:
             target = fact.dst
-            if not is_test_file(target) and purity_of(target) == "none":
+            if not is_test_file(target) and purity_of(target) == "off":
                 base = target.rpartition("/")[2].removesuffix(".py")
                 if base in fn.names_loaded or any(sym in fn.names_loaded for sym in fact.names):
                     return True
@@ -211,7 +211,7 @@ def impure_fixture_diagnostics(view: RunView) -> list[Diagnostic]:
         if not is_test_file(scan.path):
             continue
         mode = view.test_mode(scan)
-        if mode == "none":
+        if mode == "off":
             continue
         found.extend(
             Diagnostic(

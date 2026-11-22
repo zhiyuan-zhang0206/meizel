@@ -41,7 +41,7 @@ class RunView:
     changed: frozenset[str] | None
     # The top-level roles the root manifest declares.
     roles: Mapping[str, tuple[str, ...]]
-    # The purity a path is declared to have: "strict", "strict-to-be" or "none".
+    # The purity a path is declared to have: "strict", "ratchet" or "off".
     purity_of: Callable[[str], str]
     # The purity a test file is judged under, from its own path and the modules it reaches.
     test_mode: Callable[[FileScan], str]

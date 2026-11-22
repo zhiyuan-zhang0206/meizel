@@ -20,7 +20,7 @@ exports = ["__init__.py", "closure_at.py", "surface"]
 
 [purity]
 "." = "strict"
-"closure_at.py" = { mode = "none", why = "the entry that turns a checkout's root path into a universe (`meizel.checkout.load_universe` runs git for it) and hands it to the closure; what the closure contains is decided in resolve/impacted.py" }
+"closure_at.py" = { mode = "off", why = "the entry that turns a checkout's root path into a universe (`meizel.checkout.load_universe` runs git for it) and hands it to the closure; what the closure contains is decided in resolve/impacted.py" }
 "cache.py" = "strict"
 "fixtures.py" = "strict"
 "frontend.py" = "strict"

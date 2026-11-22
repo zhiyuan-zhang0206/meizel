@@ -34,7 +34,7 @@ def test_manifest_purity_rejects_unknown_levels_and_unknown_children(
     assert len(diagnostics(root, "manifest-unknown-child")) == 1
 
 
-def test_impure_edge_fails_in_strict_and_records_in_strict_to_be(
+def test_impure_edge_fails_in_strict_and_records_in_ratchet(
     make_repo: RepoFactory,
 ) -> None:
     files = {
@@ -52,7 +52,7 @@ def test_impure_edge_fails_in_strict_and_records_in_strict_to_be(
     assert "core/domain.py -> infra/db.py" in found.message
     assert record(root, "core") == 1
 
-    (root / "core/meizel.toml").write_text('purity = "strict-to-be"\n', encoding="utf-8")
+    (root / "core/meizel.toml").write_text('purity = "ratchet"\n', encoding="utf-8")
     git(root, "add", "-A")
     assert record(root, "core") == 0
     git(root, "add", "-A")
@@ -281,7 +281,7 @@ def test_impure_call_catches_effectful_imports_async_and_calls(
         {
             "pkg/__init__.py": "",
             "pkg/a.py": source,
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     found = diagnostics(root, "impure-call")
@@ -317,7 +317,7 @@ def test_replace_on_something_that_is_not_a_path_is_not_a_filesystem_call(
     make_repo: RepoFactory, source: str
 ) -> None:
     root = make_repo(
-        {"pkg/__init__.py": "", "pkg/a.py": source, "pkg/meizel.toml": 'purity = "strict-to-be"\n'}
+        {"pkg/__init__.py": "", "pkg/a.py": source, "pkg/meizel.toml": 'purity = "ratchet"\n'}
     )
     assert diagnostics(root, "impure-call") == []
 
@@ -332,7 +332,7 @@ def test_unfrozen_value_requires_frozen_dataclass(make_repo: RepoFactory) -> Non
                 "@dataclass(frozen=False)\nclass AlsoBad:\n    x: int\n\n"
                 "@dataclass(frozen=True)\nclass Good:\n    x: int\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     found = diagnostics(root, "unfrozen-value")
@@ -354,7 +354,7 @@ def test_untyped_export_rejects_any_and_bare_dict_on_public_functions(
                 "def _private_ok(x: Any) -> dict:\n    return {}\n\n"
                 "def good_typed(x: dict[str, int]) -> list[str]:\n    return list(x)\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     keys = [d.debt.key for d in diagnostics(root, "untyped-export") if d.debt is not None]
@@ -383,17 +383,17 @@ def test_impure_test_fixture_flags_heavy_fixtures_and_monkeypatch_for_strict_tes
     assert all(d.debt is None for d in found)
 
 
-def test_strict_to_be_with_zero_violations_reports_debt_paid(make_repo: RepoFactory) -> None:
+def test_ratchet_with_zero_violations_reports_debt_paid(make_repo: RepoFactory) -> None:
     root = make_repo(
         {
             "pkg/__init__.py": "",
             "pkg/domain.py": "def calc(x: int) -> int:\n    return x + 1\n",
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     paid = diagnostics(root, "debt-paid")
     assert len(paid) == 1
-    assert "strict-to-be" in paid[0].message
+    assert "ratchet" in paid[0].message
 
 
 def test_bindings_distinguish_defined_vs_imported_and_flag_imported_patch(
@@ -477,8 +477,8 @@ def test_stale_export_flags_unused_subpackage_door_and_prune_removes_it(
 # A one-line shell declaration is prunable, so prove both directions on one checkout: `sync --prune`
 # keeps the entry while the file it names exists, and drops it once that file is gone.
 _SHELL_MANIFEST = (
-    '[purity]\n"." = "strict-to-be"\n'
-    '"entry.py" = { mode = "none", why = "the entry reads the world once" }\n'
+    '[purity]\n"." = "ratchet"\n'
+    '"entry.py" = { mode = "off", why = "the entry reads the world once" }\n'
 )
 
 
@@ -513,7 +513,7 @@ def test_pass_through_function_flags_trivial_wrappers_and_allows_real_adapters(
                 "def _private_wrapper(x: int, y: int) -> int:\n"
                 "    return target(x, y)\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     keys = [d.debt.key for d in diagnostics(root, "pass-through-function") if d.debt is not None]
@@ -530,7 +530,7 @@ def test_nested_attr_write_flags_deep_attribute_mutation(make_repo: RepoFactory)
                 "    holder.inner.count += 1\n"
                 "    holder.direct = val\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     keys = [d.debt.key for d in diagnostics(root, "nested-attr-write") if d.debt is not None]
@@ -544,7 +544,7 @@ def test_nested_patch_target_flags_deep_patch_chains_in_strict_tests(
         {
             "pkg/__init__.py": "",
             "pkg/domain.py": "class Svc:\n    pass\n",
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n\n[uses]\n"tests" = ["domain.py"]\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n\n[uses]\n"tests" = ["domain.py"]\n',
             "pkg/tests/test_domain.py": (
                 "from pkg import domain\n\n"
                 "def test_svc(holder: object) -> None:\n"
@@ -595,7 +595,7 @@ def test_domain_subset_leak_flags_duplicate_cross_module_enum_subsets(
                 "    return s not in (Status.FAILED, Status.DONE)\n"
             ),
             "pkg/meizel.toml": (
-                'purity = "strict-to-be"\n\n'
+                'purity = "ratchet"\n\n'
                 '[uses]\n"first.py" = ["model.py"]\n"second.py" = ["model.py"]\n'
             ),
         }
@@ -604,7 +604,7 @@ def test_domain_subset_leak_flags_duplicate_cross_module_enum_subsets(
     assert keys == ["first.py#Status(DONE,FAILED)", "second.py#Status(DONE,FAILED)"]
 
 
-def test_wide_fanout_flags_excess_sibling_uses_in_strict_and_records_in_strict_to_be(
+def test_wide_fanout_flags_excess_sibling_uses_in_strict_and_records_in_ratchet(
     make_repo: RepoFactory,
 ) -> None:
     files = {
@@ -613,7 +613,7 @@ def test_wide_fanout_flags_excess_sibling_uses_in_strict_and_records_in_strict_t
         "pkg/m1.py": "X = 1\n",
         "pkg/m2.py": "X = 2\n",
         "pkg/m3.py": "X = 3\n",
-        "pkg/meizel.toml": 'purity = "strict-to-be"\n\n[uses]\n"hub.py" = ["m1.py", "m2.py", "m3.py"]\n',
+        "pkg/meizel.toml": 'purity = "ratchet"\n\n[uses]\n"hub.py" = ["m1.py", "m2.py", "m3.py"]\n',
         "meizel.policy.toml": '[purity]\nmax-uses = ["2"]\n',
     }
     root = make_repo(files)
@@ -631,7 +631,7 @@ def test_wide_exports_flags_excess_subpackage_doors(make_repo: RepoFactory) -> N
             "pkg/sub/a.py": "X = 1\n",
             "pkg/sub/b.py": "X = 2\n",
             "pkg/sub/c.py": "X = 3\n",
-            "pkg/sub/meizel.toml": 'purity = "strict-to-be"\nexports = ["a.py", "b.py", "c.py"]\n',
+            "pkg/sub/meizel.toml": 'purity = "ratchet"\nexports = ["a.py", "b.py", "c.py"]\n',
             "meizel.policy.toml": '[purity]\nmax-exports = ["2"]\n',
         }
     )
@@ -656,7 +656,7 @@ def test_wide_public_surface_counts_behavioral_symbols_not_frozen_data_classes(
                 "def f2(v: Value) -> int:\n    return v.x + 2\n\n"
                 "def f3(v: Value) -> int:\n    return v.x + 3\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
             "meizel.policy.toml": '[purity]\nmax-public-symbols = ["2"]\n',
         }
     )
@@ -678,7 +678,7 @@ def test_wide_params_excludes_self_and_flags_excess_parameters(make_repo: RepoFa
                 "    def too_many(self, a: int, b: int, c: int, d: int) -> int:\n"
                 "        return a + b + c + d\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
             "meizel.policy.toml": '[purity]\nmax-params = ["3"]\n',
         }
     )
@@ -699,7 +699,7 @@ def test_deep_attr_chain_flags_train_wrecks_and_ignores_module_or_method_chains(
                 "    _ = ctx.a.b.c\n"
                 "    return str(ctx.a.b.c.d)\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     [found] = diagnostics(root, "deep-attr-chain")
@@ -742,7 +742,7 @@ def test_a_shell_constructor_the_policy_lists_is_an_impure_call(make_repo: RepoF
                 "from meizel.graph.universe import GitRepo\n\n"
                 "def repo(root: object) -> object:\n    return GitRepo(root)\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     keys = [d.debt.key for d in diagnostics(root, "impure-call") if d.debt is not None]
@@ -767,7 +767,7 @@ def test_a_policy_listed_constructor_named_without_a_call_is_an_impure_call(
             + '\n[purity]\npure-third-party = ["meizel"]\nimpure-calls = ["meizel.graph.universe.GitRepo", "meizel.graph.universe.load_universe"]\n',
             "pkg/__init__.py": "",
             "pkg/a.py": source,
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     found = diagnostics(root, "impure-call")
@@ -789,7 +789,7 @@ def test_a_shell_constructor_named_in_an_annotation_is_not_an_impure_call(
                 "from meizel.graph.universe import GitRepo\n\n"
                 "def root_of(repo: GitRepo) -> object:\n    return repo.root\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
         }
     )
     assert diagnostics(root, "impure-call") == []

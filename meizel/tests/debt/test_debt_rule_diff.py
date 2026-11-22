@@ -389,7 +389,7 @@ def test_rule_comparison_refreshes_policy_after_validating_the_old_snapshot(
         {
             **source,
             "app/__init__.py": "def before(): ...\ndef after(): ...\n",
-            "app/meizel.toml": 'purity = "strict-to-be"\n',
+            "app/meizel.toml": 'purity = "ratchet"\n',
             "meizel.policy.toml": old_policy,
         },
     )

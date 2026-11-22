@@ -174,7 +174,7 @@ def test_a_manifest_without_markers_is_not_rewritten_by_the_resolver(
 
 def test_one_refused_manifest_leaves_every_file_as_it_was(make_repo: RepoFactory) -> None:
     root = recorded_repo(make_repo)
-    bad = "[purity]\n" + conflict('"x.py" = "strict"\n', '"x.py" = "strict-to-be"\n')
+    bad = "[purity]\n" + conflict('"x.py" = "strict"\n', '"x.py" = "ratchet"\n')
     conflicted(root, conflict(entry(X, 3), entry(X, 2)))
     write(root, {"lib/meizel.toml": bad})
     before = {p: (root / p).read_text() for p in ("meizel.toml", "lib/meizel.toml")}

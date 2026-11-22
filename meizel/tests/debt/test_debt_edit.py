@@ -229,7 +229,7 @@ def test_a_directory_whose_debt_is_all_paid_becomes_strict_again(make_repo: Repo
     assert (root / "pkg/meizel.toml").read_text() == '[uses]\n"a.py" = ["b.py"]\n'
     write(root, {"pkg/a.py": "from pkg.b import _secret\n"})
     [found] = [d for d in analysis_of(root).verdict if d.path == "pkg/a.py"]
-    assert "strict-to-be" not in found.render()
+    assert "ratchet" not in found.render()
 
 
 def test_prune_pays_cycle_back_edges_one_at_a_time(make_repo: RepoFactory) -> None:

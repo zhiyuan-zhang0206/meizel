@@ -33,7 +33,7 @@ from meizel.contracts.purity_mode import purity_debt, test_purity_mode
 from meizel.contracts.rule import (
     Projection,
     judge_facts,
-    paid_strict_to_be,
+    paid_ratchet,
     purity_diagnostics,
     stale_exports,
 )
@@ -652,7 +652,7 @@ def analyze(
         diagnostics.extend(
             _stale_approvals(policy, universe.files, {p: len(s.patches) for p, s in scans.items()})
         )
-        diagnostics.extend(paid_strict_to_be(manifests, purity_diags))
+        diagnostics.extend(paid_ratchet(manifests, purity_diags))
     diagnostics.extend(purity_diags)
     diagnostics = _distinct(diagnostics)
     return Analysis(

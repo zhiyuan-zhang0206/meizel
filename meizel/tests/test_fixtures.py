@@ -223,7 +223,7 @@ def test_pure_helper_fixture_in_mixed_conftest_allowed_in_strict_tests(
             "meizel.policy.toml": render_policy({}, {}, {}) + "\n[purity]\nimpure-fixtures = []\n",
             "infra/__init__.py": "",
             "infra/db.py": "import socket\nclass DBConn:\n    pass\n",
-            "infra/meizel.toml": 'purity = "none"\nexports = ["db.py"]\n',
+            "infra/meizel.toml": 'exports = ["db.py"]\n\n[purity]\n"." = { mode = "off", why = "infra" }\n',
             "conftest.py": (
                 "import pytest\n"
                 "from infra.db import DBConn\n\n"
@@ -257,7 +257,7 @@ def test_fixture_taint_graph_catches_transitive_impure_fixtures_without_string_c
             "meizel.policy.toml": render_policy({}, {}, {}) + "\n[purity]\nimpure-fixtures = []\n",
             "infra/__init__.py": "",
             "infra/db.py": "import socket\nclass Transport:\n    pass\n",
-            "infra/meizel.toml": 'purity = "none"\nexports = ["db.py"]\n',
+            "infra/meizel.toml": 'exports = ["db.py"]\n\n[purity]\n"." = { mode = "off", why = "infra" }\n',
             "conftest.py": (
                 "import pytest\n"
                 "from infra.db import Transport\n\n"

@@ -163,7 +163,7 @@ def test_existing_test_path_contract_excludes_helpers(tmp_path: Path, path: str)
     assert scan(tmp_path, "from typing import cast\ncast(int, value)", path).type_casts == []
 
 
-@pytest.mark.parametrize("mode", ["none", "strict-to-be", "strict"])
+@pytest.mark.parametrize("mode", ['{ mode = "off", why = "not judged" }', '"ratchet"', '"strict"'])
 def test_type_cast_is_independent_of_purity_and_partial_scan(
     make_repo: RepoFactory, mode: str
 ) -> None:
@@ -171,7 +171,7 @@ def test_type_cast_is_independent_of_purity_and_partial_scan(
         {
             "app.py": "from typing import cast\ncast(int, value)\n",
             "other.py": "from typing import cast\ncast(int, value)\n",
-            "meizel.toml": f'[purity]\n"." = "{mode}"\n',
+            "meizel.toml": f'[purity]\n"." = {mode}\n',
         }
     )
     found = analyze(seat(root), jobs=1, changed=["app.py"])

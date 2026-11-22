@@ -16,7 +16,7 @@ def test_wide_public_surface_treats_a_subclass_of_a_same_module_data_class_as_da
                 "class Two(One):\n    y: int\n\n"
                 "class Three(_Base):\n    z: int\n"
             ),
-            "pkg/meizel.toml": 'purity = "strict-to-be"\n',
+            "pkg/meizel.toml": 'purity = "ratchet"\n',
             "meizel.policy.toml": '[purity]\nmax-public-symbols = ["2"]\n',
         }
     )

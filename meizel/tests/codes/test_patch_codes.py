@@ -132,7 +132,7 @@ def test_the_messages_say_what_to_do_instead(make_repo: RepoFactory) -> None:
     assert "not an imported module or object" in texts["unresolved-patch"]
 
 
-def test_a_new_unresolved_patch_in_a_strict_to_be_directory_fails(make_repo: RepoFactory) -> None:
+def test_a_new_unresolved_patch_in_a_ratchet_directory_fails(make_repo: RepoFactory) -> None:
     source = "def test_a(monkeypatch, thing):\n    monkeypatch.setattr(thing, 'x', 1)\n    monkeypatch.setattr(thing, 'y', 1)\n"
     baseline = '[debt.unresolved-patch]\n"test_x.py#monkeypatch.setattr thing.x" = 1\n'
     root = make_repo(
@@ -140,7 +140,7 @@ def test_a_new_unresolved_patch_in_a_strict_to_be_directory_fails(make_repo: Rep
     )
     [found] = [d for d in analysis_of(root).verdict if d.code.value == "unresolved-patch"]
     assert "thing.y" in found.message
-    assert "app is strict-to-be" in found.render()
+    assert "app is ratchet" in found.render()
 
 
 GUARD = (
