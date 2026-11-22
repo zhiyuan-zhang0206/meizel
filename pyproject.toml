@@ -1,6 +1,6 @@
 [project]
 name = "meizel"
-version = "0.12.1"
+version = "0.12.2"
 description = "Locality rules for a repository: module manifests, ambient-state and purity checks, recorded debt, file budgets and test selection."
 readme = "README.md"
 requires-python = ">=3.12"

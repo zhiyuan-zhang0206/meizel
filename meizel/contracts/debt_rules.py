@@ -561,7 +561,7 @@ def rule_diff(
     symbols: Sequence[SymbolMove] = (),
 ) -> RuleDiff:
     with repo.checkout(ref) as checkout:
-        prepare_policy_snapshot(checkout)
+        prepare_policy_snapshot(checkout, normalize_purity=True)
         # Normalizing the snapshot rewrites its policy, so the index is read after it: a universe
         # is a snapshot of the tree that was there when it was built.
         _refuse_unreadable(manifest_diagnostics(checkout.universe()), ref)
@@ -575,7 +575,7 @@ def rule_diff(
         invalidate_policy_caches()
         found = regenerated(checkout, ref, jobs)
     with repo.checkout(ref) as checkout:
-        prepare_policy_snapshot(checkout)
+        prepare_policy_snapshot(checkout, normalize_purity=True)
         _apply_content(repo, ref, checkout, moved)
         regenerate_role_regions(checkout)
         checkout.stage_all()
