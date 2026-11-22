@@ -288,9 +288,13 @@ def _normalize_purity_snapshots(repo: Checkout) -> None:
 
 # The policy of a disposable comparison checkout, read once before anything is written there: a
 # malformed or unknown table fails the comparison as unreadable instead of being judged.
-def prepare_policy_snapshot(repo: Checkout) -> Policy:
-    _normalize_purity_snapshots(repo)
+# Callers running `debt diff` on a git snapshot checkout pass `normalize_purity=True` so pre-v0.12
+# `[purity]` spellings are normalized after the policy is validated; non-git snapshot callers keep
+# the default (`False`) and never invoke `git ls-files`.
+def prepare_policy_snapshot(repo: Checkout, *, normalize_purity: bool = False) -> Policy:
     if not repo.has_file(POLICY):
+        if normalize_purity:
+            _normalize_purity_snapshots(repo)
         return Policy()
     text = repo.load_text(POLICY)
     policy, problems = parse_snapshot(text)
@@ -314,6 +318,8 @@ def prepare_policy_snapshot(repo: Checkout) -> Policy:
             )
         ]
         repo.apply_plan(EditPlan(writes={repo.root / POLICY: "\n".join(lines) + "\n" + text}))
+    if normalize_purity:
+        _normalize_purity_snapshots(repo)
     return policy
 
 

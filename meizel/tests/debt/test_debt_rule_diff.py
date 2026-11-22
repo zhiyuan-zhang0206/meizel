@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from meizel.contracts.sync import prepare_policy_snapshot
+from meizel.entry import open_repository
 from meizel.tests.synthetic import RepoFactory, commit, git, run, write
 
 RULES = ":(glob)rules/**"
@@ -447,6 +449,15 @@ def test_rule_diff_normalizes_legacy_purity_modes_in_base_snapshot_only(
     assert diff(root) == 0
     out = capsys.readouterr().out
     assert "total" in out
+
+
+def test_prepare_policy_snapshot_does_not_require_git_by_default(tmp_path: Path) -> None:
+    (tmp_path / "meizel.policy.toml").write_text(
+        '[purity]\nimpure-calls = ["app.f"]\n',
+        encoding="utf-8",
+    )
+    policy = prepare_policy_snapshot(open_repository(tmp_path))
+    assert policy.names("purity", "impure-calls") == ("app.f",)
 
 
 def test_type_cast_rule_baseline_uses_existing_application_content(
