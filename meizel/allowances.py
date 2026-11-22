@@ -101,6 +101,16 @@ RULES: dict[str, dict[str, str]] = {
         "inlined-env-roots": NAMES,
         "package-dir": NAMES,
     },
+    "comments": {
+        "mode": NAMES,
+        "baseline": NAMES,
+        "link-prefix": NAMES,
+        "inline-directives": NAMES,
+        "allow-fixture-docstrings": NAMES,
+        "docstring-marker-symbols": NAMES,
+        "docstring-paths": NAMES,
+        "exclude-paths": NAMES,
+    },
 }
 
 
@@ -323,9 +333,36 @@ def _state_kinds(document: Mapping[str, object], problems: list[str]) -> tuple[s
     return tuple(found)
 
 
+_COMMENT_MODES = frozenset({"off", "ratchet", "strict"})
+_COMMENT_SCALARS = frozenset({"mode", "baseline", "link-prefix"})
+
+
+def _comment_section(section: str, value: object, where: str, into: _Sections) -> None:
+    if section == "allow-fixture-docstrings":
+        if isinstance(value, bool):
+            into.named[("comments", section)] = ("true" if value else "false",)
+        else:
+            into.problems.append(f"{where} must be a boolean")
+        return
+    if section in _COMMENT_SCALARS:
+        if not isinstance(value, str) or not value.strip():
+            into.problems.append(f"{where} must be a non-empty string")
+            return
+        cleaned = value.strip()
+        if section == "mode" and cleaned not in _COMMENT_MODES:
+            allowed = ", ".join(sorted(_COMMENT_MODES))
+            into.problems.append(f"{where} must be one of {allowed}, not {cleaned!r}")
+            return
+        into.named[("comments", section)] = (cleaned,)
+        return
+    into.named[("comments", section)] = _names(value, where, into.problems)
+
+
 # A list section. `purity`'s `max-*` limits are written as one integer and kept as its text.
 def _names_section(rule: str, section: str, value: object, where: str, into: _Sections) -> None:
-    if (
+    if rule == "comments":
+        _comment_section(section, value, where, into)
+    elif (
         rule == "purity"
         and section.startswith("max-")
         and isinstance(value, int)

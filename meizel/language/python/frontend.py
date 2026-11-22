@@ -11,6 +11,7 @@ from meizel.graph.universe import Universe
 from meizel.language.file_scan import FileScan
 from meizel.language.frontend import Frontend
 from meizel.language.python.cache import scan_python_cached
+from meizel.language.python.comments import scan_python_comments
 from meizel.language.python.judge import (
     python_companions,
     python_evidence,
@@ -110,4 +111,6 @@ PYTHON = Frontend(
     Code.RESTRICTED,
     "Python",
     _restricted_hint,
+    _candidates,
+    scan_python_comments,
 )

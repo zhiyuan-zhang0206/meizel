@@ -26,6 +26,7 @@ from meizel.checkout import (
 from meizel.contracts.analysis import (
     Analysis,
     analyze,
+    check_comments,
     exempt_test_modules,
     load_manifests,
     load_policy,
@@ -86,6 +87,7 @@ __all__ = [
     "allowances",
     "analyze",
     "apply_plan",
+    "check_comments",
     "exempt_test_modules",
     "framework_dirs",
     "input_closures",

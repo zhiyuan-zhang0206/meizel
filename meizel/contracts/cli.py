@@ -15,7 +15,7 @@ from typing import Protocol, TypeGuard
 
 from meizel.budgets import check_report
 from meizel.contracts import enumerations, test_cache
-from meizel.contracts.analysis import Analysis, analyze
+from meizel.contracts.analysis import Analysis, CommentsCommand, analyze, run_comments
 from meizel.contracts.bootstrap import Bootstrap, bootstrap
 from meizel.contracts.debt_carry import DebtBase, DebtPaths, renames_since, run_debt
 from meizel.contracts.explain import Explain, explain
@@ -389,6 +389,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_test_cache_parser(commands)
     seed = commands.add_parser("bootstrap", help="generate manifests from current facts")
     seed.add_argument("--out", type=Path, required=True, help="directory to mirror manifests into")
+    _add_comments_parser(commands)
     _add_debt_parser(commands)
     policy = commands.add_parser("policy", help="the allowance lists in meizel.policy.toml")
     policy_modes = policy.add_subparsers(dest="policy_mode", required=True)
@@ -445,6 +446,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="print at most this many diagnostics",
     )
     return parser
+
+
+def _add_comments_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:  # pyright: ignore[reportPrivateUsage]
+    comments = commands.add_parser(
+        "comments",
+        help="manage the [comments] ratchet baseline and inspect remaining comment blocks",
+    )
+    modes = comments.add_subparsers(dest="comments_mode", required=True)
+    record = modes.add_parser("record", help="scan the repository and write the comment baseline")
+    record.set_defaults(output_format="jsonl", path_prefix=None)
+    prune = modes.add_parser(
+        "prune", help="tighten the comment baseline without raising any file count"
+    )
+    prune.set_defaults(output_format="jsonl", path_prefix=None)
+    corpus = modes.add_parser("corpus", help="export all remaining disallowed comment blocks")
+    corpus.add_argument(
+        "--format",
+        dest="output_format",
+        choices=["jsonl", "markdown"],
+        default="jsonl",
+        help="output format (default: jsonl)",
+    )
+    corpus.add_argument(
+        "--path",
+        dest="path_prefix",
+        default=None,
+        metavar="prefix",
+        help="only include comment blocks under this repository path prefix",
+    )
 
 
 def _add_debt_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -810,6 +840,8 @@ def dispatch(repo: Repository, base: Path, args: argparse.Namespace, deps: Comma
     cmd = read_args(args, Command).command
     if cmd == "check":
         return _run_check(repo, deps, read_args(args, Check))
+    if cmd == "comments":
+        return run_comments(repo, read_args(args, CommentsCommand))
     if cmd == "debt":
         return _run_debt(repo, args, deps)
     if cmd == "policy":

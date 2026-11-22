@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import NamedTuple
 
+from meizel.contracts.comments import CommentsCommand, check_comments, run_comments
 from meizel.contracts.debt import PURITY_CODES, source_of
 from meizel.contracts.manifest import Manifest, effective_purity, manifest_path, unlicensed, within
 from meizel.contracts.policy import Policy
@@ -17,12 +18,15 @@ from meizel.language import DOOR_FILES, FileScan, is_private_module
 from meizel.language.test_files import is_test_file
 
 __all__ = [
+    "CommentsCommand",
     "Projection",
+    "check_comments",
     "is_private",
     "judge_facts",
     "paid_ratchet",
     "project",
     "purity_diagnostics",
+    "run_comments",
     "stale_exports",
 ]
 

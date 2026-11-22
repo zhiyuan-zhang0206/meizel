@@ -1,19 +1,20 @@
 exports = ["python", "test_files.py", "typescript"]
 
 [uses]
-"__init__.py" = ["closure.py", "file_scan.py", "frontend.py", "frontends.py", "sources.py"]
+"__init__.py" = ["closure.py", "comment_scan.py", "file_scan.py", "frontend.py", "frontends.py", "sources.py"]
 "closure.py" = ["frontends.py"]
-"frontend.py" = ["file_scan.py"]
+"frontend.py" = ["comment_scan.py", "file_scan.py"]
 "frontends.py" = ["file_scan.py", "frontend.py", "python", "typescript"]
 "json_fields.py" = ["json_containers.py"]
-"python" = ["file_scan.py", "frontend.py", "json_containers.py", "json_fields.py", "json_scalars.py", "scan_codec.py", "test_files.py"]
+"python" = ["comment_scan.py", "file_scan.py", "frontend.py", "json_containers.py", "json_fields.py", "json_scalars.py", "scan_codec.py", "test_files.py"]
 "scan_codec.py" = ["file_scan.py", "json_containers.py", "json_fields.py", "json_scalars.py"]
 "sources.py" = ["frontend.py", "frontends.py"]
 "tests" = ["__init__.py", "python", "scan_codec.py"]
-"typescript" = ["file_scan.py", "frontend.py", "scan_codec.py", "test_files.py"]
+"typescript" = ["comment_scan.py", "file_scan.py", "frontend.py", "scan_codec.py", "test_files.py"]
 
 [purity]
 "." = "strict"
+"comment_scan.py" = "strict"
 "file_scan.py" = "strict"
 "frontend.py" = "strict"
 "closure.py" = "strict"
