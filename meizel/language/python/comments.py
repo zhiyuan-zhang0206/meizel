@@ -7,18 +7,27 @@ import inspect
 import io
 import re
 import tokenize
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from itertools import pairwise
 
 from meizel.graph.model import Code, Problem
 from meizel.graph.universe import Universe
-from meizel.language.comment_scan import CommentBlock, CommentLink, CommentOptions, CommentScan
+from meizel.language.comment_scan import (
+    CommentBlock,
+    CommentCache,
+    CommentLink,
+    CommentOptions,
+    CommentScan,
+)
 from meizel.language.file_scan import read_source
 from meizel.language.python.comment_fixtures import fixture_owners
 from meizel.language.test_files import is_test_file
 
 __all__ = ["scan_python_comments"]
 
+_PARALLEL_FROM = 200
 _SHEBANG = re.compile(r"#!/usr/bin/(?:env python(?:3(?:\.12)?)?|python3(?:\.12)?)")
 _RUFF_CODE = r"[A-Z]+[0-9]{3,4}"
 _PYRIGHT_CODE = r"report[A-Z][A-Za-z0-9]+"
@@ -264,32 +273,65 @@ def _scan_one(
     return CommentScan(path, tuple(blocks), tuple(links))
 
 
-def scan_python_comments(
-    universe: Universe, paths: Sequence[str], options: CommentOptions
-) -> dict[str, CommentScan]:
-    link_pattern = (
-        re.compile(rf"#\s*{re.escape(options.link_prefix)}\s+(\S+)\s*")
-        if options.link_prefix
-        else None
-    )
-    directives = tuple(re.compile(pattern) for pattern in options.inline_directives)
-    doc_globs = tuple(_glob_to_regex(pattern) for pattern in options.docstring_paths)
-    results: dict[str, CommentScan] = {}
-    for path in paths:
-        raw = read_source(universe, path)
-        try:
-            text = raw.decode("utf-8")
-        except UnicodeDecodeError as error:
-            results[path] = CommentScan(
-                path, problems=(Problem(1, Code.CODE_COMMENT, f"cannot decode UTF-8: {error}"),)
-            )
-            continue
-        results[path] = _scan_one(
-            path,
-            text,
-            options,
-            link_pattern=link_pattern,
-            directives=directives,
-            doc_globs=doc_globs,
+def _scan_source(
+    path: str,
+    raw: bytes,
+    *,
+    options: CommentOptions,
+    link_pattern: re.Pattern[str] | None,
+    directives: tuple[re.Pattern[str], ...],
+    doc_globs: tuple[re.Pattern[str], ...],
+) -> CommentScan:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        return CommentScan(
+            path, problems=(Problem(1, Code.CODE_COMMENT, f"cannot decode UTF-8: {error}"),)
         )
-    return results
+    return _scan_one(
+        path,
+        text,
+        options,
+        link_pattern=link_pattern,
+        directives=directives,
+        doc_globs=doc_globs,
+    )
+
+
+def _scan_misses(
+    sources: Mapping[str, bytes], options: CommentOptions, jobs: int | None
+) -> dict[str, CommentScan]:
+    if not sources:
+        return {}
+    task = partial(
+        _scan_source,
+        options=options,
+        link_pattern=(
+            re.compile(rf"#\s*{re.escape(options.link_prefix)}\s+(\S+)\s*")
+            if options.link_prefix
+            else None
+        ),
+        directives=tuple(re.compile(pattern) for pattern in options.inline_directives),
+        doc_globs=tuple(_glob_to_regex(pattern) for pattern in options.docstring_paths),
+    )
+    if jobs is None or jobs <= 1 or len(sources) < _PARALLEL_FROM:
+        return {path: task(path, raw) for path, raw in sources.items()}
+    with ProcessPoolExecutor(jobs) as pool:
+        chunk = max(1, len(sources) // (jobs * 8))
+        return {
+            scan.path: scan for scan in pool.map(task, sources, sources.values(), chunksize=chunk)
+        }
+
+
+def scan_python_comments(
+    universe: Universe, paths: Sequence[str], options: CommentOptions, jobs: int | None = None
+) -> dict[str, CommentScan]:
+    sources = {path: read_source(universe, path) for path in paths}
+    cache = CommentCache(universe.repo, "python", options, sources)
+    hits = cache.load()
+    fresh = _scan_misses(
+        {path: raw for path, raw in sources.items() if path not in hits}, options, jobs
+    )
+    cache.store(fresh)
+    hits.update(fresh)
+    return {path: hits[path] for path in sources}

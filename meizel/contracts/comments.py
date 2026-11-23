@@ -39,6 +39,7 @@ class CommentsCommand:
     comments_mode: str
     output_format: str
     path_prefix: str | None
+    jobs: int | None = None
 
 
 def _canonical_path(value: str) -> bool:
@@ -163,6 +164,8 @@ def _scan_files(
     policy: Policy,
     config: CommentsConfig,
     changed: Collection[str] | None = None,
+    *,
+    jobs: int | None = None,
 ) -> tuple[dict[str, CommentScan], frozenset[str]]:
     excludes = tuple(_glob_to_regex(pattern) for pattern in config.exclude_paths)
     all_files: list[str] = []
@@ -178,7 +181,7 @@ def _scan_files(
             candidates if changed is None else [path for path in candidates if path in changed]
         )
         if selected:
-            scans.update(frontend.scan_comments(universe, selected, config.options))
+            scans.update(frontend.scan_comments(universe, selected, config.options, jobs))
     return scans, frozenset(all_files)
 
 
@@ -384,12 +387,16 @@ def _ratchet_diagnostics(
 
 
 def check_comments(
-    universe: Universe, policy: Policy, *, changed: Collection[str] | None = None
+    universe: Universe,
+    policy: Policy,
+    *,
+    changed: Collection[str] | None = None,
+    jobs: int | None = None,
 ) -> list[Diagnostic]:
     config, problems = _read_config(policy)
     if config.mode == "off" or problems:
         return problems
-    scans, all_files = _scan_files(universe, policy, config, changed)
+    scans, all_files = _scan_files(universe, policy, config, changed, jobs=jobs)
     found = _link_and_parse_diagnostics(universe, scans, config.options.link_prefix)
     if config.mode == "strict":
         found.extend(_strict_diagnostics(universe, config, scans))
@@ -414,10 +421,10 @@ def _require_baseline_config(universe: Universe) -> tuple[Policy, CommentsConfig
     return policy, config
 
 
-def _run_record(repo: Checkout) -> int:
+def _run_record(repo: Checkout, jobs: int | None) -> int:
     universe = repo.universe()
     policy, config = _require_baseline_config(universe)
-    scans, _ = _scan_files(universe, policy, config)
+    scans, _ = _scan_files(universe, policy, config, jobs=jobs)
     counts = {path: len(scan.blocks) for path, scan in sorted(scans.items()) if scan.blocks}
     total_blocks = sum(counts.values())
     total_links = sum(len(scan.links) for scan in scans.values())
@@ -429,7 +436,7 @@ def _run_record(repo: Checkout) -> int:
     return 0
 
 
-def _run_prune(repo: Checkout) -> int:
+def _run_prune(repo: Checkout, jobs: int | None) -> int:
     universe = repo.universe()
     policy, config = _require_baseline_config(universe)
     baseline, problems = _read_baseline(universe, config.baseline)
@@ -437,7 +444,7 @@ def _run_prune(repo: Checkout) -> int:
         raise MeizelError(problems[0].render())
     if baseline is None:
         raise MeizelError(f"{config.baseline}: baseline file does not exist")
-    scans, _ = _scan_files(universe, policy, config)
+    scans, _ = _scan_files(universe, policy, config, jobs=jobs)
     updated: dict[str, int] = {}
     for path, old in sorted(baseline.items()):
         if path not in scans:
@@ -463,7 +470,9 @@ def _matches_prefix(path: str, prefix: str | None) -> bool:
     return path == cleaned or path.startswith(f"{cleaned}/")
 
 
-def _run_corpus(repo: Checkout, output_format: str, path_prefix: str | None) -> int:
+def _run_corpus(
+    repo: Checkout, output_format: str, path_prefix: str | None, jobs: int | None
+) -> int:
     universe = repo.universe()
     policy, policy_problems = load_policy(universe)
     if policy_problems:
@@ -471,7 +480,7 @@ def _run_corpus(repo: Checkout, output_format: str, path_prefix: str | None) -> 
     config, config_problems = _read_config(policy)
     if config_problems:
         raise MeizelError(config_problems[0].render())
-    scans, _ = _scan_files(universe, policy, config)
+    scans, _ = _scan_files(universe, policy, config, jobs=jobs)
     selected = {
         path: scan
         for path, scan in sorted(scans.items())
@@ -522,7 +531,7 @@ def _run_corpus(repo: Checkout, output_format: str, path_prefix: str | None) -> 
 
 def run_comments(repo: Checkout, opts: CommentsCommand) -> int:
     if opts.comments_mode == "record":
-        return _run_record(repo)
+        return _run_record(repo, opts.jobs)
     if opts.comments_mode == "prune":
-        return _run_prune(repo)
-    return _run_corpus(repo, opts.output_format, opts.path_prefix)
+        return _run_prune(repo, opts.jobs)
+    return _run_corpus(repo, opts.output_format, opts.path_prefix, opts.jobs)

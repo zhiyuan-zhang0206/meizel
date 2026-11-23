@@ -1,5 +1,6 @@
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
-import {ts} from './compiler.mjs';
+import {compiler, ts} from './compiler.mjs';
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -82,7 +83,7 @@ function scanOne(file, text, linkPattern, directives) {
     const message = tree.parseDiagnostics
       .map((d) => ts.flattenDiagnosticMessageText(d.messageText, ' '))
       .join('; ');
-    return {blocks: [], links: [], problems: [{line, message}]};
+    return {blocks: [], links: [], problems: [{line, code: 'code-comment', message}]};
   }
 
   const lineAt = (position) => tree.getLineAndCharacterOfPosition(position).line + 1;
@@ -201,4 +202,14 @@ const files = {};
 for (const [file, text] of Object.entries(request.sources || {})) {
   files[file] = scanOne(file, text, linkPattern, directives);
 }
-process.stdout.write(JSON.stringify({files}));
+// Node options can load arbitrary external scripts. Their effects have no stable fingerprint.
+const identity = process.env.NODE_OPTIONS
+  ? null
+  : JSON.stringify([
+      process.versions,
+      process.platform,
+      process.arch,
+      new Intl.Collator().resolvedOptions(),
+      createHash('sha256').update(fs.readFileSync(compiler)).digest('hex'),
+    ]);
+process.stdout.write(JSON.stringify({identity, files}));

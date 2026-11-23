@@ -659,7 +659,7 @@ def analyze(
             _stale_approvals(policy, universe.files, {p: len(s.patches) for p, s in scans.items()})
         )
         diagnostics.extend(paid_ratchet(manifests, purity_diags))
-    diagnostics.extend(check_comments(universe, policy, changed=scope))
+    diagnostics.extend(check_comments(universe, policy, changed=scope, jobs=jobs))
     diagnostics.extend(purity_diags)
     diagnostics = _distinct(diagnostics)
     return Analysis(

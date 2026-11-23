@@ -285,4 +285,29 @@ def test_debt_diff_succeeds_when_introducing_comments_ratchet(
 
     capsys.readouterr()
     assert _run(root, "debt", "diff", "--against", "main", "--on-growth", "fail") == 0
+    first = capsys.readouterr()
+    assert _run(root, "debt", "diff", "--against", "main", "--on-growth", "fail") == 0
+    assert capsys.readouterr() == first
     assert _codes(root) == []
+
+
+def test_cached_comment_links_and_renames_use_the_current_tree(make_repo: RepoFactory) -> None:
+    root = make_repo(
+        {
+            "docs/intro.md": "# Doc\n",
+            "meizel.policy.toml": (
+                '[comments]\nmode = "strict"\n'
+                'link-prefix = "doc:link"\ndocstring-paths = ["pkg/a.py"]\n'
+            ),
+            "pkg/__init__.py": "",
+            "pkg/a.py": '"""API docs."""\n# doc:link docs/intro.md\nx = 1\n',
+        }
+    )
+    assert _codes(root) == []
+    git(root, "rm", "-f", "docs/intro.md")
+    assert _codes(root) == [("pkg/a.py", Code.BROKEN_COMMENT_LINK)]
+    git(root, "mv", "pkg/a.py", "pkg/b.py")
+    assert set(_codes(root)) == {
+        ("pkg/b.py", Code.CODE_COMMENT),
+        ("pkg/b.py", Code.BROKEN_COMMENT_LINK),
+    }
