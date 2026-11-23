@@ -125,4 +125,6 @@ class Frontend:
     restricted_hint: Callable[[str, str], str]
     # Every tracked file of this language that the `[comments]` rule scans, and its comment scanner.
     comment_files: Callable[[Universe], Sequence[str]]
-    scan_comments: Callable[[Universe, Sequence[str], CommentOptions], dict[str, CommentScan]]
+    scan_comments: Callable[
+        [Universe, Sequence[str], CommentOptions, int | None], dict[str, CommentScan]
+    ]

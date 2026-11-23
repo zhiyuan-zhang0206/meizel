@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
 
 from meizel.graph.model import Code, MeizelError, Problem
 from meizel.graph.universe import Universe
-from meizel.language.comment_scan import CommentBlock, CommentLink, CommentOptions, CommentScan
+from meizel.language.comment_scan import (
+    CommentCache,
+    CommentOptions,
+    CommentScan,
+    comment_source_digest,
+    decode_comment_scan,
+)
 from meizel.language.file_scan import read_source
 from meizel.lint_common import run_node_analyzer
-from meizel.source_text import is_mapping, is_object_list, object_of
+from meizel.source_text import is_mapping, object_of
 
 __all__ = ["scan_typescript_comments", "typescript_comment_files"]
 
@@ -22,88 +28,62 @@ def typescript_comment_files(universe: Universe) -> tuple[str, ...]:
     return universe.files_ending(_COMMENT_EXTENSIONS)
 
 
-def _decode_blocks(raw: object, path: str) -> tuple[CommentBlock, ...]:
-    if not is_object_list(raw):
-        raise ValueError(f"{path}: blocks must be a list")
-    blocks: list[CommentBlock] = []
-    for item in raw:
-        if not is_mapping(item):
-            raise ValueError(f"{path}: block entry must be an object")
-        line = item.get("line")
-        end_line = item.get("end_line")
-        kind = item.get("kind")
-        text = item.get("text")
-        raw_text = item.get("raw_text")
-        if (
-            not isinstance(line, int)
-            or isinstance(line, bool)
-            or not isinstance(end_line, int)
-            or isinstance(end_line, bool)
-            or not isinstance(kind, str)
-            or not isinstance(text, str)
-            or not isinstance(raw_text, str)
-        ):
-            raise TypeError(f"{path}: malformed comment block entry")
-        blocks.append(CommentBlock(line, end_line, kind, text, raw_text))
-    return tuple(blocks)
+def _run(
+    universe: Universe, contents: Mapping[str, str], options: CommentOptions
+) -> tuple[str | None, dict[str, CommentScan]]:
+    producer = Path(__file__).parent / "compiler" / "comments.mjs"
+    request = {
+        "sources": dict(contents),
+        "link_prefix": options.link_prefix,
+        "inline_directives": list(options.inline_directives),
+    }
+    tree = universe.repo.tree
+    output = run_node_analyzer(tree, producer, json.dumps(request), frontend=tree.toolchain())
+    try:
+        return _decode_output(output, contents)
+    except (KeyError, TypeError, ValueError) as error:
+        raise MeizelError(f"invalid TypeScript comment scan result: {error}") from error
 
 
-def _decode_links(raw: object, path: str) -> tuple[CommentLink, ...]:
-    if not is_object_list(raw):
-        raise ValueError(f"{path}: links must be a list")
-    links: list[CommentLink] = []
-    for item in raw:
-        if not is_mapping(item):
-            raise ValueError(f"{path}: link entry must be an object")
-        line = item.get("line")
-        target = item.get("target")
-        if not isinstance(line, int) or isinstance(line, bool) or not isinstance(target, str):
-            raise TypeError(f"{path}: malformed comment link entry")
-        links.append(CommentLink(line, target))
-    return tuple(links)
-
-
-def _decode_problems(raw: object, path: str) -> tuple[Problem, ...]:
-    if not is_object_list(raw):
-        raise ValueError(f"{path}: problems must be a list")
-    problems: list[Problem] = []
-    for item in raw:
-        if not is_mapping(item):
-            raise ValueError(f"{path}: problem entry must be an object")
-        line = item.get("line")
-        message = item.get("message")
-        if not isinstance(line, int) or isinstance(line, bool) or not isinstance(message, str):
-            raise TypeError(f"{path}: malformed problem entry")
-        problems.append(Problem(line, Code.CODE_COMMENT, message))
-    return tuple(problems)
-
-
-def _decode_output(output: str, expected: Sequence[str]) -> dict[str, CommentScan]:
+def _decode_output(
+    output: str, expected: Collection[str]
+) -> tuple[str | None, dict[str, CommentScan]]:
     payload = object_of(json.loads, output)
     if not is_mapping(payload):
-        raise ValueError("TypeScript comment scan output must be a JSON object")
-    files = payload.get("files")
+        raise ValueError("output must be a JSON object")
+    identity, files = payload["identity"], payload["files"]
+    if identity is not None and not isinstance(identity, str):
+        raise ValueError("invalid compiler fingerprint")
     if not is_mapping(files):
-        raise ValueError("missing files map in TypeScript comment scan output")
-    results: dict[str, CommentScan] = {}
-    for path in expected:
-        entry: object = files.get(path)
-        if not isinstance(entry, Mapping) or not is_mapping(entry):
-            raise ValueError(f"TypeScript comment scanner omitted {path}")
-        results[path] = CommentScan(
-            path,
-            _decode_blocks(entry.get("blocks"), path),
-            _decode_links(entry.get("links"), path),
-            _decode_problems(entry.get("problems"), path),
-        )
-    return results
+        raise ValueError("missing files map")
+    return identity, {path: decode_comment_scan(path, files[path]) for path in expected}
+
+
+def _scan_cached(
+    universe: Universe, contents: Mapping[str, str], options: CommentOptions
+) -> dict[str, CommentScan]:
+    # Even a fully warm cache must resolve and load the locked compiler. The same producer
+    # answers the probe and the parse so a replaced toolchain cannot stamp the wrong cache key.
+    identity, _ = _run(universe, {}, options)
+    if identity is None:
+        return _run(universe, contents, options)[1]
+    digests = {path: comment_source_digest(text) for path, text in contents.items()}
+    cache = CommentCache(universe.repo, "typescript", options, digests, runtime=identity)
+    hits = cache.load()
+    misses = {path: text for path, text in contents.items() if path not in hits}
+    if not misses:
+        return hits
+    actual, fresh = _run(universe, misses, options)
+    if actual != identity:
+        return _run(universe, contents, options)[1] if hits else fresh
+    cache.store(fresh)
+    hits.update(fresh)
+    return {path: hits[path] for path in contents}
 
 
 def scan_typescript_comments(
-    universe: Universe, paths: Sequence[str], options: CommentOptions
+    universe: Universe, paths: Sequence[str], options: CommentOptions, _jobs: int | None = None
 ) -> dict[str, CommentScan]:
-    if not paths:
-        return {}
     results: dict[str, CommentScan] = {}
     contents: dict[str, str] = {}
     for path in paths:
@@ -114,22 +94,6 @@ def scan_typescript_comments(
             results[path] = CommentScan(
                 path, problems=(Problem(1, Code.CODE_COMMENT, f"cannot decode UTF-8: {error}"),)
             )
-    if not contents:
-        return results
-    producer = Path(__file__).parent / "compiler" / "comments.mjs"
-    request = {
-        "sources": contents,
-        "link_prefix": options.link_prefix,
-        "inline_directives": list(options.inline_directives),
-    }
-    output = run_node_analyzer(
-        universe.repo.tree,
-        producer,
-        json.dumps(request),
-        frontend=universe.repo.tree.toolchain(),
-    )
-    try:
-        results.update(_decode_output(output, list(contents)))
-    except (TypeError, ValueError) as error:
-        raise MeizelError(f"invalid TypeScript comment scan result: {error}") from error
+    if contents:
+        results.update(_scan_cached(universe, contents, options))
     return results

@@ -11,6 +11,10 @@ decision and its rationale live in
 The checker never executes inspected source. Tracked files come from `git ls-files -z`
 (untracked source/manifest files trigger a `stderr` warning suggesting `git add -N`);
 scan results are cached by content digest in `<git-common-dir>/meizel-scan-cache-v1.sqlite3`.
+Comment scans use the same cache across linked worktrees and commands. Each entry holds the
+parsed blocks, links, and parse diagnostics for the exact source bytes, path, language,
+parser runtime, and comment options. Link targets and baselines are checked against the
+current tree on every run. TypeScript still validates the installed compiler on cache hits.
 Python uses stdlib AST; TypeScript uses the locked Node compiler. See TypeScript
 scanning below for setup and coverage.
 

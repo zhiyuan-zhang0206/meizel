@@ -66,6 +66,8 @@ class SourceTree:
     # needs it; None when the tree was bound without one, and then nothing checks that package's
     # install before node starts.
     toolchain: Callable[[], Path | None] = field(default=lambda: None)
+    # Tool-owned scanner code and interpreter, independent of the policy in the tree being judged.
+    scanner_identity: Callable[[], str] = field(default=lambda: "")
 
 
 # The checkout a decision layer works on: the root it reads and the files under it. The decision

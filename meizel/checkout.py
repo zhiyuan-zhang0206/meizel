@@ -128,6 +128,7 @@ def source_tree(root: Path) -> SourceTree:
         roles=partial(roles_at, root),
         run_node=_run_node,
         toolchain=typescript_toolchain,
+        scanner_identity=_comment_scanner_digest,
     )
 
 
@@ -631,11 +632,11 @@ def _working_tree_digests(root: Path) -> dict[str, str]:
 
 
 @cache
-def _process_scanner_digest(root: Path) -> str:
+def _scanner_source_bytes() -> bytes:
     pkg_dir = Path(__file__).resolve().parent
-    hasher = hashlib.sha256()
+    pieces: list[bytes] = []
     ver = sys.version_info
-    hasher.update(f"py:{ver.major}.{ver.minor}.{ver.micro}\0".encode())
+    pieces.append(f"py:{ver.major}.{ver.minor}.{ver.micro}\0".encode())
     sources = sorted(
         (path.relative_to(pkg_dir).as_posix(), path)
         for path in pkg_dir.rglob("*")
@@ -645,14 +646,29 @@ def _process_scanner_digest(root: Path) -> str:
         and path.is_file()
     )
     for rel, path in sources:
-        hasher.update(rel.encode())
-        hasher.update(b"\0")
-        hasher.update(path.read_bytes())
-        hasher.update(b"\0")
-    policy_path = root / "meizel.policy.toml"
-    if policy_path.is_file():
+        pieces.append(rel.encode())
+        pieces.append(b"\0")
+        pieces.append(path.read_bytes())
+        pieces.append(b"\0")
+    return b"".join(pieces)
+
+
+@cache
+def _comment_scanner_digest() -> str:
+    # CommentOptions carry every policy input to the comment parser. The checkout's full
+    # policy would unnecessarily evict records when a replay only changes other rules.
+    hasher = hashlib.sha256(_scanner_source_bytes())
+    hasher.update(f"{sys.implementation.name}\0{sys.version}".encode())
+    return hasher.hexdigest()
+
+
+@cache
+def _process_scanner_digest(root: Path) -> str:
+    hasher = hashlib.sha256(_scanner_source_bytes())
+    policy = root / POLICY_FILE
+    if policy.is_file():
         hasher.update(b"policy\0")
-        hasher.update(policy_path.read_bytes())
+        hasher.update(policy.read_bytes())
     return hasher.hexdigest()
 
 

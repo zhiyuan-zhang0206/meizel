@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import subprocess
-from collections.abc import Collection, Generator, Mapping
+import tracemalloc
+from collections.abc import Callable, Collection, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -20,6 +22,7 @@ from meizel.graph.model import (
     EnumSubsetUse,
     Fact,
     FactKind,
+    MeizelError,
     Patch,
     Problem,
     PurityItem,
@@ -29,7 +32,7 @@ from meizel.graph.model import (
     Unless,
 )
 from meizel.graph.universe import Checkout, EditPlan, SourceTree, Universe
-from meizel.language import FileScan, scan_all
+from meizel.language import CommentOptions, FileScan, frontend_of, scan_all
 from meizel.language.python import (
     FixtureFunction,
     FixtureRequest,
@@ -53,6 +56,8 @@ from meizel.language.scan_codec import decode_file_scan, encode_file_scan
 class _RecordingCheckout:
     inner: GitRepo
     loaded_bytes: list[str] = field(default_factory=list[str])
+    cache_writes: list[str] = field(default_factory=list[str])
+    node_runner: Callable[[Path, str], tuple[int, str, str]] | None = None
 
     @property
     def root(self) -> Path:
@@ -60,7 +65,8 @@ class _RecordingCheckout:
 
     @property
     def tree(self) -> SourceTree:
-        return self.inner.tree
+        tree = self.inner.tree
+        return replace(tree, run_node=self.node_runner) if self.node_runner is not None else tree
 
     def has_file(self, rel: str) -> bool:
         return self.inner.has_file(rel)
@@ -112,6 +118,7 @@ class _RecordingCheckout:
         return self.inner.cache_get_many(keys)
 
     def cache_put_many(self, entries: Mapping[str, str]) -> None:
+        self.cache_writes.extend(entries)
         self.inner.cache_put_many(entries)
 
     def memo_get(self, key: str) -> object | None:
@@ -371,3 +378,100 @@ def test_the_reverse_closure_without_a_worker_count_reads_in_this_process(tmp_pa
     closure = python_reverse_closure(probe.universe(), ["pkg/m0.py"], jobs=None)
     assert closure == frozenset({"pkg/m0.py"})
     assert sorted(probe.loaded_bytes) == sorted(_wide_files())
+
+
+def test_comment_cache_reuses_and_repairs_sqlite_entries(tmp_path: Path) -> None:
+    root = _init_git_repo(
+        tmp_path, {"a.py": "# guide docs/intro.md\n# comment\nx = 1\n", "b.py": "y = (\n"}
+    )
+    repo = GitRepo(root)
+    scanner = frontend_of("a.py", Policy()).scan_comments
+    paths = ["a.py", "b.py"]
+    opts = CommentOptions(link_prefix="guide")
+    first = scanner(repo.universe(), paths, opts, 1)
+    assert len(first["a.py"].blocks) == len(first["a.py"].links) == 1
+    assert first["b.py"].problems[0].code is Code.CODE_COMMENT
+
+    warm = _RecordingCheckout(GitRepo(root))
+    assert scanner(warm.universe(), paths, opts, 1) == first
+    assert warm.cache_writes == []
+
+    entries = repo.cache_items("comments:")
+    assert len(entries) == 2
+    key = next(key for key in entries if key.endswith(":a.py"))
+    malformed = '{"blocks":null,"links":[],"problems":[]}'
+    checksum = hashlib.sha256(f"{key}\n{malformed}".encode()).hexdigest()
+    repo.cache_put_many({key: f"{checksum}\n{malformed}"})
+    repaired = _RecordingCheckout(GitRepo(root))
+    assert scanner(repaired.universe(), paths, opts, 1) == first
+    assert repaired.cache_writes == [key]
+    assert repo.cache_items("comments:") == entries
+
+    new_rule = replace(opts, inline_directives=("# comment",))
+    assert scanner(GitRepo(root).universe(), paths, new_rule, 1)["a.py"].blocks == ()
+    (root / "a.py").write_text("x = 1\n")
+    edited = _RecordingCheckout(GitRepo(root))
+    assert scanner(edited.universe(), paths, opts, 1)["a.py"].links == ()
+    assert len(edited.cache_writes) == 1
+    assert edited.cache_writes[0].endswith(":a.py")
+
+
+def test_parallel_comment_scans_merge_hits_and_misses(tmp_path: Path) -> None:
+    files = _wide_files()
+    root = _init_git_repo(tmp_path, files)
+    opts = CommentOptions()
+    scanner = frontend_of("pkg/m0.py", Policy()).scan_comments
+    repo = GitRepo(root)
+    hits = ["pkg/m0.py", "pkg/m1.py"]
+    first = scanner(repo.universe(), hits, opts, 1)
+    parallel = _RecordingCheckout(GitRepo(root))
+    scans = scanner(parallel.universe(), list(files), opts, 2)
+    assert scans.keys() == files.keys()
+    assert {path: scans[path] for path in hits} == first
+    assert len(parallel.cache_writes) == len(files) - len(hits)
+    assert all(scan.blocks == scan.links == scan.problems == () for scan in scans.values())
+
+
+def test_warm_typescript_comments_require_the_compiler(tmp_path: Path) -> None:
+    root = _init_git_repo(tmp_path, {"a.ts": "// legacy comment\nconst x = 1;\n"})
+    scanner = frontend_of("a.ts", Policy()).scan_comments
+    repo = GitRepo(root)
+    options = CommentOptions()
+    first = scanner(repo.universe(), ["a.ts"], options, 1)
+    assert len(first["a.ts"].blocks) == 1
+
+    requests: list[str] = []
+
+    def observe(producer: Path, request: str) -> tuple[int, str, str]:
+        requests.append(request)
+        return repo.tree.run_node(producer, request)
+
+    warm = _RecordingCheckout(GitRepo(root), node_runner=observe)
+    assert scanner(warm.universe(), ["a.ts"], options, 1) == first
+    assert len(requests) == 1
+    assert '"sources": {}' in requests[0]
+    assert warm.cache_writes == []
+
+    def missing(_producer: Path, _request: str) -> tuple[int, str, str]:
+        return 1, "", "Cannot find module 'typescript'"
+
+    broken = _RecordingCheckout(GitRepo(root), node_runner=missing)
+    with pytest.raises(MeizelError, match=r"compiler failed: .* no installed dependencies"):
+        scanner(broken.universe(), ["a.ts"], options, 1)
+
+
+def test_comment_cache_hashes_large_sources_with_bounded_memory(tmp_path: Path) -> None:
+    source = f'# retained comment\nvalue = "{"x" * (256 * 1024)}"\n'
+    files = dict.fromkeys((f"m{i}.py" for i in range(96)), source)
+    root = _init_git_repo(tmp_path, files)
+    universe = GitRepo(root).universe()
+    scanner = frontend_of("m0.py", Policy()).scan_comments
+    tracemalloc.start()
+    try:
+        scans = scanner(universe, list(files), CommentOptions(), 1)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert len(scans) == len(files)
+    assert all(len(scan.blocks) == 1 for scan in scans.values())
+    assert peak < 16 * 1024 * 1024
