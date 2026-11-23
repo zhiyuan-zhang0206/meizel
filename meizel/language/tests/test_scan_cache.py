@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import subprocess
+import tracemalloc
 from collections.abc import Callable, Collection, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
@@ -457,3 +458,20 @@ def test_warm_typescript_comments_require_the_compiler(tmp_path: Path) -> None:
     broken = _RecordingCheckout(GitRepo(root), node_runner=missing)
     with pytest.raises(MeizelError, match=r"compiler failed: .* no installed dependencies"):
         scanner(broken.universe(), ["a.ts"], options, 1)
+
+
+def test_comment_cache_hashes_large_sources_with_bounded_memory(tmp_path: Path) -> None:
+    source = f'# retained comment\nvalue = "{"x" * (256 * 1024)}"\n'
+    files = dict.fromkeys((f"m{i}.py" for i in range(96)), source)
+    root = _init_git_repo(tmp_path, files)
+    universe = GitRepo(root).universe()
+    scanner = frontend_of("m0.py", Policy()).scan_comments
+    tracemalloc.start()
+    try:
+        scans = scanner(universe, list(files), CommentOptions(), 1)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert len(scans) == len(files)
+    assert all(len(scan.blocks) == 1 for scan in scans.values())
+    assert peak < 16 * 1024 * 1024

@@ -3,6 +3,8 @@
 # run reads TypeScript and so needs the locked compiler, which the static lane installs.
 from __future__ import annotations
 
+import json
+import os
 import shutil
 import subprocess
 import sys
@@ -117,3 +119,52 @@ def test_a_policy_that_enables_only_typescript_leaves_python_unread(
     universe = seat(root)
     scans = scan_all(universe, Sources(), policy=allowances.load(universe.repo))
     assert sorted(scans) == ["pkg/stamp.ts"]
+
+
+@pytest.mark.parametrize("first_mode", ["default", "error"])
+def test_comment_cache_preserves_warning_policy_and_prune(
+    make_repo: RepoFactory, first_mode: str
+) -> None:
+    root = make_repo(
+        {
+            "a.py": '# retained comment\nvalue = "\\q"\n',
+            "meizel.policy.toml": '[comments]\nmode = "ratchet"\nbaseline = "baseline.json"\n',
+            "baseline.json": '{"a.py": 1}\n',
+        }
+    )
+
+    def run(mode: str, *args: str) -> subprocess.CompletedProcess[bytes]:
+        # Fixed CLI argv, with the warning policy scoped to this process.
+        return subprocess.run(  # noqa: S603
+            [
+                sys.executable,
+                "-m",
+                "meizel.tests.languages.check_probe",
+                "--jobs",
+                "1",
+                "comments",
+                *args,
+            ],
+            cwd=root,
+            capture_output=True,
+            check=True,
+            env={**os.environ, "PYTHONWARNINGS": f"{mode}::SyntaxWarning"},
+        )
+
+    def expect_corpus(mode: str) -> tuple[bytes, bytes]:
+        result = run(mode, "corpus", "--format", "jsonl")
+        if mode == "default":
+            assert b"retained comment" in result.stdout
+            assert b"SyntaxWarning: invalid escape sequence" in result.stderr
+        else:
+            assert result.stdout == result.stderr == b""
+        return result.stdout, result.stderr
+
+    other_mode = "error" if first_mode == "default" else "default"
+    first = expect_corpus(first_mode)
+    second = expect_corpus(other_mode)
+    assert expect_corpus(first_mode) == first
+    assert expect_corpus(other_mode) == second
+    prune = run("default", "prune")
+    assert b"SyntaxWarning: invalid escape sequence" in prune.stderr
+    assert json.loads((root / "baseline.json").read_text()) == {"a.py": 1}

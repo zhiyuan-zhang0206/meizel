@@ -7,7 +7,8 @@ import inspect
 import io
 import re
 import tokenize
-from collections.abc import Mapping, Sequence
+import warnings
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from itertools import pairwise
@@ -20,6 +21,7 @@ from meizel.language.comment_scan import (
     CommentLink,
     CommentOptions,
     CommentScan,
+    comment_source_digest,
 )
 from meizel.language.file_scan import read_source
 from meizel.language.python.comment_fixtures import fixture_owners
@@ -298,12 +300,8 @@ def _scan_source(
     )
 
 
-def _scan_misses(
-    sources: Mapping[str, bytes], options: CommentOptions, jobs: int | None
-) -> dict[str, CommentScan]:
-    if not sources:
-        return {}
-    task = partial(
+def _parse_task(options: CommentOptions) -> Callable[[str, bytes], CommentScan]:
+    return partial(
         _scan_source,
         options=options,
         link_pattern=(
@@ -314,24 +312,86 @@ def _scan_misses(
         directives=tuple(re.compile(pattern) for pattern in options.inline_directives),
         doc_globs=tuple(_glob_to_regex(pattern) for pattern in options.docstring_paths),
     )
-    if jobs is None or jobs <= 1 or len(sources) < _PARALLEL_FROM:
-        return {path: task(path, raw) for path, raw in sources.items()}
-    with ProcessPoolExecutor(jobs) as pool:
-        chunk = max(1, len(sources) // (jobs * 8))
-        return {
-            scan.path: scan for scan in pool.map(task, sources, sources.values(), chunksize=chunk)
-        }
+
+
+type Parsed = tuple[CommentScan, str, list[warnings.WarningMessage]]
+
+_COMMENT_WORKER: dict[str, tuple[Universe, str]] = {}
+
+
+def _warning_policy() -> tuple[str, bool]:
+    filters = tuple(warnings.filters)
+    warning_action: object = vars(warnings).get("defaultaction")
+    default_action = warning_action if isinstance(warning_action, str) else "default"
+    # "once" and "module" consult warning registries shared by scans in this process.
+    stateful_actions = {"once", "module"}
+    stateful = default_action in stateful_actions or any(f[0] in stateful_actions for f in filters)
+    return repr((filters, default_action)), stateful
+
+
+def _init_comment_worker(universe: Universe) -> None:
+    _COMMENT_WORKER["universe"] = (universe, _warning_policy()[0])
+
+
+def _parse_miss(universe: Universe, task: Callable[[str, bytes], CommentScan], path: str) -> Parsed:
+    raw = read_source(universe, path)
+    with warnings.catch_warnings(record=True) as emitted:
+        scan = task(path, raw)
+    return scan, comment_source_digest(raw), emitted
+
+
+def _parse_in_worker(
+    task: Callable[[str, bytes], CommentScan], policy: str, path: str
+) -> Parsed | None:
+    universe, worker_policy = _COMMENT_WORKER["universe"]
+    return _parse_miss(universe, task, path) if worker_policy == policy else None
+
+
+def _scan_misses(
+    universe: Universe,
+    paths: list[str],
+    task: Callable[[str, bytes], CommentScan],
+    jobs: int | None,
+    policy: str,
+) -> Iterator[Parsed]:
+    if jobs is None or jobs <= 1 or len(paths) < _PARALLEL_FROM:
+        for path in paths:
+            yield _parse_miss(universe, task, path)
+        return
+    # Workers read each path themselves. The queue carries names instead of source bytes.
+    with ProcessPoolExecutor(jobs, initializer=_init_comment_worker, initargs=(universe,)) as pool:
+        chunk = max(1, len(paths) // (jobs * 8))
+        parsed = pool.map(partial(_parse_in_worker, task, policy), paths, chunksize=chunk)
+        # Spawned interpreters may have a different policy from the caller's in-process filters.
+        for path, scan in zip(paths, parsed, strict=True):
+            yield scan if scan is not None else _parse_miss(universe, task, path)
 
 
 def scan_python_comments(
     universe: Universe, paths: Sequence[str], options: CommentOptions, jobs: int | None = None
 ) -> dict[str, CommentScan]:
-    sources = {path: read_source(universe, path) for path in paths}
-    cache = CommentCache(universe.repo, "python", options, sources)
-    hits = cache.load()
-    fresh = _scan_misses(
-        {path: raw for path, raw in sources.items() if path not in hits}, options, jobs
-    )
-    cache.store(fresh)
-    hits.update(fresh)
-    return {path: hits[path] for path in sources}
+    policy, stateful = _warning_policy()
+    task = _parse_task(options)
+    if stateful:
+        return {path: task(path, read_source(universe, path)) for path in paths}
+    digests = {path: comment_source_digest(read_source(universe, path)) for path in paths}
+    cache = CommentCache(universe.repo, "python", options, digests, runtime=policy)
+    scans = cache.load()
+    misses = [path for path in digests if path not in scans]
+    updates: dict[str, CommentScan] = {}
+    for scan, digest, emitted in _scan_misses(universe, misses, task, jobs, policy):
+        scans[scan.path] = scan
+        # Re-emit visible warnings in input order. Cache only scans with no warning side effects
+        # and only under the digest of the bytes the worker actually parsed.
+        for warning in emitted:
+            warnings.showwarning(
+                warning.message,
+                warning.category,
+                warning.filename,
+                warning.lineno,
+                line=warning.line,
+            )
+        if not emitted and digest == digests[scan.path]:
+            updates[scan.path] = scan
+    cache.store(updates)
+    return {path: scans[path] for path in digests}

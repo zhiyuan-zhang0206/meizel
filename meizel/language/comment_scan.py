@@ -19,6 +19,7 @@ __all__ = [
     "CommentLink",
     "CommentOptions",
     "CommentScan",
+    "comment_source_digest",
     "decode_comment_scan",
 ]
 
@@ -105,7 +106,7 @@ class CommentCache:
         repo: Checkout,
         frontend: str,
         options: CommentOptions,
-        sources: Mapping[str, bytes | str],
+        digests: Mapping[str, str],
         *,
         runtime: str = "",
     ) -> None:
@@ -118,10 +119,7 @@ class CommentCache:
         prefix = f"comments:v1:{_digest(context.encode())}"
         # Each parser receives these exact bytes (or their lossless UTF-8 decoding). Git's blob
         # SHA can differ from what a checkout supplies through filters or line-ending conversion.
-        self.keys = {
-            path: f"{prefix}:{_digest(_source_bytes(source))}:{path}"
-            for path, source in sources.items()
-        }
+        self.keys = {path: f"{prefix}:{digest}:{path}" for path, digest in digests.items()}
 
     def load(self) -> dict[str, CommentScan]:
         scans: dict[str, CommentScan] = {}
@@ -150,5 +148,5 @@ class CommentCache:
         self.repo.cache_put_many(updates)
 
 
-def _source_bytes(source: bytes | str) -> bytes:
-    return source.encode() if isinstance(source, str) else source
+def comment_source_digest(source: bytes | str) -> str:
+    return _digest(source.encode() if isinstance(source, str) else source)

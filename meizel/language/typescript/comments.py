@@ -12,6 +12,7 @@ from meizel.language.comment_scan import (
     CommentCache,
     CommentOptions,
     CommentScan,
+    comment_source_digest,
     decode_comment_scan,
 )
 from meizel.language.file_scan import read_source
@@ -66,7 +67,8 @@ def _scan_cached(
     identity, _ = _run(universe, {}, options)
     if identity is None:
         return _run(universe, contents, options)[1]
-    cache = CommentCache(universe.repo, "typescript", options, contents, runtime=identity)
+    digests = {path: comment_source_digest(text) for path, text in contents.items()}
+    cache = CommentCache(universe.repo, "typescript", options, digests, runtime=identity)
     hits = cache.load()
     misses = {path: text for path, text in contents.items() if path not in hits}
     if not misses:
